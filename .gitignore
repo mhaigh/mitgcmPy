@@ -1,0 +1,12 @@
+venv/
+*.pdf
+*.jpg
+*.png
+*.dat
+*.npy
+*.nc
+*.pyc
+*.mp4
+*.data
+*.meta
+
