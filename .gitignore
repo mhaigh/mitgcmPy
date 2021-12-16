@@ -1,4 +1,5 @@
 venv/
+*.pbs
 *.pdf
 *.jpg
 *.png

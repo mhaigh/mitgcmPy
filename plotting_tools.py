@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 def maskBathyXY(data, grid, zi, color='grey', subregion=False, lats=[], lons=[]):
 	'''Function to be called before plotting to mask the bathymetry in (X,Y)-slice.'''
-	
+		
 	# If masking in subregion, grid needs to account for it.
 	if subregion == True:
 		try:
@@ -33,9 +33,13 @@ def maskBathyXY(data, grid, zi, color='grey', subregion=False, lats=[], lons=[])
 	
 #==
 
-def maskBathyXZ(data, grid, color='grey', yi=0, subregion=False, lons=[], depths=[]):
+def maskBathyXZ(data, grid, color='grey', yi=0, subregion=False, lons=[], depths=[], timeDep=False):
 	'''Function to be called before plotting to mask the bathymetry in (X,Z)-slice.'''
 	
+	if (len(data.shape) != 2 and timeDep == False):
+		print('Error: plotting_toolts.maskBathyXZ. If data is more than 2-dimensional, timeDep must be set to True.')
+		sys.exit()
+		
 	# If masking in subregion, grid needs to account for it.
 	if subregion == True:
 		try:
@@ -56,15 +60,25 @@ def maskBathyXZ(data, grid, color='grey', yi=0, subregion=False, lons=[], depths
 	
 	# Make draft array with (y,z)-dimensions.
 	bathy = np.tile(bathy[yi, ], (RC.shape[0], 1))
+	
+	# If data is time-dependent, assume time dimension is first and tile draft and z arrays.
+	if timeDep:
+		NT = data.shape[0]
+		z = np.tile(z, (NT, 1, 1))
+		bathy = np.tile(bathy, (NT, 1, 1))
 		
 	return np.ma.array(data, mask=z<bathy)
 	
 	
 #==
 
-def maskDraftYZ(data, grid, color='grey', xi=10, subregion=False, lats=[], depths=[]):
+def maskDraftYZ(data, grid, color='grey', xi=10, subregion=False, lats=[], depths=[], timeDep=False):
 	'''Function to be called before plotting to mask the ice shelf draft.
 	If subregion is True, lats and depths lets grid know what the subregion is.'''
+	
+	if (len(data.shape) != 2 and timeDep == False):
+		print('Error: plotting_toolts.maskDraftYZ. If data is more than 2-dimensional, timeDep must be set to True.')
+		sys.exit()
 	
 	# If masking in subregion, grid needs to account for it.
 	if subregion == True:
@@ -77,7 +91,7 @@ def maskDraftYZ(data, grid, color='grey', xi=10, subregion=False, lats=[], depth
 			print('Error: plottingtools.maskDraftYZ. If subregion set to True, lats and depths need to be defined.')
 			sys.exit()
 			
-	else:
+	else:  
 		RC = grid.RC.squeeze()
 		YC = grid.YC
 		draft = grid.draft
@@ -88,13 +102,23 @@ def maskDraftYZ(data, grid, color='grey', xi=10, subregion=False, lats=[], depth
 	# Make draft array with (y,z)-dimensions.
 	draft = np.tile(draft[:,xi], (RC.shape[0], 1))
 	
+	# If data is time-dependent, assume time dimension is first and tile draft and z arrays.
+	if timeDep:
+		NT = data.shape[0]
+		z = np.tile(z, (NT, 1, 1))
+		draft = np.tile(draft, (NT, 1, 1))
+	
 	return np.ma.array(data, mask=z>draft)
 	
 
 #==
 
-def maskBathyYZ(data, grid, color='grey', xi=0, subregion=False, lats=[], depths=[]):
+def maskBathyYZ(data, grid, color='grey', xi=0, subregion=False, lats=[], depths=[], timeDep=False):
 	'''Function to be called before plotting to mask the bathymetry in (Y,Z)-slice.'''
+	
+	if (len(data.shape) != 2 and timeDep == False):
+		print('Error: plotting_toolts.maskDraftYZ. If data is more than 2-dimensional, timeDep must be set to True.')
+		sys.exit()
 	
 	# If masking in subregion, grid needs to account for it.
 	if subregion == True:
@@ -116,6 +140,12 @@ def maskBathyYZ(data, grid, color='grey', xi=0, subregion=False, lats=[], depths
 	
 	# Make draft array with (y,z)-dimensions.
 	bathy = np.tile(bathy[:,xi], (RC.shape[0], 1))
+
+	# If data is time-dependent, assume time dimension is first and tile draft and z arrays.
+	if timeDep:
+		NT = data.shape[0]
+		z = np.tile(z, (NT, 1, 1))
+		bathy = np.tile(bathy, (NT, 1, 1))
 		
 	return np.ma.array(data, mask=z<bathy)
 	

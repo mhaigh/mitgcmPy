@@ -13,8 +13,9 @@ import plotting_tools as ptt
 
 import tools
 
-#import xmitgcm
-#import xgcm
+from readData import readVariable
+
+#from io import readData
 
 #==========================================================
 
@@ -24,7 +25,15 @@ import tools
 ##	 hfac is fraction of vertical cell occupied by water, so if zero, then its land. Full column=0 -> coastline.
 # To get ice shelf, get ocean mask, multiply by (surface) regions where hfac < 1.
 
-path = '/Users/mh115/Documents/BAS/data/PAS_666/'
+# What to do today?
+# input code. Can read either nc or mitgcm binaries, function takes filed name as input.
+# check they give the same result.
+# maybe also optionally return a dictonary with plotting properties such as vmax/vmin and cmap, title...
+# animate theta.
+# make sure grid looks right from hfacs.
+
+#path = '/Users/mh115/Documents/BAS/data/PAS_666/'
+path =  '/Users/mh115/Documents/BAS/data/PISOMIP_001/run/'
 grid = Grid(path)
 grid_KN = Grid_KN(path) 
 
@@ -36,10 +45,52 @@ grid_KN = Grid_KN(path)
 #fname = 'stateVvel.nc'; var = 'VVEL'; vmin = -0.2; vmax = 0.2
 
 
+#==
+
+TEST_animate = True
+if TEST_animate:
+
+
+
+	path =  '/Users/mh115/Documents/BAS/data/PISOMIP_001/run/'
+	grid = Grid(path)
+	
+	data = readVariable('Theta', path, file_format='nc')
+
+	data = np.mean(data, axis=3)
+	
+	data = ptt.maskDraftYZ(data, grid, xi=10, timeDep=True)
+	data = ptt.maskBathyYZ(data, grid, xi=10, timeDep=True)
+
+
+	print(data.shape)
+
+	
+	figsize=(5,4)
+	dpi=100
+	X = grid.YC[:,1]
+	Y = grid.RC.squeeze()
+	vmin=-1.5; vmax=1.5
+	Nt = data.shape[0]
+	cmap='coolwarm'
+	levels = np.linspace(-1,1,9)
+	
+	#==
+
+	pt.animate1by1(data, X, Y, vmin=vmin, vmax=vmax, cmap=cmap)
+
+		
+	quit()
+	
+	#==
+	
+	# Lat-lon plot.
+	pt.plot1by2([var1[-1,0], var2[-1,0]], X=[grid.XC, grid.XC], Y=[grid.YC, grid.YC], titles=['rdmds', 'nc'], xlabels=['lon', 'lon'], ylabels=['lat', 'lat'], show=True)
+	
 
 #==
 
-TEST_troughTransport = True
+TEST_troughTransport = False
 if TEST_troughTransport:
 
 	# Look at volume transport through window west of trough and possibly east of trough.
@@ -77,7 +128,8 @@ if TEST_troughTransport:
 	
 	# Get zonal transport
 	fname = 'stateUvel.nc'; var = 'UVEL'; cmap = 'coolwarm'; vmax = 0.1; vmin = -vmax
-	ncfile = nc.Dataset(path+fname, 'r'); data = ncfile.variables[var]
+	#data = io.readData('Uvel', path,)
+	ncfile = nc.Dataset(path+'', 'r'); data = ncfile.variables[var]
 	ut = tools.zonalTransport(data, grid)
 	
 	# Zonal transport through windows 1 and 4.
@@ -234,7 +286,7 @@ if TEST_getSubregionYZ:
 	Zsubr = grid.Zsubr1D(depth_vals)
 	#data1 = ptt.maskBathyYZ(data1, grid, xi=xi)
 
-	pt.plot1by2([data1, data2], X=[Ysubr, Ysubr], Y=[Zsubr, Zsubr], titles=['data1', 'data2'], cmap=cmap, vmin=vmin, vmax=vmax, xlabels=['lat', 'lat'], ylabels=['depth', ''])
+	pt.plot1by2([data1, data2], X=[Ysubr, Ysubr], Y=[Zsubr, Zsubr], titles=['data1', 'data2'], cmap=cmap, vmin=vmin, vmax=vmax, xlabels=['lat', 'lat'], ylabels=['depth', ''], show=False, save=True)
 
 #==
 
@@ -292,6 +344,38 @@ if TEST_getIndex:
 	
 	quit()
 	
+
+	
+	
+#==
+
+TEST_readData = True
+if TEST_readData:
+
+	path =  '/Users/mh115/Documents/BAS/data/PISOMIP_001/run/'
+	grid = Grid(path)
+	
+	var1 = readVariable('Theta', path, file_format='rdmds')
+	var2 = readVariable('Theta', path, file_format='nc')
+
+	#==
+	
+	ts = 1
+		
+	# Lat-depth plot.
+	data1 = np.mean(var1[ts], axis=2); data2 = np.mean(var2[ts], axis=2)
+	data1 = ptt.maskBathyYZ(data1, grid, xi=10); data2 = ptt.maskBathyYZ(data2, grid, xi=10)
+	print(data1.shape)
+	data1 = ptt.maskDraftYZ(data1, grid, xi=10); data2 = ptt.maskDraftYZ(data2, grid, xi=10)
+	
+	pt.plot1by2([data1, data2], X=[grid.YC[:,0], grid.YC[:,0]], Y=[grid.RC.squeeze(), grid.RC.squeeze()], titles=['rdmds', 'nc'], xlabels=['lat', 'lat'], ylabels=['depth', ''], show=True, figsize=(8,3))
+		
+	quit()
+	
+	#==
+	
+	# Lat-lon plot.
+	pt.plot1by2([var1[-1,0], var2[-1,0]], X=[grid.XC, grid.XC], Y=[grid.YC, grid.YC], titles=['rdmds', 'nc'], xlabels=['lon', 'lon'], ylabels=['lat', 'lat'], show=True)
 
 
 

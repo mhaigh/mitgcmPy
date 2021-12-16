@@ -5,7 +5,8 @@ import sys
 import numpy as np
 
 import matplotlib.pyplot as plt
-
+import matplotlib.animation as animation
+	
 #==========================================================
 
 def plotBathymetry(grid, xlims=None, ylims=None):
@@ -21,7 +22,7 @@ def plotBathymetry(grid, xlims=None, ylims=None):
 	
 #==
 
-def timeSeries(data, TIME=None, Y=None, time_units='days', figsize=(6,3), labels=None, title=None, fontsize=14, ylabel=None, gridOn=True, save=False, outhpath='', outname='Figure_1.png', show=True, dpi=200):
+def timeSeries(data, TIME=None, Y=None, time_units='days', figsize=(6,3), labels=None, title=None, fontsize=14, ylabel=None, gridOn=True, save=False, outpath='', outname='timeSeries.png', show=True, dpi=200):
 	'''1D time series of entries in listed data.'''
 	
 	fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
@@ -69,7 +70,7 @@ def timeSeries(data, TIME=None, Y=None, time_units='days', figsize=(6,3), labels
 	
 #==
 		
-def plot1by2(data, X=None, Y=None, figsize=(9,4), titles=None, fontsize=14, mesh=True, cmap='jet', vmin=None, vmax=None, xlabels=None, ylabels=None, save=False, outhpath='', outname='Figure_1.png', show=True, dpi=200):
+def plot1by2(data, X=None, Y=None, figsize=(9,4), titles=None, fontsize=14, mesh=True, cmap='jet', vmin=None, vmax=None, xlabels=None, ylabels=None, save=False, outpath='', outname='plot1by2.png', show=True, dpi=200):
 	
 	fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
 
@@ -108,10 +109,11 @@ def plot1by2(data, X=None, Y=None, figsize=(9,4), titles=None, fontsize=14, mesh
 		else: 
 			plt.pcolormesh(data[1], cmap=cmap,  vmin=vmin, vmax=vmax)
 	else:
+		nlevels = 9
 		if X is not None and Y is not None:
-			plt.contourf(X[1], Y[1], data[1], cmap=cmap, vmin=vmin, vmax=vmax)
+			plt.contourf(X[1], Y[1], data[1], cmap=cmap, levels=np.linspace(vmin, vmax, nlevels))
 		else: 
-			plt.contourf(data[1], cmap=cmap, vmin=vmin, vmax=vmax)
+			plt.contourf(data[1], cmap=cmap, levels=np.linspace(vmin, vmax, nlevels))
 	
 	if xlabels is not None:
 		plt.xlabel(xlabels[1], fontsize=fontsize)
@@ -133,5 +135,49 @@ def plot1by2(data, X=None, Y=None, figsize=(9,4), titles=None, fontsize=14, mesh
 	if show:
 		plt.show()
 	
+#==
+
+def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh=True, cmap='jet', vmin=None, vmax=None, xlabel='', ylabel='', save=True, outpath='', outname='animate1by1.mp4', show=False, dpi=200, fps=8, bitrate=-1):
+
+	# Make animation
+	fig = plt.figure(figsize=figsize, dpi=dpi)
+	ax = fig.add_subplot()
+	plt.gca().patch.set_color('.25')
+
+	if mesh:
+		if X is not None and Y is not None:
+			cax = ax.pcolormesh(X, Y, data[0, ], cmap=cmap, vmin=vmin, vmax=vmax)
+		else: 
+			cax = ax.pcolormesh(data[0, ], cmap=cmap, vmin=vmin, vmax=vmax)
+		def animate(i):
+			cax.set_array(data[i,].flatten())
+		# End if mesh	
+
+	else:
+		nlevels = 9
+		if X is not None and Y is not None:
+			cax = ax.contourf(X, Y, data[0, ], cmap=cmap, levels=np.linspace(vmin, vmax, nlevels))
+		else: 
+			cax = ax.contourf(data[0, ], cmap=cmap, levels=np.linspace(vmin, vmax, nlevels))
+		def animate(i):
+			ax.contourf(X, Y, data[i,], levels=np.linspace(vmin, vmax, nlevels))
+			
+	#==
+	
+	fig.colorbar(cax, ax=ax)
+	plt.xlabel(xlabel, fontsize=fontsize)
+	plt.ylabel(ylabel, fontsize=fontsize)
+	plt.title(title, fontsize=fontsize)
+	
+	anim = animation.FuncAnimation(fig, animate, interval=50, frames=data.shape[0])
+	plt.tight_layout()
+	plt.draw()
+	
+	if save:
+		anim.save(outpath+outname,metadata={'artist':'Guido'},writer='ffmpeg',fps=fps,bitrate=bitrate)
+		
+	if show:
+		plt.show()
+		
 	
 	

@@ -6,6 +6,19 @@ import sys
 import numpy as np
 
 #==========================================================
+
+def maskEdges(data, size, dims=None):
+	'''Given data mask its edges.
+	Size of mask in each dimension determined by size and dims.'''
+	
+	if dims is None and len(data.shape)==2:
+		return data[size:-size, size:-size]
+	
+	else:
+		print('Error: tools.maskEdges. Option selected which has not been coded up.')
+		sys.exit()
+		
+#==
 	
 def getSubregionXY(data, grid, lons, lats):
 	'''Given data with lat-lon dimensions in final two (or only two)
