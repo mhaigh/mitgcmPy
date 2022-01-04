@@ -32,11 +32,6 @@ from readData import readVariable
 # animate theta.
 # make sure grid looks right from hfacs.
 
-#path = '/Users/mh115/Documents/BAS/data/PAS_666/'
-path =  '/Users/mh115/Documents/BAS/data/PISOMIP_001/run/'
-grid = Grid(path)
-grid_KN = Grid_KN(path) 
-
 
 # Load which nc file?
 #fname = 'stateRho.nc'; var = 'RHOAnoma'; vmin = -2; vmax = - 1
@@ -50,9 +45,8 @@ grid_KN = Grid_KN(path)
 TEST_animate = True
 if TEST_animate:
 
-
-
-	path =  '/Users/mh115/Documents/BAS/data/PISOMIP_001/run/'
+	path = '/home/michai/Documents/data/PISOMIP_001/run/'
+	#path =  '/Users/mh115/Documents/BAS/data/PISOMIP_001/run/' 
 	grid = Grid(path)
 	
 	data = readVariable('Theta', path, file_format='nc')
@@ -70,7 +64,8 @@ if TEST_animate:
 	dpi=100
 	X = grid.YC[:,1]
 	Y = grid.RC.squeeze()
-	vmin=-1.5; vmax=1.5
+	#vmin=-.1; vmax=.1
+	vmin = -1.8; vmax=1.	
 	Nt = data.shape[0]
 	cmap='coolwarm'
 	levels = np.linspace(-1,1,9)
@@ -314,9 +309,9 @@ if TEST_bathy:
 	iceC = grid.iceC
 	
 	
-	pt.plot1by2(draft, grid_KN.draft, titles=['Bathymetry', 'KN Bathymetry'])
+	pt.plot1by2([draft, grid_KN.draft], titles=['Bathymetry', 'KN Bathymetry'])
 	
-	pt.plot1by2(bathy, grid_KN.bathy, titles=['Draft', 'KN Draft'])
+	pt.plot1by2([bathy, grid_KN.bathy], titles=['Draft', 'KN Draft'])
 
 	quit()
 	
@@ -349,7 +344,7 @@ if TEST_getIndex:
 	
 #==
 
-TEST_readData = True
+TEST_readData = False
 if TEST_readData:
 
 	path =  '/Users/mh115/Documents/BAS/data/PISOMIP_001/run/'

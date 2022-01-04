@@ -168,7 +168,8 @@ def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh
 	plt.xlabel(xlabel, fontsize=fontsize)
 	plt.ylabel(ylabel, fontsize=fontsize)
 	plt.title(title, fontsize=fontsize)
-	
+	plt.grid() 
+
 	anim = animation.FuncAnimation(fig, animate, interval=50, frames=data.shape[0])
 	plt.tight_layout()
 	plt.draw()

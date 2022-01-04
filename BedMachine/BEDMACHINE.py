@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 
 #==========================================================
 
-path =  '/Users/mh115/Documents/BAS/data/BedMachine/'
-fname = 'BedMachineAntarctica_2019-11-05_v01.nc'
+path = '/home/michai/Documents/data/BedMachine/'# '/Users/mh115/Documents/BAS/data/BedMachine/'
+fname = 'BedMachineAntarctica_2020-07-15_v02.nc'
 		
 bed = 'bed'
 mask = 'mask'
@@ -28,6 +28,8 @@ mask = mask[ylims[0]:ylims[1], xlims[0]:xlims[1]]
 
 bed = np.ma.array(bed, mask=mask>0)
 lvls = [-2000, -1500, -1000, -500]
+
+bed = bed.T[:, ::-1]
 
 plt.figure(dpi=200)
 plt.gca().patch.set_color('.25')

@@ -11,8 +11,8 @@
 
 Rho = {'fname':'stateRho', 'var':'RHOAnoma', 'vmin':-2, 'vmax':-1, 'cmap':''}
 Theta = {'fname':'stateTheta', 'var':'THETA', 'vmin':-2.5, 'vmax':2.5, 'cmap':'coolwarm'}
-
-varDict={'Rho':Rho, 'Theta':Theta}
+Uvel = {'fname':'stateUvel', 'var':'UVEL', 'vmin':-0.1, 'vmax':0.1, 'cmap':'coolwarm'}
+varDict={'Rho':Rho, 'Theta':Theta, 'Uvel':Uvel}
 
 #fname = 'stateRho.nc'; var = 'RHOAnoma'; vmin = -2; vmax = - 1
 #fname = 'stateTheta.nc'; var = 'THETA'; vmin = - 2.5; vmax = 2.5; cmap='coolwarm'

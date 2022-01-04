@@ -3,7 +3,7 @@
 
 BSL=michai@bslcenb.nerc-bas.ac.uk
 BSLDIR=${BSL}:/data/oceans_output/shelf/michai/mitgcm
-HOMEDIR=/Users/mh115/Documents/BAS/data
+HOMEDIR=/home/michai/Documents/data #/Users/mh115/Documents/BAS/data
 DATAPATH=/PISOMIP_001/run/
 
 NC=1
