@@ -30,7 +30,10 @@ def readVariable(variable, path, file_format='nc', time_step=1, meta=False):
 		from netCDF4 import Dataset
 		from varDict import varDict
 		fname = 'state' + variable + '.nc'
-		return Dataset(path+fname, 'r')[varDict[variable]['var']]
+		if meta:
+			return Dataset(path+fname, 'r')
+		else:
+			return Dataset(path+fname, 'r')[varDict[variable]['var']]
 		
 	else:
 		print('Error: io.readData. file_format must be rdmds or nc')

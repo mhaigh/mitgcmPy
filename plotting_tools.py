@@ -8,6 +8,27 @@ import matplotlib.pyplot as plt
 
 #==========================================================
 
+def maskBathyAll(data, grid, color='grey', timeDep=False):
+	'''Mask bathymetry everywhere in data field.
+	If timeDep=True, assumes data is time-dependent with
+	time on the first axis.'''
+
+	# Make bathy and z 3D fields.
+	bathy = grid.bathy
+	z = grid.RC
+	bathy = np.tile(bathy, (z.shape[0], 1, 1))
+	z = np.tile(z, (1, bathy.shape[1], bathy.shape[2]))
+
+	if timeDep:
+		print('Note: creating 4D arrays for masking can be slow.')
+		Nt = data.shape[0]
+		bathy = np.tile(bathy, (Nt,1,1,1))
+		z = np.tile(bathy, (Nt,1,1,1))
+
+	return np.ma.array(data, mask=grid.RC<bathy)
+
+#==
+
 def maskBathyXY(data, grid, zi, color='grey', subregion=False, lats=[], lons=[]):
 	'''Function to be called before plotting to mask the bathymetry in (X,Y)-slice.'''
 		

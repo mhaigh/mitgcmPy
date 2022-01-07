@@ -9,6 +9,26 @@ import matplotlib.animation as animation
 	
 #==========================================================
 
+def setText(ax, text_data, i, set_invisible=False):
+	'''Utility function for setting text on axis given text_data dictionary.'''
+
+	if set_invisible:
+		for t in ax.texts:
+			t.set_visible(False)
+	
+	ax.text(text_data['xloc'], text_data['yloc'], text_data['text'][i], fontdict=text_data['fontdict'])	
+	
+#==
+
+def contourf(data):
+	'''Quick contourf plot of data.'''
+	
+	plt.contourf(data)
+	plt.colorbar()
+	plt.show()	
+
+#==
+
 def plotBathymetry(grid, xlims=None, ylims=None):
 	
 	x = grid.XC; y = grid.YC
@@ -70,7 +90,7 @@ def timeSeries(data, TIME=None, Y=None, time_units='days', figsize=(6,3), labels
 	
 #==
 		
-def plot1by2(data, X=None, Y=None, figsize=(9,4), titles=None, fontsize=14, mesh=True, cmap='jet', vmin=None, vmax=None, xlabels=None, ylabels=None, save=False, outpath='', outname='plot1by2.png', show=True, dpi=200):
+def plot1by2(data, X=None, Y=None, figsize=(9,4), titles=None, fontsize=14, mesh=True, cmap='jet', vmin=[None,None], vmax=[None,None], xlabels=None, ylabels=None, grid=True, save=False, outpath='', outname='plot1by2.png', show=True, dpi=200):
 	
 	fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
 
@@ -79,20 +99,24 @@ def plot1by2(data, X=None, Y=None, figsize=(9,4), titles=None, fontsize=14, mesh
 	
 	if mesh:
 		if X is not None and Y is not None:
-			plt.pcolormesh(X[0], Y[0], data[0], cmap=cmap, vmin=vmin, vmax=vmax)
+			plt.pcolormesh(X[0], Y[0], data[0], cmap=cmap, vmin=vmin[0], vmax=vmax[0])
 		else: 
-			plt.pcolormesh(data[0], cmap=cmap, vmin=vmin, vmax=vmax)
+			plt.pcolormesh(data[0], cmap=cmap, vmin=vmin[0], vmax=vmax[0])
 	else:
+		nlevels = 9
 		if X is not None and Y is not None:
-			plt.contourf(X[0], Y[0], data[0], cmap=cmap, vmin=vmin, vmax=vmax)
+			plt.contourf(X[0], Y[0], data[0], cmap=cmap, levels=np.linspace(vmin[0], vmax[0], nlevels))
 		else: 
-			plt.contourf(data[0], cmap=cmap, vmin=vmin, vmax=vmax)
+			plt.contourf(data[0], cmap=cmap, levels=np.linspace(vmin[0], vmax[0], nlevels))
 			
 	if xlabels is not None:
 		plt.xlabel(xlabels[0], fontsize=fontsize)
 	if ylabels is not None:
 		plt.ylabel(ylabels[0], fontsize=fontsize)
-		
+	
+	if grid:
+		plt.grid()
+
 	plt.colorbar()
 	
 	if titles is not None:
@@ -105,22 +129,24 @@ def plot1by2(data, X=None, Y=None, figsize=(9,4), titles=None, fontsize=14, mesh
 	
 	if mesh:
 		if X is not None and Y is not None:
-			plt.pcolormesh(X[1], Y[1], data[1], cmap='jet', vmin=vmin, vmax=vmax)
+			plt.pcolormesh(X[1], Y[1], data[1], cmap='jet', vmin=vmin[1], vmax=vmax[1])
 		else: 
-			plt.pcolormesh(data[1], cmap=cmap,  vmin=vmin, vmax=vmax)
+			plt.pcolormesh(data[1], cmap=cmap,  vmin=vmin[1], vmax=vmax[1])
 	else:
 		nlevels = 9
 		if X is not None and Y is not None:
-			plt.contourf(X[1], Y[1], data[1], cmap=cmap, levels=np.linspace(vmin, vmax, nlevels))
+			plt.contourf(X[1], Y[1], data[1], cmap=cmap, levels=np.linspace(vmin[1], vmax[1], nlevels))
 		else: 
-			plt.contourf(data[1], cmap=cmap, levels=np.linspace(vmin, vmax, nlevels))
+			plt.contourf(data[1], cmap=cmap, levels=np.linspace(vmin[1], vmax[1], nlevels))
 	
 	if xlabels is not None:
 		plt.xlabel(xlabels[1], fontsize=fontsize)
 	if ylabels is not None:
 		plt.ylabel(ylabels[1], fontsize=fontsize)
 		
-				
+	if grid:
+		plt.grid()
+		
 	plt.colorbar()
 	
 	if titles is not None:
@@ -137,7 +163,7 @@ def plot1by2(data, X=None, Y=None, figsize=(9,4), titles=None, fontsize=14, mesh
 	
 #==
 
-def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh=True, cmap='jet', vmin=None, vmax=None, xlabel='', ylabel='', save=True, outpath='', outname='animate1by1.mp4', show=False, dpi=200, fps=8, bitrate=-1):
+def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh=True, cmap='jet', vmin=None, vmax=None, xlabel='', ylabel='', save=True, outpath='', outname='animate1by1.mp4', show=False, dpi=200, fps=8, bitrate=-1, text_data=None):
 
 	# Make animation
 	fig = plt.figure(figsize=figsize, dpi=dpi)
@@ -149,8 +175,14 @@ def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh
 			cax = ax.pcolormesh(X, Y, data[0, ], cmap=cmap, vmin=vmin, vmax=vmax)
 		else: 
 			cax = ax.pcolormesh(data[0, ], cmap=cmap, vmin=vmin, vmax=vmax)
+		if text_data is not None:
+			setText(ax, text_data, 0)	
+
 		def animate(i):
 			cax.set_array(data[i,].flatten())
+			if text_data is not None:
+				setText(ax, text_data, i, set_invisible=True)
+		
 		# End if mesh	
 
 	else:
@@ -159,9 +191,14 @@ def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh
 			cax = ax.contourf(X, Y, data[0, ], cmap=cmap, levels=np.linspace(vmin, vmax, nlevels))
 		else: 
 			cax = ax.contourf(data[0, ], cmap=cmap, levels=np.linspace(vmin, vmax, nlevels))
+		if text_data is not None:
+			setText(ax, text_data, 0)
+		
 		def animate(i):
-			ax.contourf(X, Y, data[i,], levels=np.linspace(vmin, vmax, nlevels))
-			
+			if text_data is not None:
+				setText(ax, text_data, i, set_invisible=True)
+			ax.contourf(X, Y, data[i,], cmap=cmap, levels=np.linspace(vmin, vmax, nlevels))	
+
 	#==
 	
 	fig.colorbar(cax, ax=ax)

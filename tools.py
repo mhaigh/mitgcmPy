@@ -123,6 +123,31 @@ def zonalTransportTEST(u, grid):
 	quit()
 	
 	return ud, ub
+
+#==
+
+def depthAverage(data, timeDep=True):
+	'''Return depth average of data.
+	Assumes input is time-dependent (timeDep=True) in which case depth is on second axis.
+	If timeDep=False, assumes depth is on first axis.
+	Averages over all depths, unless a maxLevel is provided.'''
+
+	return # Does land have to be masked before taking the average?
+
+#==
+
+def boundData(data, vmin, vmax, scale=None):
+	'''Limit data array by vmin and vmax using np.where.
+	scale used to ensure data less than or greater than (not equal) to bounds.
+	This is messy fix for contourf plots.'''
+
+	if scale is not None:
+		data = np.ma.where(data>=vmax, scale*vmax, data)
+		data = np.ma.where(data<=vmin, scale*vmin, data)
+	else:
+		data = np.ma.where(data>=vmax, vmax, data)
+		data = np.ma.where(data<=vmin, vmin, data)
+	return data 
 	
 	
 	

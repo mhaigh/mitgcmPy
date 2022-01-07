@@ -14,6 +14,7 @@ import plotting_tools as ptt
 import tools
 
 from readData import readVariable
+from varDict import getPlottingVars
 
 #from io import readData
 
@@ -40,23 +41,20 @@ from readData import readVariable
 #fname = 'stateVvel.nc'; var = 'VVEL'; vmin = -0.2; vmax = 0.2
 
 
-#==
+TEST_PISO = False
+if TEST_PISO:
 
-TEST_animate = True
-if TEST_animate:
+	print(data.shape)
 
-	path = '/home/michai/Documents/data/PISOMIP_001/run/'
-	#path =  '/Users/mh115/Documents/BAS/data/PISOMIP_001/run/' 
-	grid = Grid(path)
-	
-	data = readVariable('Theta', path, file_format='nc')
-
-	data = np.mean(data, axis=3)
-	
-	data = ptt.maskDraftYZ(data, grid, xi=10, timeDep=True)
-	data = ptt.maskBathyYZ(data, grid, xi=10, timeDep=True)
+	data = ptt.maskBathyAll(data[-1], grid)
+	u1=np.mean(data,axis=0)
+	u2=np.mean(data[:26],axis=0)
+	pt.plot1by2([u1,u2], vmin=[vmin,vmin], vmax=[vmax,vmax])
 
 
+	data = np.mean(data, axis=2)
+	#data = ptt.maskDraftYZ(data, grid, xi=10, timeDep=True)
+	data = ptt.maskBathyYZ(data, grid, xi=0)
 	print(data.shape)
 
 	
@@ -64,15 +62,59 @@ if TEST_animate:
 	dpi=100
 	X = grid.YC[:,1]
 	Y = grid.RC.squeeze()
-	#vmin=-.1; vmax=.1
-	vmin = -1.8; vmax=1.	
+
+		
 	Nt = data.shape[0]
 	cmap='coolwarm'
 	levels = np.linspace(-1,1,9)
 	
 	#==
 
-	pt.animate1by1(data, X, Y, vmin=vmin, vmax=vmax, cmap=cmap)
+	pt.plot1by2([data, data], X=[X,X], Y=[Y,Y], vmin=[vmin, vmin], vmax=[vmax, vmax], mesh=False)
+	quit()
+
+#==
+
+TEST_animate = True
+if TEST_animate:
+
+	path = '/home/michai/Documents/data/PISOMIP_002/run/'
+	#path =  '/Users/mh115/Documents/BAS/data/PISOMIP_001/run/' 
+	grid = Grid(path)
+	X = grid.YC[:,1]/1000.
+	Y = grid.RC.squeeze()
+
+	var = '2D'; VAR = 'ETAN'
+	#var = 'Theta'; VAR = 'THETA'
+	#var = 'Uvel'; VAR = 'UVEL'
+	#var = 'Vvel'; VAR = 'VVEL'
+	#var = 'Wvel'; VAR = 'WVEL'
+	vmin, vmax, cmap, title = getPlottingVars(var)
+
+	data = readVariable(var, path, file_format='nc', meta=True)
+	print(data)
+
+	tscale = 86400. * 30
+	tscale_name = 'month'
+	t = data.variables['TIME'][:] / tscale
+	text = [tscale_name + ' ' + str(int(tt)) for tt in t]
+	text_data = {'text':text, 'xloc':X[1], 'yloc':Y[-10], 'fontdict':{'fontsize':14, 'color':'w'}}
+
+	data = data[VAR][:]
+
+	pt.contourf(data[-1,])
+	quit()
+
+	data = tools.boundData(data, vmin, vmax, scale=0.99999)
+	
+	
+	for ti in range(data.shape[0]):
+		data[ti,] = ptt.maskBathyAll(data[ti,], grid)
+		
+	data = np.mean(data, axis=3)
+
+	xlabel = 'LATITUDE (km)'; ylabel = 'DEPTH (m)'
+	pt.animate1by1(data, X, Y, vmin=vmin, vmax=vmax, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=False, text_data=text_data)
 
 		
 	quit()
