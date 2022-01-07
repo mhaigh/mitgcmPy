@@ -1,6 +1,5 @@
 
 import numpy as np
-import netCDF4 as nc
 
 from grid_KN import Grid as Grid_KN
 from grid import Grid
@@ -96,7 +95,7 @@ if TEST_animate:
 
 	tscale = 86400. * 30
 	tscale_name = 'month'
-	t = data.variables['TIME'][:] / tscale
+	t = data.variables['TIME'][:] / tscale; print(t)
 	text = [tscale_name + ' ' + str(int(tt)) for tt in t]
 	text_data = {'text':text, 'xloc':X[1], 'yloc':Y[-10], 'fontdict':{'fontsize':14, 'color':'w'}}
 

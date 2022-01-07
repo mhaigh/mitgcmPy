@@ -36,7 +36,7 @@ def readVariable(variable, path, file_format='nc', time_step=1, meta=False):
 			return Dataset(path+fname, 'r')[varDict[variable]['var']]
 		
 	else:
-		print('Error: io.readData. file_format must be rdmds or nc')
+		print('Error: readData.readVariable. file_format must be rdmds or nc')
 		sys.exit()
 	
 

@@ -7,7 +7,7 @@
 # Template:
 # {'ncfile':'', 'var':'', 'vmin':, 'vmax':, cmap:''}
 
-Eta = {'fname':'state2D', 'var':'ETAN', 'vmin':-10, 'vmax':10, 'cmap':'', 'title':'SSH'}
+Eta = {'fname':'state2D', 'var':'ETAN', 'vmin':-0.1, 'vmax':0.1, 'cmap':'', 'title':'SSH anomaly (m)'}
 Rho = {'fname':'stateRho', 'var':'RHOAnoma', 'vmin':-2, 'vmax':-1, 'cmap':''}
 Theta = {'fname':'stateTheta', 'var':'THETA', 'vmin':-1.8, 'vmax':1, 'cmap':'coolwarm', 'title':'THETA (deg. C)'}
 Uvel = {'fname':'stateUvel', 'var':'UVEL', 'vmin':-0.02, 'vmax':0.02, 'cmap':'coolwarm', 'title':'U (m/s)'}
