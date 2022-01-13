@@ -7,11 +7,11 @@
 # Template:
 # {'ncfile':'', 'var':'', 'vmin':, 'vmax':, cmap:''}
 
-Eta = {'fname':'state2D', 'var':'ETAN', 'vmin':-0.1, 'vmax':0.1, 'cmap':'', 'title':'SSH anomaly (m)'}
-Rho = {'fname':'stateRho', 'var':'RHOAnoma', 'vmin':-2, 'vmax':-1, 'cmap':''}
+Eta = {'fname':'state2D', 'var':'ETAN', 'vmin':-0.02, 'vmax':0.02, 'cmap':'jet', 'title':'SSH anomaly (m)'}
+Rho = {'fname':'stateRho', 'var':'RHOAnoma', 'vmin':-2, 'vmax':-1, 'cmap':'jet'}
 Theta = {'fname':'stateTheta', 'var':'THETA', 'vmin':-1.8, 'vmax':1, 'cmap':'coolwarm', 'title':'THETA (deg. C)'}
 Uvel = {'fname':'stateUvel', 'var':'UVEL', 'vmin':-0.02, 'vmax':0.02, 'cmap':'coolwarm', 'title':'U (m/s)'}
-Vvel = {'fname':'stateUvel', 'var':'VVEL', 'vmin':-0.02, 'vmax':0.02, 'cmap':'coolwarm', 'title':'V (m/s)'}
+Vvel = {'fname':'stateUvel', 'var':'VVEL', 'vmin':-0.0002, 'vmax':0.0002, 'cmap':'coolwarm', 'title':'V (m/s)'}
 Wvel = {'fname':'stateWvel', 'var':'WVEL', 'vmin':-1.e-6, 'vmax':1.e-6, 'cmap':'coolwarm', 'title':'W (m/s)'}
 
 varDict={'2D':Eta, 'Rho':Rho, 'Theta':Theta, 'Uvel':Uvel, 'Vvel':Vvel, 'Wvel':Wvel}

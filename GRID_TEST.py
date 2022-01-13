@@ -1,7 +1,6 @@
 
 import numpy as np
 
-from grid_KN import Grid as Grid_KN
 from grid import Grid
 
 import matplotlib.pyplot as plt
@@ -40,36 +39,39 @@ from varDict import getPlottingVars
 #fname = 'stateVvel.nc'; var = 'VVEL'; vmin = -0.2; vmax = 0.2
 
 
-TEST_PISO = False
-if TEST_PISO:
+TEST_depthAverage = False
+if TEST_depthAverage:
 
-	print(data.shape)
+	path = '/home/michai/Documents/data/MCS_001/run/'
 
-	data = ptt.maskBathyAll(data[-1], grid)
-	u1=np.mean(data,axis=0)
-	u2=np.mean(data[:26],axis=0)
-	pt.plot1by2([u1,u2], vmin=[vmin,vmin], vmax=[vmax,vmax])
+	var = 'Vvel'; VAR = 'VVEL'
+	vmin, vmax, cmap, title = getPlottingVars(var)
 
+	# Get grid.
+	grid = Grid(path)
+	X = grid.XC[0,:] / 1000.
+	Y = grid.YC[:,0] / 1000.
+	Z = grid.RC.squeeze()	
 
-	data = np.mean(data, axis=2)
-	#data = ptt.maskDraftYZ(data, grid, xi=10, timeDep=True)
-	data = ptt.maskBathyYZ(data, grid, xi=0)
-	print(data.shape)
+	# Read data
+	data = readVariable(var, path, file_format='nc', meta=True)
+	data = data[VAR][0,]
+
+	#v_zav1 = np.trapz(data, Z, axis=0)
+	#data = ptt.maskBathyAll(data, grid)
+	#v_zav2 = np.trapz(data,-Z, axis=0)
+	#v_zav3 = tools.depthAverage(data, Z, timeDep=False)
 
 	
-	figsize=(5,4)
-	dpi=100
-	X = grid.YC[:,1]
-	Y = grid.RC.squeeze()
-
-		
-	Nt = data.shape[0]
-	cmap='coolwarm'
-	levels = np.linspace(-1,1,9)
+	vstr1 = tools.meridStreamfunction(data, X, Z)
 	
-	#==
+	data = ptt.maskBathyAll(data, grid)
+	vstr2 = tools.meridStreamfunction(data, X, Z)
+	vstr1 = ptt.maskBathyYZ(vstr2, grid)
+	#vstr2 = np.cumsum(np.sum(data[::-1], axis=2), axis=0) * (Z[0]-Z[1]) * (X[1]-X[0]); vstr2 = vstr2[::-1]
 
-	pt.plot1by2([data, data], X=[X,X], Y=[Y,Y], vmin=[vmin, vmin], vmax=[vmax, vmax], mesh=False)
+	pt.plot1by2([vstr1, vstr2], X=[Y,Y], Y=[Z,Z])	
+	
 	quit()
 
 #==
@@ -77,14 +79,14 @@ if TEST_PISO:
 TEST_animate = True
 if TEST_animate:
 
-	path = '/home/michai/Documents/data/PISOMIP_002/run/'
-	#path =  '/Users/mh115/Documents/BAS/data/PISOMIP_001/run/' 
+	#path = '/home/michai/Documents/data/MCS_002/run/'
+	path = '/home/michai/Documents/data/PISOMIP_001/run/'
 	grid = Grid(path)
 	X = grid.YC[:,1]/1000.
 	Y = grid.RC.squeeze()
 
-	var = '2D'; VAR = 'ETAN'
-	#var = 'Theta'; VAR = 'THETA'
+	#var = '2D'; VAR = 'ETAN'
+	var = 'Theta'; VAR = 'THETA'
 	#var = 'Uvel'; VAR = 'UVEL'
 	#var = 'Vvel'; VAR = 'VVEL'
 	#var = 'Wvel'; VAR = 'WVEL'
@@ -95,17 +97,12 @@ if TEST_animate:
 
 	tscale = 86400. * 30
 	tscale_name = 'month'
-	t = data.variables['TIME'][:] / tscale; print(t)
+	t = data.variables['TIME'][:] / tscale
 	text = [tscale_name + ' ' + str(int(tt)) for tt in t]
 	text_data = {'text':text, 'xloc':X[1], 'yloc':Y[-10], 'fontdict':{'fontsize':14, 'color':'w'}}
 
 	data = data[VAR][:]
-
-	pt.contourf(data[-1,])
-	quit()
-
-	data = tools.boundData(data, vmin, vmax, scale=0.99999)
-	
+	data = tools.boundData(data, vmin, vmax, scale=0.99999)	
 	
 	for ti in range(data.shape[0]):
 		data[ti,] = ptt.maskBathyAll(data[ti,], grid)
@@ -123,7 +120,52 @@ if TEST_animate:
 	# Lat-lon plot.
 	pt.plot1by2([var1[-1,0], var2[-1,0]], X=[grid.XC, grid.XC], Y=[grid.YC, grid.YC], titles=['rdmds', 'nc'], xlabels=['lon', 'lon'], ylabels=['lat', 'lat'], show=True)
 	
+#==
 
+animateSurface = False
+if animateSurface:
+
+	path = '/home/michai/Documents/data/MCS_004/run/'
+	#path =  '/Users/mh115/Documents/BAS/data/PISOMIP_001/run/' 
+	grid = Grid(path)
+	X = grid.XC[1,:]/1000.
+	Y = grid.YC[:,1]/1000.
+
+
+	var = '2D'; VAR = 'ETAN'
+	#var = 'Theta'; VAR = 'THETA'
+	#var = 'Uvel'; VAR = 'UVEL'
+	#var = 'Vvel'; VAR = 'VVEL'
+	#var = 'Wvel'; VAR = 'WVEL'
+	vmin, vmax, cmap, title = getPlottingVars(var)
+
+	data = readVariable(var, path, file_format='nc', meta=True)
+	print(data)
+
+	tscale = 86400. * 30
+	tscale_name = 'month'
+	t = data.variables['TIME'][:] / tscale
+	text = [tscale_name + ' ' + str(int(tt)) for tt in t]
+	text_data = {'text':text, 'xloc':X[1], 'yloc':Y[1], 'fontdict':{'fontsize':14, 'color':'k'}}
+
+	data = data[VAR][:]
+
+	data = tools.boundData(data, vmin, vmax, scale=0.99999)
+	data = ptt.maskBathyXY(data, grid, 0, timeDep=True)
+		
+	#data = np.mean(data, axis=3)
+
+	xlabel = 'LATITUDE (km)'; ylabel = 'DEPTH (m)'
+	pt.animate1by1(data, X, Y, vmin=vmin, vmax=vmax, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=False, text_data=text_data)
+
+		
+	quit()
+	
+	#==
+	
+	# Lat-lon plot.
+	pt.plot1by2([var1[-1,0], var2[-1,0]], X=[grid.XC, grid.XC], Y=[grid.YC, grid.YC], titles=['rdmds', 'nc'], xlabels=['lon', 'lon'], ylabels=['lat', 'lat'], show=True)
+	
 #==
 
 TEST_troughTransport = False

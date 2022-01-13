@@ -117,7 +117,6 @@ def zonalTransportTEST(u, grid):
 
 	ub = u * grid.DYG * grid.DRF * grid.hFacW
 
-	
 	import plotting as pt
 	pt.plot1by2([ud[time,level,]-ub[time,level,], ub[time,level,]], titles=['From loop', 'broadcasting'])
 	quit()
@@ -126,13 +125,37 @@ def zonalTransportTEST(u, grid):
 
 #==
 
-def depthAverage(data, timeDep=True):
+def depthAverage(data, Z, timeDep=True):
 	'''Return depth average of data.
 	Assumes input is time-dependent (timeDep=True) in which case depth is on second axis.
 	If timeDep=False, assumes depth is on first axis.
 	Averages over all depths, unless a maxLevel is provided.'''
 
-	return # Does land have to be masked before taking the average?
+	if timeDep:
+		axis = 1	
+	else:
+		axis = 0
+
+	return np.trapz(data[::-1], Z[::-1], axis=0) / (Z[0] - Z[-1]) 
+
+#==
+
+def meridStreamfunction(v, X, Z, timeDep=False):
+	'''Given meridional velocity, return meridional overturning streamfunction.
+	If timeDep, assumes axis ordering is (t, z, y, x).
+	If not timeDep, assumes axis ordering is (z, y, x).'''
+
+	if timeDep:	
+		return
+
+	else:
+		vx = np.trapz(v, X, axis=2)
+		vxz = np.zeros(vx.shape)
+		Nz = vx.shape[0]
+		for zi in range(Nz):
+			vxz[Nz-zi-1] = np.trapz(vx[::-1][:zi+1], Z[::-1][:zi+1], axis=0) 
+		
+	return vxz
 
 #==
 

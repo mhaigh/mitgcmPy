@@ -29,7 +29,7 @@ def maskBathyAll(data, grid, color='grey', timeDep=False):
 
 #==
 
-def maskBathyXY(data, grid, zi, color='grey', subregion=False, lats=[], lons=[]):
+def maskBathyXY(data, grid, zi, color='grey', subregion=False, lats=[], lons=[], timeDep=False):
 	'''Function to be called before plotting to mask the bathymetry in (X,Y)-slice.'''
 		
 	# If masking in subregion, grid needs to account for it.
@@ -49,6 +49,12 @@ def maskBathyXY(data, grid, zi, color='grey', subregion=False, lats=[], lons=[])
 	
 	# The depth of the slice.
 	z = grid.RC.squeeze()[zi]
+
+	# If data is time-dependent, assume time dimension is first and tile draft and z arrays.
+	if timeDep:
+		NT = data.shape[0]
+		z = np.tile(z, (NT, 1, 1))
+		bathy = np.tile(bathy, (NT, 1, 1))
 		
 	return np.ma.array(data, mask=z<bathy)
 	
@@ -93,6 +99,63 @@ def maskBathyXZ(data, grid, color='grey', yi=0, subregion=False, lons=[], depths
 	
 #==
 
+def maskBathyYZ(data, grid, color='grey', xi=0, subregion=False, lats=[], depths=[], timeDep=False):
+	'''Function to be called before plotting to mask the bathymetry in (Y,Z)-slice.'''
+	
+	if (len(data.shape) != 2 and timeDep == False):
+		print('Error: plotting_toolts.maskBathyYZ. If data is more than 2-dimensional, timeDep must be set to True.')
+		sys.exit()
+	
+	# If masking in subregion, grid needs to account for it.
+	if subregion == True:
+		try:
+			RC = grid.RC.squeeze()[depths[0]:depths[1]+1]
+			YC = grid.YC[lats[0]:lats[1]+1,]
+			bathy = grid.bathy[lats[0]:lats[1]+1,]
+			
+		except ValueError:
+			print('Error: plottingtools.maskBathyYZ. If subregion set to True, lats and depths need to be defined.')
+			
+	else:
+		RC = grid.RC.squeeze()
+		YC = grid.YC
+		bathy = grid.bathy
+	
+	# Make z a depth array with (y,z)-dimensions.
+	z = np.tile(RC, (YC.shape[0], 1)).T
+	
+	# Make draft array with (y,z)-dimensions.
+	bathy = np.tile(bathy[:,xi], (RC.shape[0], 1))
+
+	# If data is time-dependent, assume time dimension is first and tile draft and z arrays.
+	if timeDep:
+		NT = data.shape[0]
+		z = np.tile(z, (NT, 1, 1))
+		bathy = np.tile(bathy, (NT, 1, 1))
+		
+	return np.ma.array(data, mask=z<bathy)
+
+#==
+
+def maskBathyYZ_allX(data, grid, timeDep=False):
+	'''Calls maskBathyYZ for a range of x gridpoints.
+	Makes the assumption that x is on the final axis.
+	If timeDep this is axis=3, if not timeDep this is axis=2.'''
+
+	data_masked = data.copy()
+
+	if timeDep:
+		Nx = data.shape[3]
+	else:
+		Nx = data.shape[2]
+
+	for xi in range(Nx):
+		data_masked[..., xi] = maskBathyYZ(data[..., xi], grid, xi=xi, timeDep=timeDep)
+
+	return data_masked
+	
+#==
+
 def maskDraftYZ(data, grid, color='grey', xi=10, subregion=False, lats=[], depths=[], timeDep=False):
 	'''Function to be called before plotting to mask the ice shelf draft.
 	If subregion is True, lats and depths lets grid know what the subregion is.'''
@@ -134,41 +197,28 @@ def maskDraftYZ(data, grid, color='grey', xi=10, subregion=False, lats=[], depth
 
 #==
 
-def maskBathyYZ(data, grid, color='grey', xi=0, subregion=False, lats=[], depths=[], timeDep=False):
-	'''Function to be called before plotting to mask the bathymetry in (Y,Z)-slice.'''
+
+def setText(ax, text_data, i=None, set_invisible=False):
+	'''Utility function for setting text on axis given text_data dictionary.'''
+
+	if set_invisible:
+		for t in ax.texts:
+			t.set_visible(False)
 	
-	if (len(data.shape) != 2 and timeDep == False):
-		print('Error: plotting_toolts.maskDraftYZ. If data is more than 2-dimensional, timeDep must be set to True.')
-		sys.exit()
-	
-	# If masking in subregion, grid needs to account for it.
-	if subregion == True:
-		try:
-			RC = grid.RC.squeeze()[depths[0]:depths[1]+1]
-			YC = grid.YC[lats[0]:lats[1]+1,]
-			bathy = grid.bathy[lats[0]:lats[1]+1,]
-			
-		except ValueError:
-			print('If subregion set to True, both lats and depths need to be defined.')
-			
+	if i is None:
+		ax.text(text_data['xloc'], text_data['yloc'], text_data['text'], fontdict=text_data['fontdict'])	
 	else:
-		RC = grid.RC.squeeze()
-		YC = grid.YC
-		bathy = grid.bathy
-	
-	# Make z a depth array with (y,z)-dimensions.
-	z = np.tile(RC, (YC.shape[0], 1)).T
-	
-	# Make draft array with (y,z)-dimensions.
-	bathy = np.tile(bathy[:,xi], (RC.shape[0], 1))
+		ax.text(text_data['xloc'], text_data['yloc'], text_data['text'][i], fontdict=text_data['fontdict'])	
 
-	# If data is time-dependent, assume time dimension is first and tile draft and z arrays.
-	if timeDep:
-		NT = data.shape[0]
-		z = np.tile(z, (NT, 1, 1))
-		bathy = np.tile(bathy, (NT, 1, 1))
-		
-	return np.ma.array(data, mask=z<bathy)
-	
+#==
 
+def getContourfLevels(vmin, vmax, contourfNlevels):
+	'''Get kwarg levels for contourf plot from given vmin and vmax.
+	vmin and vmax can be None, in which case None is returned.'''
+
+	if vmin == None or vmax == None:
+		return None
+	
+	else:
+		return np.linspace(vmin, vmax, contourfNlevels)
 	
