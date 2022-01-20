@@ -38,7 +38,7 @@ from varDict import getPlottingVars
 #fname = 'stateUvel.nc'; var = 'UVEL'; cmap = 'coolwarm'; vmax = 0.1; vmin = -vmax
 #fname = 'stateVvel.nc'; var = 'VVEL'; vmin = -0.2; vmax = 0.2
 
-TEST_readLargeFile = False
+TEST_readLargeFile = True
 if TEST_readLargeFile:
 	
 	path = '/home/michai/Documents/data/PISOMIP_001/run/'
