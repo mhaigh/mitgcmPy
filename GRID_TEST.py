@@ -38,6 +38,45 @@ from varDict import getPlottingVars
 #fname = 'stateUvel.nc'; var = 'UVEL'; cmap = 'coolwarm'; vmax = 0.1; vmin = -vmax
 #fname = 'stateVvel.nc'; var = 'VVEL'; vmin = -0.2; vmax = 0.2
 
+TEST_readLargeFile = False
+if TEST_readLargeFile:
+	
+	path = '/home/michai/Documents/data/PISOMIP_001/run/'
+	grid = Grid(path)
+	X = grid.YC[:,1]/1000.
+	Y = grid.RC.squeeze()
+	ts = 3; level = 24
+
+	VAR = 'SALT'
+	theta = readVariable(VAR, path, file_format='nc', meta=False)
+	VAR = 'VVEL'
+	vvel = readVariable(VAR, path, file_format='nc', meta=False)
+
+	#vvel_ = vvel[ts, :, -5]
+	#theta_ = theta[ts, :, -5] - np.tile(np.mean(theta[ts, :, -5], axis=1), [theta.shape[3],1]).T
+	vvel_ = vvel[ts, level, 1:-1]; theta_ = theta[ts, level, 1:-1,]	
+	pt.plot1by2([vvel_, theta_]); quit()
+
+	vvelth = np.mean(theta * vvel, axis=3)
+	vvel = np.mean(vvel, axis=3) * np.mean(theta, axis=3)
+
+	VAR = 'VVELTH'
+	VVELTH = readVariable(VAR, path, file_format='nc', meta=False)
+	VVELTH = np.mean(VVELTH, axis=3)
+	vmin, vmax, cmap, title = getPlottingVars(VAR)
+
+	vvelth = tools.boundData(vvelth, vmin, vmax, scale=0.99999)	
+	VVELTH = tools.boundData(VVELTH, vmin, vmax, scale=0.99999)	
+
+	vvelth = ptt.maskBathyYZ(vvelth, grid, timeDep=True)
+	VVELTH = ptt.maskBathyYZ(VVELTH, grid, timeDep=True)
+	#data = np.mean(data, axis=3)
+
+	vmin *= 0.05; vmax *= 0.05
+
+	pt.plot1by2([vvel[ts,], VVELTH[ts,]], X=[X,X], Y=[Y,Y], vmin=[vmin, vmin], vmax=[vmax,vmax])
+
+	quit()
 
 TEST_depthAverage = False
 if TEST_depthAverage:
@@ -64,7 +103,7 @@ if TEST_depthAverage:
 
 	
 	vstr1 = tools.meridStreamfunction(data, X, Z)
-	
+
 	data = ptt.maskBathyAll(data, grid)
 	vstr2 = tools.meridStreamfunction(data, X, Z)
 	vstr1 = ptt.maskBathyYZ(vstr2, grid)
@@ -85,32 +124,42 @@ if TEST_animate:
 	X = grid.YC[:,1]/1000.
 	Y = grid.RC.squeeze()
 
-	#var = '2D'; VAR = 'ETAN'
-	var = 'Theta'; VAR = 'THETA'
-	#var = 'Uvel'; VAR = 'UVEL'
-	#var = 'Vvel'; VAR = 'VVEL'
-	#var = 'Wvel'; VAR = 'WVEL'
-	vmin, vmax, cmap, title = getPlottingVars(var)
+	#VAR = 'ETAN'
+	#VAR = 'THETA'
+	#VAR = 'DFrE_TH';
+	#VAR = 'WVELTH'#','UVELTH','VVELTH','WVELTH', 'TOTTTEND'
 
-	data = readVariable(var, path, file_format='nc', meta=True)
-	print(data)
+	#VAR = 'SALT'	
+	#VAR = 'UVEL'
+	VAR = 'VVEL'
+	#VAR = 'WVEL'
+	vmin, vmax, cmap, title = getPlottingVars(VAR)
+	#vmin = -0.12; vmax = 0.12
+	data = readVariable(VAR, path, file_format='nc', meta=True)
 
-	tscale = 86400. * 30
-	tscale_name = 'month'
+	#tscale = 86400. * 30; tscale_name = 'month'
+	tscale = 86400.; tscale_name = 'day'
 	t = data.variables['TIME'][:] / tscale
 	text = [tscale_name + ' ' + str(int(tt)) for tt in t]
 	text_data = {'text':text, 'xloc':X[1], 'yloc':Y[-10], 'fontdict':{'fontsize':14, 'color':'w'}}
-
-	data = data[VAR][:]
-	data = tools.boundData(data, vmin, vmax, scale=0.99999)	
 	
-	for ti in range(data.shape[0]):
-		data[ti,] = ptt.maskBathyAll(data[ti,], grid)
-		
-	data = np.mean(data, axis=3)
+	data = np.mean(data[VAR][:], axis=3)
+	#data = data[:20]
+
+	#data = tools.diff(data, axis=1, dx=20)
+	#pt.contourf(data[1,::-1,...,1]); quit()
+
+	data = tools.boundData(data, vmin, vmax, scale=0.99999)	
+	# Have to use this one if any assymetries in x.
+	#for ti in range(data.shape[0]):
+	#	data[ti,] = ptt.maskBathyAll(data[ti,], grid)
+	data = ptt.maskBathyYZ(data, grid, timeDep=True)
+	
+	print(1)
+	#data = np.mean(data, axis=3)
 
 	xlabel = 'LATITUDE (km)'; ylabel = 'DEPTH (m)'
-	pt.animate1by1(data, X, Y, vmin=vmin, vmax=vmax, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=False, text_data=text_data)
+	pt.animate1by1(data, X, Y, vmin=vmin, vmax=vmax, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=True, text_data=text_data)
 
 		
 	quit()

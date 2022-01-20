@@ -15,25 +15,26 @@ import sys
 # In PISOMIP_001/run on Archer2 I had to hard copy mit2nc before I could execute it.
 
 
-def readVariable(variable, path, file_format='nc', time_step=1, meta=False):
+def readVariable(VAR, path, file_format='nc', time_step=1, meta=False):
 	'''Read mitgcm output for variable in given file format.
 	Options are rdmds or nc, with netCDF default.
 	If meta==True, returns additional metadata useful for plotting.'''
-	
+			
+	from varDict import varDict
+
 	if file_format == 'rdmds':
 		from MITgcmutils import rdmds
 		import numpy as np
-		fname = 'state' + variable
+		fname = varDict[VAR]['fname']
 		return rdmds(path+fname, itrs=np.NaN)
 	
 	elif file_format == 'nc':
 		from netCDF4 import Dataset
-		from varDict import varDict
-		fname = 'state' + variable + '.nc'
+		fname = varDict[VAR]['fname'] + '.nc'
 		if meta:
 			return Dataset(path+fname, 'r')
 		else:
-			return Dataset(path+fname, 'r')[varDict[variable]['var']]
+			return Dataset(path+fname, 'r')[VAR][:]
 		
 	else:
 		print('Error: readData.readVariable. file_format must be rdmds or nc')

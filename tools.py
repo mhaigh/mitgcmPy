@@ -171,8 +171,27 @@ def boundData(data, vmin, vmax, scale=None):
 		data = np.ma.where(data>=vmax, vmax, data)
 		data = np.ma.where(data<=vmin, vmin, data)
 	return data 
-	
-	
+
+#==
+
+def diff(data, axis=0, dx=1):
+	'''Implement central differencing on data along specified axis.'''
+
+	ddata = np.zeros(data.shape)
+
+	if axis == 0:
+		ddata[1:-1,] = (data[2:,] - data[0:-2,]) / (2 * dx)
+		ddata[0,] = (data[1,] - data[0,]) / dx
+		ddata[-1,] = (data[-1,] - data[-2,]) / dx
+
+	elif axis == 1:
+		ddata[:, 1:-1,] = (data[:, 2:,] - data[:, 0:-2,]) / (2 * dx)
+		ddata[:, 0,] = (data[:, 1,] - data[:, 0,]) / dx
+		ddata[:, -1,] = (data[:, -1,] - data[:, -2,]) / dx
+
+	return ddata
+
+
 	
 	
 	
