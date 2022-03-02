@@ -81,6 +81,53 @@ def timeSeries(data, TIME=None, Y=None, time_units='days', figsize=(6,3), labels
 		plt.show()
 	
 #==
+
+def plot1by1(data, X=None, Y=None, figsize=(5,4), title=None, fontsize=14, mesh=False, cmap='jet', vmin=None, vmax=None, text_data=None, xlabel=None, ylabel=None, grid=True, contourfNlevels=9, save=False, outpath='', outname='plot1by1.png', show=True, dpi=200):
+	
+	fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
+
+	plt.subplot(111)
+	plt.gca().patch.set_color('.25')
+
+	if mesh:
+		if X is not None and Y is not None:
+			plt.pcolormesh(X, Y, data, cmap=cmap, vmin=vmin, vmax=vmax)
+		else: 
+			plt.pcolormesh(data, cmap=cmap, vmin=vmin, vmax=vmax)
+	else:
+		levels = getContourfLevels(vmin, vmax, contourfNlevels)
+		if X is not None and Y is not None:
+			plt.contourf(X, Y, data, cmap=cmap, levels=levels)
+		else: 
+			plt.contourf(data, cmap=cmap, levels=levels)
+			
+	if xlabel is not None:
+		plt.xlabel(xlabel, fontsize=fontsize)
+	if ylabel is not None:
+		plt.ylabel(ylabel, fontsize=fontsize)
+	
+	if grid:
+		plt.grid()
+
+	if text_data is not None:
+		setText(plt.gca(), text_data, set_invisible=False)
+
+	plt.colorbar()
+	
+	if title is not None:
+		plt.title(title, fontsize=fontsize)
+
+	#==
+	
+	plt.tight_layout()
+	if save:
+		plt.savefig(outpath + outname)
+		
+	if show:
+		plt.show()
+	
+
+#==
 		
 def plot1by2(data, X=None, Y=None, figsize=(9,4), titles=None, fontsize=14, mesh=False, cmap='jet', vmin=[None,None], vmax=[None,None], text_data=[None,None], xlabels=None, ylabels=None, grid=True, contourfNlevels=9, save=False, outpath='', outname='plot1by2.png', show=True, dpi=200):
 	
@@ -164,7 +211,7 @@ def plot1by2(data, X=None, Y=None, figsize=(9,4), titles=None, fontsize=14, mesh
 	
 #==
 
-def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh=True, cmap='jet', vmin=None, vmax=None, xlabel='', ylabel='', save=True, outpath='', outname='animate1by1.mp4', show=False, dpi=200, fps=8, bitrate=-1, text_data=None):
+def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh=True, cmap='jet', vmin=None, vmax=None, xlabel='', ylabel='', save=True, outpath='', outname='animate1by1.mp4', show=False, dpi=200, fps=8, bitrate=-1, text_data=None, contour=None):
 
 	# Make animation
 	fig = plt.figure(figsize=figsize, dpi=dpi)
@@ -178,6 +225,9 @@ def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh
 			cax = ax.pcolormesh(data[0, ], cmap=cmap, vmin=vmin, vmax=vmax)
 		if text_data is not None:
 			setText(ax, text_data, i=0)	
+
+		if contour is not None:
+			plt.contour(X, Y, contour, colors='k', linestyles='solid', linewidths=0.4)
 
 		def animate(i):
 			cax.set_array(data[i,].flatten())
@@ -194,7 +244,10 @@ def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh
 			cax = ax.contourf(data[0, ], cmap=cmap, levels=np.linspace(vmin, vmax, nlevels))
 		if text_data is not None:
 			setText(ax, text_data, i=0)
-		
+
+		if contour is not None:
+			plt.contour(X, Y, contour, colors='k', linestyles='solid', linewidths=0.4)
+
 		def animate(i):
 			if text_data is not None:
 				setText(ax, text_data, i=i, set_invisible=True)
@@ -218,5 +271,98 @@ def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh
 	if show:
 		plt.show()
 		
+#==
+
+
+def animateLine(data, X=None, figsize=(5,4), title='', labels=None, fontsize=14, vmin=None, vmax=None, xlabel='', ylabel='', save=True, outpath='', outname='animateLine.mp4', show=False, dpi=200, fps=8, bitrate=-1, text_data=None):
+
+	# Make animation
+	fig = plt.figure(figsize=figsize, dpi=dpi)
+	ax = fig.add_subplot()
+
+	lines = []
+	for di in range(len(data)):
+		if labels is not None:
+			line, = ax.plot(X, data[di][0], label=labels[di])
+		else:
+			line, = ax.plot(X, data[di][0])
+		lines.append(line)
+
+	if text_data is not None:
+		setText(ax, text_data, i=0, set_invisible=True)
+
+	plt.ylim(vmin, vmax)
+
+	if labels is not None:
+		plt.legend(loc=4)
+
+	plt.xlabel(xlabel, fontsize=fontsize)
+	plt.ylabel(ylabel, fontsize=fontsize)
+	plt.title(title, fontsize=fontsize)
+	plt.grid()
 	
+
+	def animate(i):
+		for di in range(len(data)):
+			lines[di].set_ydata(data[di][i])  # update the data.
+		if text_data is not None:
+			setText(ax, text_data, i=i, set_invisible=True)
+		return lines
+
+	anim = animation.FuncAnimation(fig, animate, interval=50, frames=data[0].shape[0])
+	
+	plt.tight_layout()
+	plt.draw()
+	
+	if save:
+		anim.save(outpath+outname,metadata={'artist':'Guido'},writer='ffmpeg',fps=fps,bitrate=bitrate)
+		
+	if show:
+		plt.show()
+
+#==
+
+def animate1by1quiver(u, v, Xd, Yd, contour=None, X=None, Y=None, contourf=True, figsize=(5,4), title='', fontsize=14, mesh=True, cmap='jet', vmin=None, vmax=None, xlabel='', ylabel='', save=True, outpath='', outname='animate1by1.mp4', show=False, dpi=200, fps=8, bitrate=-1, text_data=None):
+
+	# Make animation
+
+	fig = plt.figure(figsize=figsize, dpi=dpi)
+	ax = fig.add_subplot()
+	plt.gca().patch.set_color('.25')
+
+	if contour is not None:
+		if contourf:
+			plt.contourf(X, Y, contour)
+		else:
+			plt.pcolormesh(X, Y, contour)		
+		plt.colorbar()
+
+	cax = ax.quiver(Xd, Yd, u[0], v[0])
+	ax.quiverkey(cax, 0.1, 0.1, .1, '0.1 m/s', labelpos='E', coordinates='axes')
+
+	if text_data is not None:
+		setText(ax, text_data, i=0)
+
+	def animate(i):
+		cax.set_UVC(u[i], v[i])
+		if text_data is not None:
+			setText(ax, text_data, i=i, set_invisible=True)
+		
+		# End if mesh	
+
+	if title is not None:
+		plt.title(title)
+
+	anim = animation.FuncAnimation(fig, animate, interval=50, frames=u.shape[0])
+	plt.tight_layout()
+	plt.draw()
+
+	#==
+	
+	if save:
+		anim.save(outpath+outname,metadata={'artist':'Guido'},writer='ffmpeg',fps=fps,bitrate=bitrate)
+		
+	if show:
+		plt.show()	
+
 	

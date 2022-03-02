@@ -7,22 +7,22 @@
 # Template:
 # {'ncfile':'', 'var':'', 'vmin':, 'vmax':, cmap:''}
 
-Eta = {'fname':'state2D', 'VAR':'ETAN', 'vmin':-0.02, 'vmax':0.02, 'cmap':'jet', 'title':'SSH anomaly (m)'}
-Rho = {'fname':'stateRho', 'VAR':'RHOAnoma', 'vmin':-2, 'vmax':-1, 'cmap':'jet'}
+Eta = {'fname':'state2D', 'VAR':'ETAN', 'vmin':-0.15, 'vmax':0.15, 'cmap':'jet', 'title':'SSH anomaly (m)'}
+Rho = {'fname':'stateRho', 'VAR':'RHOAnoma', 'vmin':-.2, 'vmax':.2, 'cmap':'jet', 'title':'Rho anom.'}
 Theta = {'fname':'stateTheta', 'VAR':'THETA', 'vmin':-1.8, 'vmax':1, 'cmap':'coolwarm', 'title':'THETA (deg. C)'}
 Salt = {'fname':'stateSalt', 'VAR':'SALT', 'vmin':33.5, 'vmax':34.5, 'cmap':'jet', 'title':'Salinity (g/kg)'}
-Uvel = {'fname':'stateUvel', 'VAR':'UVEL', 'vmin':-0.04, 'vmax':0.04, 'cmap':'coolwarm', 'title':'U (m/s)'}
-Vvel = {'fname':'stateVvel', 'VAR':'VVEL', 'vmin':-0.0002, 'vmax':0.0002, 'cmap':'coolwarm', 'title':'V (m/s)'}
-Wvel = {'fname':'stateWvel', 'VAR':'WVEL', 'vmin':-1.e-6, 'vmax':1.e-6, 'cmap':'coolwarm', 'title':'W (m/s)'}
+Uvel = {'fname':'stateUvel', 'VAR':'UVEL', 'vmin':-0.2, 'vmax':0.2, 'cmap':'coolwarm', 'title':'U (m/s)'}
+Vvel = {'fname':'stateVvel', 'VAR':'VVEL', 'vmin':-0.001, 'vmax':0.001, 'cmap':'coolwarm', 'title':'V (m/s)'}
+Wvel = {'fname':'stateWvel', 'VAR':'WVEL', 'vmin':-1.e-5, 'vmax':1.e-5, 'cmap':'coolwarm', 'title':'W (m/s)'}
 
-varDict={'2D':Eta, 'RHOAnoma':Rho, 'THETA':Theta, 'SALT':Salt, 'UVEL':Uvel, 'VVEL':Vvel, 'WVEL':Wvel}
+varDict={'ETAN':Eta, 'RHOAnoma':Rho, 'THETA':Theta, 'SALT':Salt, 'UVEL':Uvel, 'VVEL':Vvel, 'WVEL':Wvel}
 
 varDict['DFrE_TH'] = {'fname':'stateTheta', 'vmin':-0.12, 'vmax':0.12, 'cmap':'coolwarm', 'title':'Pot. Temp. vertical flux'}
 varDict['TOTTTEND'] = {'fname':'stateTheta', 'vmin':-1.e-3, 'vmax':1.e-3, 'cmap':'coolwarm', 'title':'Pot. Temp. Tendency'}
 varDict['UVELTH'] = {'fname':'stateTheta', 'vmin':-1.e-1, 'vmax':1.e-1, 'cmap':'coolwarm', 'title':'Pot. Temp. U adv'}
 varDict['VVELTH'] = {'fname':'stateTheta', 'vmin':-1.e-2, 'vmax':1.e-2, 'cmap':'coolwarm', 'title':'Pot. Temp. V adv'}
 varDict['WVELTH'] = {'fname':'stateTheta', 'vmin':-1.e-5, 'vmax':1.e-5, 'cmap':'coolwarm', 'title':'Pot. Temp. W adv'}
-
+varDict['PHIHYD'] = {'fname':'stateTheta', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Hydr. pressure pot. anom.'}
 def getPlottingVars(var):
 	
 	d = varDict[var]

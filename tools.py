@@ -192,8 +192,11 @@ def diff(data, axis=0, dx=1):
 	return ddata
 
 
+def removeOscillations(data, lim):
 	
+	data = np.where(np.abs(data)<lim, 0, data)
 	
+	return data
 	
 	
 	

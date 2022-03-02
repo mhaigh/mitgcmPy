@@ -2,6 +2,7 @@
 import numpy as np
 
 from grid import Grid
+from grid_PAS import Grid as Grid_PAS
 
 import matplotlib.pyplot as plt
 import matplotlib.colors as cl
@@ -13,6 +14,8 @@ import tools
 
 from readData import readVariable
 from varDict import getPlottingVars
+
+import time
 
 #from io import readData
 
@@ -37,46 +40,43 @@ from varDict import getPlottingVars
 #fname = 'stateTheta.nc'; var = 'THETA'; vmin = - 2.5; vmax = 2.5; cmap='coolwarm'
 #fname = 'stateUvel.nc'; var = 'UVEL'; cmap = 'coolwarm'; vmax = 0.1; vmin = -vmax
 #fname = 'stateVvel.nc'; var = 'VVEL'; vmin = -0.2; vmax = 0.2
-
-TEST_readLargeFile = True
-if TEST_readLargeFile:
+# PHIHYD
+baroclinicEddies = False
+if baroclinicEddies:
 	
-	path = '/home/michai/Documents/data/PISOMIP_001/run/'
+	path = '/home/michai/Documents/data/MCS_002/run/'
 	grid = Grid(path)
-	X = grid.YC[:,1]/1000.
-	Y = grid.RC.squeeze()
-	ts = 3; level = 24
+	X = grid.XC[1,:]/1000.		
+	Y = grid.YC[:,1]/1000.
+	Z = grid.RC.squeeze()
+	ts = 16; level = 24; yi = -5
 
-	VAR = 'SALT'
+	VAR = 'THETA'
 	theta = readVariable(VAR, path, file_format='nc', meta=False)
 	VAR = 'VVEL'
 	vvel = readVariable(VAR, path, file_format='nc', meta=False)
+	
+	# Get time data. This assumes both data have same output freq.
+	text = 'month ' + str(ts+1) + '; Z = ' + str(Z[level]) + ' m'
+	text_data = [{'text':text, 'xloc':X[1], 'yloc':Y[1], 'fontdict':{'fontsize':14, 'color':'k'}}, None]
 
 	#vvel_ = vvel[ts, :, -5]
-	#theta_ = theta[ts, :, -5] - np.tile(np.mean(theta[ts, :, -5], axis=1), [theta.shape[3],1]).T
-	vvel_ = vvel[ts, level, 1:-1]; theta_ = theta[ts, level, 1:-1,]	
-	pt.plot1by2([vvel_, theta_]); quit()
+	#
+	vvel_ = vvel[ts, level, ]; theta_ = theta[ts, level,]	
+	pt.plot1by2([vvel_, theta_], X=[X,X], Y=[Y,Y], xlabels=['X (km)', 'X (km)'], ylabels=['Y (km)', ''], titles=['VVel (m/s)', 'Theta (deg. C)'], text_data=text_data); quit()
 
-	vvelth = np.mean(theta * vvel, axis=3)
-	vvel = np.mean(vvel, axis=3) * np.mean(theta, axis=3)
+	
+	vvel_ = vvel[ts, :, yi,]
+	theta_ = theta[ts, :, yi] - np.tile(np.mean(theta[ts, :, yi], axis=1), [theta.shape[3],1]).T
+	
+	vmax = 0.04; vmin = - vmax; vvel_ = tools.boundData(vvel_, vmin, vmax, scale=0.99999)	
+	vmax = 0.05; vmin = - vmax; theta_ = tools.boundData(theta_, vmin, vmax, scale=0.99999)
 
-	VAR = 'VVELTH'
-	VVELTH = readVariable(VAR, path, file_format='nc', meta=False)
-	VVELTH = np.mean(VVELTH, axis=3)
-	vmin, vmax, cmap, title = getPlottingVars(VAR)
-
-	vvelth = tools.boundData(vvelth, vmin, vmax, scale=0.99999)	
-	VVELTH = tools.boundData(VVELTH, vmin, vmax, scale=0.99999)	
-
-	vvelth = ptt.maskBathyYZ(vvelth, grid, timeDep=True)
-	VVELTH = ptt.maskBathyYZ(VVELTH, grid, timeDep=True)
-	#data = np.mean(data, axis=3)
-
-	vmin *= 0.05; vmax *= 0.05
-
-	pt.plot1by2([vvel[ts,], VVELTH[ts,]], X=[X,X], Y=[Y,Y], vmin=[vmin, vmin], vmax=[vmax,vmax])
+	pt.plot1by2([vvel_, theta_], X=[X,X], Y=[Z,Z], xlabels=['X (km)','X (km)'], ylabels=['Depth (m)', ''], titles=['VVel (m/s)', 'Theta eddy (deg. C)'])
 
 	quit()
+
+#==
 
 TEST_depthAverage = False
 if TEST_depthAverage:
@@ -84,7 +84,7 @@ if TEST_depthAverage:
 	path = '/home/michai/Documents/data/MCS_001/run/'
 
 	var = 'Vvel'; VAR = 'VVEL'
-	vmin, vmax, cmap, title = getPlottingVars(var)
+	vmin, vmax, cmap, title = getPlottingourcVars(var)
 
 	# Get grid.
 	grid = Grid(path)
@@ -115,51 +115,63 @@ if TEST_depthAverage:
 
 #==
 
-TEST_animate = True
+TEST_animate = False
 if TEST_animate:
 
 	#path = '/home/michai/Documents/data/MCS_002/run/'
-	path = '/home/michai/Documents/data/PISOMIP_001/run/'
+
+	path = '/home/michai/Documents/data/MCS_036/run/'
+	#pathG = '/home/michai/Documents/data/MCS_018/run/'
+
 	grid = Grid(path)
+	#grid = Grid_PAS(path)
+
 	X = grid.YC[:,1]/1000.
 	Y = grid.RC.squeeze()
 
 	#VAR = 'ETAN'
-	#VAR = 'THETA'
+	#VAR = 'RHOAnoma'
+	VAR = 'THETA'
+	#VAR = 'PHIHYD'
 	#VAR = 'DFrE_TH';
 	#VAR = 'WVELTH'#','UVELTH','VVELTH','WVELTH', 'TOTTTEND'
-
 	#VAR = 'SALT'	
 	#VAR = 'UVEL'
-	VAR = 'VVEL'
+	#VAR = 'VVEL'
 	#VAR = 'WVEL'
-	vmin, vmax, cmap, title = getPlottingVars(VAR)
-	#vmin = -0.12; vmax = 0.12
-	data = readVariable(VAR, path, file_format='nc', meta=True)
 
-	#tscale = 86400. * 30; tscale_name = 'month'
+	vmin, vmax, cmap, title = getPlottingVars(VAR)
+
+	data = readVariable(VAR, path, file_format='nc', meta=True)
+	print(data)
+
 	tscale = 86400.; tscale_name = 'day'
 	t = data.variables['TIME'][:] / tscale
 	text = [tscale_name + ' ' + str(int(tt)) for tt in t]
 	text_data = {'text':text, 'xloc':X[1], 'yloc':Y[-10], 'fontdict':{'fontsize':14, 'color':'w'}}
 	
-	data = np.mean(data[VAR][:], axis=3)
-	#data = data[:20]
-
-	#data = tools.diff(data, axis=1, dx=20)
-	#pt.contourf(data[1,::-1,...,1]); quit()
-
-	data = tools.boundData(data, vmin, vmax, scale=0.99999)	
-	# Have to use this one if any assymetries in x.
-	#for ti in range(data.shape[0]):
-	#	data[ti,] = ptt.maskBathyAll(data[ti,], grid)
-	data = ptt.maskBathyYZ(data, grid, timeDep=True)
+	MEAN = False
+	if not MEAN:
+		data = data[VAR][:]
+		for ti in range(data.shape[0]):
+			data[ti,] = ptt.maskBathyAll(data[ti,], grid)
+		#data = np.ma.mean(data, axis=3)
+		data = data[...,1]
 	
-	print(1)
-	#data = np.mean(data, axis=3)
+	else:
+		data = np.mean(data[VAR][:], axis=3)
+		data = ptt.maskBathyYZ(data, grid, timeDep=True)
+
+
+	data = tools.boundData(data, vmin, vmax, scale=0.99999)
+	#data = tools.removeOscillations(data, 1.e-3)
+	
+	# PLOT.
 
 	xlabel = 'LATITUDE (km)'; ylabel = 'DEPTH (m)'
-	pt.animate1by1(data, X, Y, vmin=vmin, vmax=vmax, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=True, text_data=text_data)
+	#pt.plot1by1(data[-1], X, Y, xlabel=xlabel, ylabel=ylabel, title=title, cmap=cmap, vmin=vmin, vmax=vmax, mesh=False); quit()
+
+	pt.animate1by1(data, X, Y, vmin=vmin, vmax=vmax, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=False, text_data=text_data)
 
 		
 	quit()
@@ -174,21 +186,29 @@ if TEST_animate:
 animateSurface = False
 if animateSurface:
 
-	path = '/home/michai/Documents/data/MCS_004/run/'
-	#path =  '/Users/mh115/Documents/BAS/data/PISOMIP_001/run/' 
+	#path = '/home/michai/Documents/data/PAS_666/run/'
+	path = '/home/michai/Documents/data/MCS_038/run/'
+	
 	grid = Grid(path)
+	#grid = Grid_PAS(path)
+
 	X = grid.XC[1,:]/1000.
 	Y = grid.YC[:,1]/1000.
 
+	#VAR = 'ETAN'
+	#VAR = 'RHOAnoma'
+	VAR = 'THETA' 
+	#VAR = 'PHIHYD'
+	#VAR = 'DFrE_TH';
+	#VAR = 'WVELTH'#','UVELTH','VVELTH','WVELTH', 'TOTTTEND'
+	#VAR = 'SALT'	
+	#VAR = 'UVEL'
+	#VAR = 'VVEL'
+	#VAR = 'VVEL'
+	#VAR = 'WVEL'
+	vmin, vmax, cmap, title = getPlottingVars(VAR)
 
-	var = '2D'; VAR = 'ETAN'
-	#var = 'Theta'; VAR = 'THETA'
-	#var = 'Uvel'; VAR = 'UVEL'
-	#var = 'Vvel'; VAR = 'VVEL'
-	#var = 'Wvel'; VAR = 'WVEL'
-	vmin, vmax, cmap, title = getPlottingVars(var)
-
-	data = readVariable(var, path, file_format='nc', meta=True)
+	data = readVariable(VAR, path, file_format='nc', meta=True)
 	print(data)
 
 	tscale = 86400. * 30
@@ -198,16 +218,28 @@ if animateSurface:
 	text_data = {'text':text, 'xloc':X[1], 'yloc':Y[1], 'fontdict':{'fontsize':14, 'color':'k'}}
 
 	data = data[VAR][:]
+	
+	
+	#plt.plot(np.mean(data[-1,], axis=1)); plt.show(); quit()
 
+	# DON'T CHANGE THIS. CHANGE ONE IN IF STATEMENT IF YOU WANT.
+	level = 0
+
+	if VAR != 'ETAN':
+		level = 26
+		data = data[:,level]
+
+	vmax = 1.; vmin = -0.4
 	data = tools.boundData(data, vmin, vmax, scale=0.99999)
-	data = ptt.maskBathyXY(data, grid, 0, timeDep=True)
-		
+	data = ptt.maskBathyXY(data, grid, level, timeDep=True)
+	
+
 	#data = np.mean(data, axis=3)
 
-	xlabel = 'LATITUDE (km)'; ylabel = 'DEPTH (m)'
-	pt.animate1by1(data, X, Y, vmin=vmin, vmax=vmax, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=False, text_data=text_data)
 
-		
+	xlabel = 'LON (km)'; ylabel = 'LAT (km)'
+	pt.animate1by1(data, X, Y, vmin=vmin, vmax=vmax, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=False, text_data=text_data, outname='animate1by1Surf.mp4')
+
 	quit()
 	
 	#==
@@ -215,6 +247,228 @@ if animateSurface:
 	# Lat-lon plot.
 	pt.plot1by2([var1[-1,0], var2[-1,0]], X=[grid.XC, grid.XC], Y=[grid.YC, grid.YC], titles=['rdmds', 'nc'], xlabels=['lon', 'lon'], ylabels=['lat', 'lat'], show=True)
 	
+#==
+
+animateQuivers = True
+if animateQuivers:
+
+	#path = '/home/michai/Documents/data/PAS_666/run/'
+	path = '/home/michai/Documents/data/MCS_036/run/'
+	
+	level = 24
+
+	grid = Grid(path)
+	#grid = Grid_PAS(path)	
+
+	X = grid.XC[1,:]/1000.
+	Y = grid.YC[:,1]/1000.
+	Z = grid.RC.squeeze()
+
+	VAR = 'UVEL'
+	vmin, vmax, cmap, title = getPlottingVars(VAR)
+	data1 = readVariable(VAR, path, file_format='nc', meta=True)
+	TIME = data1['TIME'][:]
+	data1 = data1[VAR]
+
+	VAR = 'VVEL'
+	vmin, vmax, cmap, title = getPlottingVars(VAR)
+	data2 = readVariable(VAR, path, file_format='nc', meta=False)
+
+	tscale = 86400. * 30
+	tscale_name = 'month'
+	t = TIME / tscale
+	text = [tscale_name + ' ' + str(int(tt)) for tt in t]
+	text_data = {'text':text, 'xloc':X[1], 'yloc':Y[1], 'fontdict':{'fontsize':14, 'color':'k'}}
+
+	data1 = ptt.maskBathyXY(data1[:, level,], grid, level, timeDep=True)
+	data2 = ptt.maskBathyXY(data2[:, level,], grid, level, timeDep=True)
+
+	contour = grid.bathy
+	contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
+	
+	# Get subregion.
+	#xlims = [100, -100]; ylims = [0, -100]
+	#data1 = data1[...,ylims[0]:ylims[1], xlims[0]:xlims[1]]
+	#data2 = data2[...,ylims[0]:ylims[1], xlims[0]:xlims[1]]
+	#X = X[xlims[0]:xlims[1]]; Y = Y[ylims[0]:ylims[1]]
+	#contour = contour[ylims[0]:ylims[1], xlims[0]:xlims[1]]
+
+	# Sample rate & level
+	d = 6
+
+	title = '(u, v) & bathymetry; Z = ' + str(Z[level]) + ' m'
+
+	data1 = data1[..., ::d, ::d]; data2 = data2[..., ::d, ::d]
+	Xd = X[::d]; Yd = Y[::d]
+	
+	#pt.plot1by2([data1[0], data2[0]]); quit()
+
+	pt.animate1by1quiver(data1, data2, Xd, Yd, contour=contour, X=X, Y=Y, contourf=False, text_data=text_data, title=title)
+
+#==
+
+animateSSHs = False
+if animateSSHs:
+	# Animate zonal mean SSHs for multiple MITgcm runs.
+	# Assumes that all use the same grid and have the same time dependencies.
+
+	path_root = '/home/michai/Documents/data/'
+
+	# These are cases without CS walls.
+	#paths = [path_root+'MCS_013/run/', path_root+'MCS_018/run/', path_root+'MCS_012/run/', path_root+'MCS_016/run/']
+	# These are cases with CS walls.	
+	paths = [path_root+'MCS_015/run/', path_root+'MCS_019/run/', path_root+'MCS_014/run/', path_root+'MCS_017/run/']
+	labels = ['05cos', '025cos', '025sin2', '0125sin2']
+	
+	grid = Grid(paths[0])
+	Y = grid.YC[:,1]/1000.
+	xlabel = 'Y (km)'
+	ylabel = 'zonal mean SSH (m)'
+
+	VAR = 'ETAN'
+	vmin, vmax, cmap, title = getPlottingVars(VAR)
+	
+	data = []
+
+	# Get metadata from first run.
+	data_tmp = readVariable(VAR, paths[0], file_format='nc', meta=True)
+
+	tscale = 86400. * 30
+	tscale_name = 'month'
+	t = data_tmp.variables['TIME'][:] / tscale
+	text = [tscale_name + ' ' + str(int(tt)) for tt in t]
+	text_data = {'text':text, 'xloc':Y[1], 'yloc':vmin, 'fontdict':{'fontsize':14, 'color':'k'}}
+
+	# Add first zonal mean SSH to data list.
+	data_tmp = ptt.maskBathyXY(data_tmp[VAR][:], grid, 0, timeDep=True)
+	data.append(np.mean(data_tmp[:,1:-1], axis=2))
+	
+	# Now get other SSHs.
+	for di in range(len(paths)-1):
+		data_tmp = readVariable(VAR, paths[di+1], file_format='nc', meta=False)
+		data_tmp = ptt.maskBathyXY(data_tmp, grid, 0, timeDep=True)
+		data.append(np.mean(data_tmp[:,1:-1], axis=2))
+
+	pt.animateLine(data, X=Y[1:-1], vmin=vmin, vmax=vmax, xlabel=xlabel, ylabel=ylabel, labels=labels, text_data=text_data)
+	quit()
+
+#==
+
+animateSSHs1sim = False
+if animateSSHs1sim:
+	# Animate SSH at different longitudes for a single MITgcm run. 
+
+	path_root = '/home/michai/Documents/data/'
+	path = path_root + 'MCS_034/run/'
+	#xis = [1, 190, 80, 120]
+	xis = [1, 5, 230, 239]
+	labels = ['x = ' + str(xi*2.5) + ' km' for xi in xis]
+
+	grid = Grid(path)
+	Y = grid.YC[:,1]/1000.
+	xlabel = 'Y (km)'
+	ylabel = 'zonal mean SSH (m)'
+
+	VAR = 'ETAN'
+	vmin, vmax, cmap, title = getPlottingVars(VAR)
+	
+	data = []
+
+	# Get metadata from first run.
+	data_tmp = readVariable(VAR, path, file_format='nc', meta=True)
+
+
+	tscale = 86400. * 30
+	tscale_name = 'month'
+	t = data_tmp.variables['TIME'][:] / tscale
+	text = [tscale_name + ' ' + str(int(tt)) for tt in t]
+	text_data = {'text':text, 'xloc':Y[1], 'yloc':vmin, 'fontdict':{'fontsize':14, 'color':'k'}}
+	
+	data_tmp = data_tmp[VAR][:]
+
+	data2 = readVariable('VVEL', path, file_format='nc', meta=True)['VVEL'][:]
+	data_tmp = (20. + data_tmp) * data2[:,0]
+
+	# Now get other SSHs.
+	for xi in xis:
+		data.append(data_tmp[...,1:-1,xi])
+
+
+	vmin = -2e-1; vmax = -vmin
+	pt.animateLine(data, X=Y[1:-1], xlabel=xlabel, ylabel=ylabel, labels=labels, text_data=text_data, vmin=vmin, vmax=vmax)
+	quit()
+
+#==
+
+animateUvelSurfs = False
+if animateUvelSurfs:
+	# Animate zonal mean SSHs for multiple MITgcm runs.
+	# Assumes that all use the same grid and have the same time dependencies.
+
+	path_root = '/home/michai/Documents/data/'
+
+	# These are cases without CS walls.
+	#paths = [path_root+'MCS_013/run/', path_root+'MCS_018/run/', path_root+'MCS_012/run/', path_root+'MCS_016/run/']
+	# These are cases with CS walls.	
+	#paths = [path_root+'MCS_015/run/', path_root+'MCS_019/run/', path_root+'MCS_014/run/', path_root+'MCS_017/run/']
+	#labels = ['05cos', '025cos', '025sin2', '0125sin2']
+
+	# These are for comparing with and without beta.
+	paths = [path_root+'MCS_015/run/', path_root+'MCS_022/run/', path_root+'MCS_014/run/', path_root+'MCS_023/run/']
+	labels = ['05cos wall', '05cos wall beta', '025sin2 wall', '025sin2 wall beta']
+	
+	grid = Grid(paths[0])
+	Y = grid.YC[:,1]/1000.
+	xlabel = 'Y (km)'
+	ylabel = 'zonal mean Uvel (m)'
+
+	VAR = 'UVEL'
+	vmin, vmax, cmap, title = getPlottingVars(VAR)
+	
+	data = []
+
+	# Get metadata from first run.
+	data_tmp = readVariable(VAR, paths[0], file_format='nc', meta=True)
+
+	tscale = 86400. * 30
+	tscale_name = 'month'
+	t = data_tmp.variables['TIME'][:] / tscale
+	text = [tscale_name + ' ' + str(int(tt)) for tt in t]
+	text_data = {'text':text, 'xloc':Y[1], 'yloc':vmin, 'fontdict':{'fontsize':14, 'color':'k'}}
+
+	# Add first zonal mean SSH to data list.
+	data_tmp = ptt.maskBathyXY(data_tmp[VAR][:,0], grid, 0, timeDep=True)
+	data.append(np.mean(data_tmp[:,1:-1,-100:], axis=2))
+	
+	# Now get other SSHs.
+	for di in range(len(paths)-1):
+		data_tmp = readVariable(VAR, paths[di+1], file_format='nc', meta=False)
+		data_tmp = ptt.maskBathyXY(data_tmp[:,0], grid, 0, timeDep=True)
+		data.append(np.mean(data_tmp[:,1:-1,-100:], axis=2))
+
+	pt.animateLine(data, X=Y[1:-1], vmin=vmin, vmax=vmax, xlabel=xlabel, ylabel=ylabel, labels=labels, text_data=text_data)
+	quit()
+
+
+#==
+
+plotBathy = False
+if plotBathy:
+
+	#path = '/home/michai/Documents/data/PAS_666/run/'
+	path = '/home/michai/Documents/data/MCS_038/run/'
+	
+	grid = Grid(path)
+	bathy = grid.bathy
+
+	X = grid.XC[1,:]/1000.
+	Y = grid.YC[:,1]/1000.
+	xlabel = 'LON (km)'; ylabel = 'LAT (km)'
+
+	bathy = ptt.maskBathyXY(bathy, grid, 0, timeDep=False)
+
+	pt.plot1by1(bathy, X=X, Y=Y, xlabel=xlabel, ylabel=ylabel, mesh=True); quit()
+
 #==
 
 TEST_troughTransport = False
