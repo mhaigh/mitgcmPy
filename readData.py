@@ -15,7 +15,7 @@ import sys
 # In PISOMIP_001/run on Archer2 I had to hard copy mit2nc before I could execute it.
 
 
-def readVariable(VAR, path, file_format='nc', time_step=1, meta=False, interval):
+def readVariable(VAR, path, file_format='nc', time_step=1, meta=False, interval=None):
 	'''Read mitgcm output for variable in given file format.
 	Options are rdmds or nc, with netCDF default.
 	If meta==True, returns additional metadata useful for plotting.'''
