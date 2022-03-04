@@ -35,7 +35,7 @@ def readVariable(VAR, path, file_format='nc', time_step=1, meta=False, interval=
 			return Dataset(path+fname, 'r')
 		else:
 			if interval is not None:
-				Dataset(path+fname, 'r')[VAR][interval[0]:interval[1]+1]
+				return Dataset(path+fname, 'r')[VAR][interval[0]:interval[1]+1,]
 			else:
 				return Dataset(path+fname, 'r')[VAR][:]
 		

@@ -90,8 +90,14 @@ if TEST_thetaHeight:
 	Y = grid.YC[:,1]/1000.
 	Z = grid.RC.squeeze()
 
-	T = readVariable('THETA', path, file_format='nc', meta=False)[-2:]
+	#T = readVariable('THETA', path, file_format='nc', meta=False)[-2:]
+	
+	T = readVariable('THETA', path, file_format='nc', meta=False, interval=[1,10])
+	print(T.shape)
+	
+	quit()
 
+	
 	THERM = -0.4
 
 	# Get z-indices of level with Theta closest to THERM.
