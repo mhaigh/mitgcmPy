@@ -3,6 +3,8 @@
 
 import sys
 
+import matplotlib.pyplot as plt
+
 import numpy as np
 
 #==========================================================
@@ -132,15 +134,71 @@ def depthAverage(data, Z, timeDep=True):
 	Averages over all depths, unless a maxLevel is provided.'''
 
 	if timeDep:
-		axis = 1	
+		return np.trapz(data[:,::-1], Z[::-1], axis=1)# / (Z[0] - Z[-1])
 	else:
 		axis = 0
-
-	return np.trapz(data[::-1], Z[::-1], axis=0) / (Z[0] - Z[-1]) 
+		return np.trapz(data[::-1], Z[::-1], axis=0)# / (Z[0] - Z[-1])
 
 #==
 
-def meridStreamfunction(v, X, Z, timeDep=False):
+def depthIntegral(data, grid, timeDep=True, SSH=None, norm=True):
+	'''Return depth integral (sum) of data.'''
+	
+	if timeDep:
+		axis = 1
+	else:
+		axis = 0
+
+	if norm:
+		norm = np.sum(grid.DRF * grid.hFacW, axis=0)
+	else:
+		norm = 1
+
+	if SSH is not None:
+		DRF0 = grid.DRF.squeeze()[0] + SSH
+		if timeDep:
+			T0 = data[:,0] * grid.hFacW[0]  * DRF0
+			return	(T0 + np.sum(data[:,1:] * grid.hFacW[1:] * grid.DRF[1:], axis=axis)) / norm
+		else: 
+			T0 = data[0] * grid.hFacW[0] * DRF0
+			return	(T0 + np.sum(data[1:] * grid.hFacW[1:] * grid.DRF[1:], axis=axis)) / norm
+			
+	else:
+		return np.sum(data * grid.hFacW * grid.DRF, axis=axis) / norm
+
+#==
+
+def barotropicStreamfunction(u, grid, timeDep=True, SSH=None):
+	'''Given zonal velocity, compute barotropic streamfunction.
+	If timeDep, assumes axis ordering is (t, z, y, x).
+	If not timeDep, assumes axis ordering is (z, y, x).'''
+	
+	# First, get depth-integrated mass transport.
+	T = depthIntegral(u, grid, timeDep=timeDep, SSH=SSH)
+
+	# Second, integrate from southern boundary to northern boundary.
+	if timeDep:
+		# Axes are (t, y, x).
+		axis = 1
+	else:
+		# Axes are (y, x).
+		axis = 0
+
+	Y = grid.YC
+	
+	# Option using trapezium rule.
+	#strfunc = np.zeros(T.shape)
+	#if timeDep:
+	#	for yi in range(0,Y.shape[0]):
+	#		strfunc[:,yi] = - np.trapz(T[:,:yi+1,], Y[:yi+1,0], axis=axis)
+
+	# Simple option using cumulative sum.
+	if timeDep:
+		strfunc = - np.cumsum(T * grid.DYG, axis=1)
+	
+	return strfunc
+
+def meridStreamfunction(v, X, Z, timeDep=True):
 	'''Given meridional velocity, return meridional overturning streamfunction.
 	If timeDep, assumes axis ordering is (t, z, y, x).
 	If not timeDep, assumes axis ordering is (z, y, x).'''
@@ -191,13 +249,81 @@ def diff(data, axis=0, dx=1):
 
 	return ddata
 
+#==
 
 def removeOscillations(data, lim):
 	
 	data = np.where(np.abs(data)<lim, 0, data)
 	
 	return data
+
+#==
+
+def ddy(f, dy):
+	'''A crude meridional derivative function.
+	Assumes y-axis is second from last.'''
 	
+	dfdy = np.zeros(f.shape)
+	Ny = f.shape[-2]	
+
+	dfdy[...,1:Ny-1,:] = (f[...,2:Ny,:] - f[...,0:Ny-2,:]) / (2 * dy)
+	dfdy[...,0,:] = (f[...,1,:] - f[...,0,:]) / dy
+	dfdy[...,Ny-1,:] = (f[...,Ny-1,:] - f[...,Ny-2,:]) / dy
+
+	return dfdy
+
+#==
+
+def bottom(data, grid, cellPos, timeDep=True):
+	'''Return value of data at bottom of domain.
+	Must specify if at u, v, or h location of grid cells.'''
+
+	if cellPos == 'u':
+		hFac = grid.hFacW
+	elif cellPos == 'v':
+		hFac = grid.hFacS
+	elif cellPoss == 'h':
+		hFac = grid.hFacC
+	else:
+		print('Error: tools.bottom. Must provide valid cellPos.')
+		sys.exit()
+
+	Nt, Nz, Ny, Nx = data.shape
+
+	# Get depth index of ocean floor.
+	bottom = np.zeros((Ny, Nx))
+	for k in range(1,Nz):
+		bottom += hFac[k] > 0
+	bottom = bottom.astype(int)
+
+	# bottom is Ny, Nx array of z grid points.
+	Y = [[i]*Nx for i in range(Ny)]
+	Y = [i for subX in Y for i in subX]
+
+	X = [[i]*Ny for i in range(Nx)]
+	X = [X[j][i] for i in range(Ny) for j in range(Nx)]
+
+	datab = data[:,bottom.flatten(),Y,X].reshape((Nt,Ny,Nx))
+
+	# Commmented out a brute-force approach to above list comprehension solution.
+	#datab = np.zeros((Nt,Ny,Nx))
+	#for j in range(Ny):
+	#	for i in range(Nx):
+	#		datab[:,j,i] = data[:,bottom[j,i],j,i]
+
+	return datab
+
+#==
+
+
+def EOSlinear(rho0, sBeta, tAlpha, S, Sref, T, Tref):
+
+	Tref = np.array(Tref); Sref = np.array(Sref) 
+	Tref = np.tile(Tref, (1,1,1)).T
+	Sref = np.tile(Sref, (1,1,1)).T
+
+	return rho0 * (sBeta * (S - Sref) - tAlpha * (T - Tref)) 
+
 	
 	
 	

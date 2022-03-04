@@ -13,9 +13,10 @@ import plotting_tools as ptt
 import tools
 
 from readData import readVariable
-from varDict import getPlottingVars
+from varDict import getPlottingVars, getTrefSref
 
 import time
+
 
 #from io import readData
 
@@ -78,6 +79,182 @@ if baroclinicEddies:
 
 #==
 
+TEST_thetaHeight = True
+if TEST_thetaHeight:
+
+	path = '/home/michai/Documents/data/MCS_038/run/'
+	
+	grid = Grid(path)
+	
+	X = grid.XC[1,:]/1000.
+	Y = grid.YC[:,1]/1000.
+	Z = grid.RC.squeeze()
+
+	T = readVariable('THETA', path, file_format='nc', meta=False)[-2:]
+
+	THERM = -0.4
+
+	# Get z-indices of level with Theta closest to THERM.
+	Tz = np.argmin(np.abs(T-THERM),axis=1)
+	
+	ThermZ = Z[Tz]
+
+	ThermZ2 = np.zeros(ThermZ.shape)
+	for ti in range(ThermZ.shape[0]):
+		for yi in range(ThermZ.shape[1]):
+			for xi in range(ThermZ.shape[2]):
+				ThermZ2[ti,yi,xi] = Z[Tz[ti, yi, xi]]
+
+	# Now, for all Tz(t, y, x) we want Z[Tz[t,y,x]]]
+	#Z[Tz]
+
+	ThermZ = ptt.maskBathyXY(ThermZ, grid, 0, timeDep=True)
+	ThermZ2 = ptt.maskBathyXY(ThermZ2, grid, 0, timeDep=True)
+
+	pt.plot1by2([ThermZ[-1], ThermZ2[-1]], mesh=True); quit()#
+	
+
+
+
+	#Tt = -1.8; Tb = 1.; print(0.5*(Tt+Tb))
+
+#==
+
+TEST_rho = False
+if TEST_rho:
+
+	path = '/home/michai/Documents/data/MCS_038/run/'
+	
+	grid = Grid(path)
+	
+	X = grid.XC[1,:]/1000.
+	Y = grid.YC[:,1]/1000.
+	Z = grid.RC.squeeze()
+
+	Rho1 = readVariable('RHOAnoma', path, file_format='nc', meta=False)[-2:]
+	T = readVariable('THETA', path, file_format='nc', meta=False)[-2:]
+	S = readVariable('SALT', path, file_format='nc', meta=False)[-2:]
+
+	rho0 = 1030.
+	tAlpha=3.90e-5
+	sBeta =7.41e-4
+
+	Tref, Sref = getTrefSref()
+	Rho2 = tools.EOSlinear(rho0, sBeta, tAlpha, S, Sref, T, Tref)
+
+	for ti in range(Rho1.shape[0]):
+		Rho1[ti,] = ptt.maskBathyAll(Rho1[ti,], grid)
+		Rho2[ti,] = ptt.maskBathyAll(Rho2[ti,], grid)
+	
+	#plt.contourf(Y, Z, S[-1,:,:,-1]); plt.colorbar(); plt.show(); quit()
+	
+	vmin = -0.2; vmax = -vmin
+	pt.plot1by2([Rho1[-1,...,-1]-Rho2[-1,...,-1], Rho2[-1,...,-1]], X=[Y,Y], Y=[Z,Z], vmin=[vmin,vmin], vmax=[vmax,vmax])
+	
+
+#==
+
+TEST_brclnc = False
+if TEST_brclnc:
+	
+	#path = '/home/michai/Documents/data/PAS_666/run/'
+	path = '/home/michai/Documents/data/MCS_038/run/'
+	
+	level = 24
+
+	grid = Grid(path)
+	#grid = Grid_PAS(path)	
+
+	X = grid.XC[1,:]/1000.
+	Y = grid.YC[:,1]/1000.
+	Z = grid.RC.squeeze()
+
+	dY = 1.e3 * (Y[1] - Y[0])
+
+	u = readVariable('UVEL', path, file_format='nc', meta=False)[-10:]
+	v = readVariable('VVEL', path, file_format='nc', meta=False)[-10:]
+
+	ub = tools.bottom(u, grid, 'u')
+	vb = tools.bottom(v, grid, 'v')
+
+	us = u[:,0] - ub
+	vs = v[:,0] - vb
+
+	vmin = -0.1; vmax = 0.1; vmin = [vmin, vmin]; vmax = [vmax, vmax]
+	pt.plot1by2([us[-1],vs[-1]], vmin=vmin, vmax=vmax)
+
+	contour = grid.bathy
+	contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
+
+	# Sample rate & level
+	d = 6
+
+	title = '(u_top-u_bot, v_top-v_bot) & bathymetry'
+
+	us = us[..., ::d, ::d]; vs = vs[..., ::d, ::d]
+	Xd = X[::d]; Yd = Y[::d]
+	
+	#pt.plot1by2([data1[0], data2[0]]); quit()
+
+	pt.animate1by1quiver(us, vs, Xd, Yd, contour=contour, X=X, Y=Y, contourf=False, title=title)
+	quit()
+	
+
+#==
+
+TEST_baroStr = False
+if TEST_baroStr:
+
+	#path = '/home/michai/Documents/data/PAS_666/run/'
+	path = '/home/michai/Documents/data/MCS_036/run/'
+	
+	level = 24
+
+	grid = Grid(path)
+	#grid = Grid_PAS(path)	
+
+	X = grid.XC[1,:]/1000.
+	Y = grid.YC[:,1]/1000.
+	Z = grid.RC.squeeze()
+
+	dY = 1.e3 * (Y[1] - Y[0])
+
+	VAR = 'UVEL'
+	vmin, vmax, cmap, title = getPlottingVars(VAR)
+	data = readVariable(VAR, path, file_format='nc', meta=True)
+	u = data[VAR][-10:]
+
+	SSH = readVariable('ETAN', path, file_format='nc', meta=False)[-10:]
+
+	for ti in range(u.shape[0]):
+		u[ti,] = ptt.maskBathyAll(u[ti,], grid)
+		SSH[ti,] = ptt.maskBathyXY(SSH[ti,], grid, 0)
+
+	#T = tools.barotropicStreamfunction(u, grid)
+	T = tools.barotropicStreamfunction(u, grid, SSH=SSH)
+
+	umean = - tools.ddy(T, dY)
+	umean2 = tools.depthIntegral(u, grid)
+	umean = ptt.maskBathyXY(umean, grid, 0, timeDep=True)
+	
+	vmin = -0.1; vmax = 0.1
+	vmin = [vmin, vmin]; vmax = [vmax, vmax]
+	g = 9.81; f0 = -1.4e-4	
+	SSHstr = g*SSH/f0
+
+	Tmean = np.mean(T, axis=(1,2)); T -= np.tile(Tmean,(1,1,1)).T
+	
+	print(np.mean(SSHstr,axis=(1,2)))
+	print(np.mean(SSHstr**2,axis=(1,2))**0.5)
+	print(np.mean(T, axis=(1,2)))
+	print(np.mean(T**2,axis=(1,2))**0.5)
+
+	pt.plot1by2([SSHstr[-1], T[-1]], mesh=True)
+	#pt.plot1by2([umean[-1], umean2[-1]], mesh=True, vmin=vmin, vmax=vmax)
+	quit()
+
+#==
+
 TEST_depthAverage = False
 if TEST_depthAverage:
 
@@ -120,7 +297,7 @@ if TEST_animate:
 
 	#path = '/home/michai/Documents/data/MCS_002/run/'
 
-	path = '/home/michai/Documents/data/MCS_036/run/'
+	path = '/home/michai/Documents/data/MCS_038/run/'
 	#pathG = '/home/michai/Documents/data/MCS_018/run/'
 
 	grid = Grid(path)
@@ -130,8 +307,8 @@ if TEST_animate:
 	Y = grid.RC.squeeze()
 
 	#VAR = 'ETAN'
-	#VAR = 'RHOAnoma'
-	VAR = 'THETA'
+	VAR = 'RHOAnoma'
+	#VAR = 'THETA'
 	#VAR = 'PHIHYD'
 	#VAR = 'DFrE_TH';
 	#VAR = 'WVELTH'#','UVELTH','VVELTH','WVELTH', 'TOTTTEND'
@@ -187,7 +364,7 @@ animateSurface = False
 if animateSurface:
 
 	#path = '/home/michai/Documents/data/PAS_666/run/'
-	path = '/home/michai/Documents/data/MCS_038/run/'
+	path = '/home/michai/Documents/data/MCS_036/run/'
 	
 	grid = Grid(path)
 	#grid = Grid_PAS(path)
@@ -195,9 +372,9 @@ if animateSurface:
 	X = grid.XC[1,:]/1000.
 	Y = grid.YC[:,1]/1000.
 
-	#VAR = 'ETAN'
+	VAR = 'ETAN'
 	#VAR = 'RHOAnoma'
-	VAR = 'THETA' 
+	#VAR = 'THETA' 
 	#VAR = 'PHIHYD'
 	#VAR = 'DFrE_TH';
 	#VAR = 'WVELTH'#','UVELTH','VVELTH','WVELTH', 'TOTTTEND'
@@ -218,6 +395,8 @@ if animateSurface:
 	text_data = {'text':text, 'xloc':X[1], 'yloc':Y[1], 'fontdict':{'fontsize':14, 'color':'k'}}
 
 	data = data[VAR][:]
+
+	pt.plot1by1(data[-1], mesh=True); quit()
 	
 	
 	#plt.plot(np.mean(data[-1,], axis=1)); plt.show(); quit()
@@ -249,7 +428,7 @@ if animateSurface:
 	
 #==
 
-animateQuivers = True
+animateQuivers = False
 if animateQuivers:
 
 	#path = '/home/michai/Documents/data/PAS_666/run/'
