@@ -33,6 +33,7 @@ class Grid:
 		self.hFacW = rdmds(path+'hFacW')
 
 		self.RF = self.RC + self.DRF/2
+		self.RF = np.append(self.RF, [self.RF[-1]-self.DRF[-1]], 0)
 		
 		# Land boolean arrays.
 		self.landC = np.sum(self.hFacC, axis=0) == 0
@@ -64,7 +65,21 @@ class Grid:
 		
 		# Bathymetry (sum cell heights scaled by land fraction, subtract depth, subtract ice shelf contribution).
 		self.bathy = np.sum(self.DRF * (1-self.hFacC), axis=0) + self.RF[-1,] + self.draft
-		
+
+		# Ice shelf draft
+		nz, ny, nx = self.hFacC.shape
+		draft = np.zeros((ny, nx)) * np.nan
+		for k in range(nz):
+			# Get indices of wet cells with draft not already computed.
+			index = (self.hFacC[k,] != 0) * np.isnan(draft)
+			# Set draft  = top of cell - dz * (fraction of cell not water).
+			draft[index] = self.RF[k,0,0] - self.DRF[k,0,0] * (1 - self.hFacC[k][index])
+    		# Set remaining NaNs to zero, representing land.
+		self.draft = np.nan_to_num(draft)
+
+		# Bathymetry (sum cell heights scaled by land fraction, subtract depth, subtract ice shelf contribution).
+		self.bathy = np.sum(self.DRF * (1-self.hFacC), axis=0) + self.RF[-1,] + self.draft
+
 	# Functions to get nearest index for given latitude, longitude, depth.
 	# May need to be extended so is compatible with grid box corners.
 	
@@ -148,6 +163,7 @@ class Grid:
 		
 		zc = self.RC[:].squeeze()
 	
+
 		
 		
 

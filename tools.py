@@ -261,19 +261,80 @@ def removeOscillations(data, lim):
 
 #==
 
-def ddy(f, dy):
+def ddx(f, dx=1):
+	'''A crude meridional derivative function.
+	Assumes x-axis is last.'''
+	
+	dfdx = np.zeros(f.shape)
+	Nx = f.shape[-1]
+
+	if isinstance(dx, (np.ndarray, tuple, list)):
+		dx_tmp = dx.copy()
+	else:
+		# Assume dy is scalar.
+		dx_tmp = dx * np.ones(f.shape)
+
+	dfdx[...,1:Nx-1] = (f[...,2:Nx] - f[...,0:Nx-2]) / (2 * dx_tmp[...,1:Nx-1])
+	dfdx[...,0] = (f[...,1] - f[...,0]) / dx_tmp[...,0]
+	dfdx[...,Nx-1] = (f[...,Nx-1] - f[...,Nx-2]) / dx_tmp[...,Nx-1]
+
+	return dfdx
+
+#==
+
+def ddy(f, dy=1):
 	'''A crude meridional derivative function.
 	Assumes y-axis is second from last.'''
 	
 	dfdy = np.zeros(f.shape)
-	Ny = f.shape[-2]	
+	Ny = f.shape[-2]
 
-	dfdy[...,1:Ny-1,:] = (f[...,2:Ny,:] - f[...,0:Ny-2,:]) / (2 * dy)
-	dfdy[...,0,:] = (f[...,1,:] - f[...,0,:]) / dy
-	dfdy[...,Ny-1,:] = (f[...,Ny-1,:] - f[...,Ny-2,:]) / dy
+	if isinstance(dy, (np.ndarray, tuple, list)):
+		dy_tmp = dy.copy()
+	else:
+		# Assume dy is scalar.
+		dy_tmp = dy * np.ones(f.shape)
+
+	dfdy[...,1:Ny-1,:] = (f[...,2:Ny,:] - f[...,0:Ny-2,:]) / (2 * dy_tmp[...,1:Ny-1,:])
+	dfdy[...,0,:] = (f[...,1,:] - f[...,0,:]) / dy_tmp[...,0,:]
+	dfdy[...,Ny-1,:] = (f[...,Ny-1,:] - f[...,Ny-2,:]) / dy_tmp[...,Ny-1,:]
 
 	return dfdy
 
+#==
+
+def ddz(f, dz=1, axis=-3):
+	'''A crude vertical derivative function.
+	Assumes z-axis is third from last.
+	If axis is elsewhere, override by providing axis.
+	This then calls ddx or ddy.'''
+	
+	# If f doesn't have x or y dependence, axis should be -1 or -2.
+	if axis == -1:
+		return ddx(f, dz)
+	elif axis == -2:
+		return ddy(f, dz)
+
+	# f has (x,y,z) dependence.
+	elif axis == -3:		
+		dfdz = np.zeros(f.shape)
+		Nz = f.shape[-3]
+
+		if isinstance(dz, (np.ndarray, tuple, list)):
+			dz_tmp = dz.copy()
+		else:
+			# Assume dy is scalar.
+			dz_tmp = dz * np.ones(f.shape)
+
+		dfdz[...,1:Nz-1,:,:] = (f[...,2:Nz,:,:] - f[...,0:Nz-2,:,:]) / (2 * dz_tmp[...,1:Nz-1,:,:])
+		dfdz[...,0,:,:] = (f[...,1,:,:] - f[...,0,:,:]) / dz_tmp[...,0,:,:]
+		dfdz[...,Nz-1,:,:] = (f[...,Nz-1,:,:] - f[...,Nz-2,:,:]) / dz_tmp[...,Nz-1,:,:]
+
+		return dfdz
+
+	else:
+		print('Error: tools.ddz. axis must be -1, -2 or -3.')
+		sys.exit()
 #==
 
 def bottom(data, grid, cellPos, timeDep=True):
@@ -350,6 +411,11 @@ def interp(data, edge):
 		print('Interpolating from v points. Averaging between masked/unmasked neighbours OK if no-slip, provided masked areas set to zero. Assuming periodic in y.' )
 		data_interp[...,:-1,:] = 0.5 * (data[...,:-1,:] + data[...,1:,:])
 		data_interp[...,-1,:] = 0.5 * (data[...,-1,:] + data[...,0,:])
+
+	elif edge == 'w':
+		print('Interpolating from w points. Bottom value is held fixed.' )
+		data_interp[...,:-1,:,:] = 0.5 * (data[...,:-1,:,:] + data[...,1:,:,:]) 
+		data_interp[...,-1,:,:] = data[...,-1,:,:]
 
 	else:
 		print('Error: tools.interp. Must provide valid edge value.')

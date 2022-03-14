@@ -79,48 +79,58 @@ if baroclinicEddies:
 
 #==
 
-TEST_thetaHeight = True
+TEST_thetaHeight = False
 if TEST_thetaHeight:
 
-	path = '/home/michai/Documents/data/MCS_038/run/'
-	
-	grid = Grid(path)
-	
-	X = grid.XC[1,:]/1000.
-	Y = grid.YC[:,1]/1000.
-	Z = grid.RC.squeeze()
-
-	#T = readVariable('THETA', path, file_format='nc', meta=False)[-2:]
-	
-	T = readVariable('THETA', path, file_format='nc', meta=False, interval=[1,10])
-	print(T.shape)
-	
-	quit()
-
-	
+	PAS = True
 	THERM = -0.4
 
-	# Get z-indices of level with Theta closest to THERM.
-	Tz = np.argmin(np.abs(T-THERM),axis=1)
-	
-	ThermZ = Z[Tz]
+	if PAS:
+		path = '/home/michai/Documents/data/PAS_851/run/'
+		grid = Grid_PAS(path)
+		T = np.load(path+'Tmean_PAS851.npy')
 
-	ThermZ2 = np.zeros(ThermZ.shape)
-	for ti in range(ThermZ.shape[0]):
-		for yi in range(ThermZ.shape[1]):
-			for xi in range(ThermZ.shape[2]):
-				ThermZ2[ti,yi,xi] = Z[Tz[ti, yi, xi]]
+		X = grid.XC#[1,:]
+		Y = grid.YC#[:,1]
+		Z = grid.RC.squeeze()
 
-	# Now, for all Tz(t, y, x) we want Z[Tz[t,y,x]]]
-	#Z[Tz]
+		# Get z-indices of level with Theta closest to THERM.
+		Tz = np.argmin(np.abs(T-THERM),axis=0)
+		ThermZ = Z[Tz]
+		ThermZ = ptt.maskBathyXY(ThermZ, grid, 0, timeDep=False)
 
-	ThermZ = ptt.maskBathyXY(ThermZ, grid, 0, timeDep=True)
-	ThermZ2 = ptt.maskBathyXY(ThermZ2, grid, 0, timeDep=True)
+		bathy = ptt.maskBathyXY(grid.bathy, grid, 0, timeDep=False)
 
-	pt.plot1by2([ThermZ[-1], ThermZ2[-1]], mesh=True); quit()#
-	
+		title = 'PAS851 mean - 0.4 deg. isotherm height'
+ 
+	else:
+		path = '/home/michai/Documents/data/MCS_038/run/'
+		grid = Grid(path)
+		T = readVariable('THETA', path, file_format='nc', meta=False)[-2:]
 
+		X = grid.XC[1,:]/1000.
+		Y = grid.YC[:,1]/1000.
+		Z = grid.RC.squeeze()
 
+		# Get z-indices of level with Theta closest to THERM.
+		Tz = np.argmin(np.abs(T-THERM),axis=1)
+		ThermZ = Z[Tz]
+		ThermZ = ptt.maskBathyXY(ThermZ, grid, 0, timeDep=True)
+
+	SUBR = True
+	if SUBR:
+		lats = [-75, -68]; lons = [230, 270]
+		latsi = grid.getIndexFromLat(lats)
+		lonsi = grid.getIndexFromLon(lons)
+
+		ThermZ = tools.getSubregionXY(ThermZ, latsi, lonsi)
+		bathy = tools.getSubregionXY(bathy, latsi, lonsi)
+
+		X = grid.Xsubr1D(lons)
+		Y = grid.Ysubr1D(lats)
+
+	pt.plot1by1(bathy, X=X, Y=Y, mesh=True, vmin=-1000, vmax=0, title='PAS851 bathymetry')
+	pt.plot1by1(ThermZ, X=X, Y=Y, mesh=True, vmin=-800, vmax=-100, title=title); quit()#
 
 	#Tt = -1.8; Tb = 1.; print(0.5*(Tt+Tb))
 
@@ -212,7 +222,7 @@ TEST_baroStr = False
 if TEST_baroStr:
 
 	#path = '/home/michai/Documents/data/PAS_666/run/'
-	path = '/home/michai/Documents/data/MCS_036/run/'
+	path = '/home/michai/Documents/data/MCS_038/run/'
 	
 	level = 24
 
@@ -237,7 +247,9 @@ if TEST_baroStr:
 		SSH[ti,] = ptt.maskBathyXY(SSH[ti,], grid, 0)
 
 	#T = tools.barotropicStreamfunction(u, grid)
-	T = tools.barotropicStreamfunction(u, grid, SSH=SSH)
+	T = tools.barotropicStreamfunction(u, grid)
+
+	T2 = tools.barotropicStreamfunction(u, grid)
 
 	umean = - tools.ddy(T, dY)
 	umean2 = tools.depthIntegral(u, grid)
@@ -250,12 +262,13 @@ if TEST_baroStr:
 
 	Tmean = np.mean(T, axis=(1,2)); T -= np.tile(Tmean,(1,1,1)).T
 	
-	print(np.mean(SSHstr,axis=(1,2)))
-	print(np.mean(SSHstr**2,axis=(1,2))**0.5)
-	print(np.mean(T, axis=(1,2)))
-	print(np.mean(T**2,axis=(1,2))**0.5)
+	#print(np.mean(SSHstr,axis=(1,2)))
+	#print(np.mean(SSHstr**2,axis=(1,2))**0.5)
+	#print(np.mean(T, axis=(1,2)))
+	#print(np.mean(T**2,axis=(1,2))**0.5)
 
-	pt.plot1by2([SSHstr[-1], T[-1]], mesh=True)
+	cmap = 'gist_rainbow'
+	pt.plot1by2([T[-1], T[-1]-T2[-1]], mesh=True, cmap=cmap)
 	#pt.plot1by2([umean[-1], umean2[-1]], mesh=True, vmin=vmin, vmax=vmax)
 	quit()
 
@@ -313,8 +326,8 @@ if TEST_animate:
 	Y = grid.RC.squeeze()
 
 	#VAR = 'ETAN'
-	VAR = 'RHOAnoma'
-	#VAR = 'THETA'
+	#VAR = 'RHOAnoma'
+	VAR = 'THETA'
 	#VAR = 'PHIHYD'
 	#VAR = 'DFrE_TH';
 	#VAR = 'WVELTH'#','UVELTH','VVELTH','WVELTH', 'TOTTTEND'
@@ -339,12 +352,11 @@ if TEST_animate:
 		for ti in range(data.shape[0]):
 			data[ti,] = ptt.maskBathyAll(data[ti,], grid)
 		#data = np.ma.mean(data, axis=3)
-		data = data[...,1]
+		data = data[...,100]
 	
 	else:
 		data = np.mean(data[VAR][:], axis=3)
 		data = ptt.maskBathyYZ(data, grid, timeDep=True)
-
 
 	data = tools.boundData(data, vmin, vmax, scale=0.99999)
 	#data = tools.removeOscillations(data, 1.e-3)
@@ -355,7 +367,6 @@ if TEST_animate:
 	#pt.plot1by1(data[-1], X, Y, xlabel=xlabel, ylabel=ylabel, title=title, cmap=cmap, vmin=vmin, vmax=vmax, mesh=False); quit()
 
 	pt.animate1by1(data, X, Y, vmin=vmin, vmax=vmax, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=False, text_data=text_data)
-
 		
 	quit()
 	
@@ -394,17 +405,11 @@ if animateSurface:
 	data = readVariable(VAR, path, file_format='nc', meta=True)
 	print(data)
 
-	tscale = 86400. * 30
-	tscale_name = 'month'
-	t = data.variables['TIME'][:] / tscale
-	text = [tscale_name + ' ' + str(int(tt)) for tt in t]
-	text_data = {'text':text, 'xloc':X[1], 'yloc':Y[1], 'fontdict':{'fontsize':14, 'color':'k'}}
-
+	text_data = ptt.getTextData(data.variables['TIME'][:], 'month', X[1], Y[1])
 	data = data[VAR][:]
 
 	pt.plot1by1(data[-1], mesh=True); quit()
-	
-	
+		
 	#plt.plot(np.mean(data[-1,], axis=1)); plt.show(); quit()
 
 	# DON'T CHANGE THIS. CHANGE ONE IN IF STATEMENT IF YOU WANT.
@@ -434,13 +439,18 @@ if animateSurface:
 	
 #==
 
-animateQuivers = False
+animateQuivers = True
 if animateQuivers:
 
 	#path = '/home/michai/Documents/data/PAS_666/run/'
-	path = '/home/michai/Documents/data/MCS_036/run/'
-	
-	level = 24
+	#path = '/home/michai/Documents/data/MCS_038/run/'
+	path = '/data/oceans_output/shelf/pahol/mitgcm/PAS_851/run/'
+
+	# Sample rate
+	d = 4
+
+	#level = 17 # 17 -> 350m depth in MCS.
+	level = grid.getIndexFromDepth(350)
 
 	grid = Grid(path)
 	#grid = Grid_PAS(path)	
@@ -459,36 +469,52 @@ if animateQuivers:
 	vmin, vmax, cmap, title = getPlottingVars(VAR)
 	data2 = readVariable(VAR, path, file_format='nc', meta=False)
 
+	T = readVariable('THETA', path, file_format='nc', meta=False)
+	cvmin, cvmax, cmap, title = getPlottingVars(VAR)
+	
 	tscale = 86400. * 30
 	tscale_name = 'month'
 	t = TIME / tscale
 	text = [tscale_name + ' ' + str(int(tt)) for tt in t]
 	text_data = {'text':text, 'xloc':X[1], 'yloc':Y[1], 'fontdict':{'fontsize':14, 'color':'k'}}
 
-	data1 = ptt.maskBathyXY(data1[:, level,], grid, level, timeDep=True)
-	data2 = ptt.maskBathyXY(data2[:, level,], grid, level, timeDep=True)
-
 	contour = grid.bathy
 	contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
 	
-	# Get subregion.
-	#xlims = [100, -100]; ylims = [0, -100]
-	#data1 = data1[...,ylims[0]:ylims[1], xlims[0]:xlims[1]]
-	#data2 = data2[...,ylims[0]:ylims[1], xlims[0]:xlims[1]]
-	#X = X[xlims[0]:xlims[1]]; Y = Y[ylims[0]:ylims[1]]
-	#contour = contour[ylims[0]:ylims[1], xlims[0]:xlims[1]]
+	INTERVAL = True
+	if INTERVAL:
+		ts = 0; te = 10		
+		data1 = data1[ts:te, level]; data2 = data2[ts:te, level]; T = T[ts:te, level]
+	else:
+		data1 = data1[:, level]; data2 = data2[:, level]; T = T[:, level]
 
-	# Sample rate & level
-	d = 6
+
+	SUBR = True
+	if SUBR:
+		#lats = [-75, -71]; lons = [240, 270]
+		lats = [-76, -70.5]; lons = [245, 260]#[230, 270]#
+		latsi = grid.getIndexFromLat(lats); lonsi = grid.getIndexFromLon(lons)
+		ThermZ = tools.getSubregionXY(ThermZ, latsi, lonsi)
+		bathy = tools.getSubregionXY(bathy, latsi, lonsi)
+		X = grid.Xsubr1D(lons)
+		Y = grid.Ysubr1D(lats)
+
+
+
+	data1 = tools.interp(data1, 'u'); data2 = tools.interp(data2, 'v')
+
+	data1 = ptt.maskBathyXY(data1, grid, level, timeDep=True)
+	data2 = ptt.maskBathyXY(data2, grid, level, timeDep=True)
 
 	title = '(u, v) & bathymetry; Z = ' + str(Z[level]) + ' m'
 
 	data1 = data1[..., ::d, ::d]; data2 = data2[..., ::d, ::d]
 	Xd = X[::d]; Yd = Y[::d]
+	Td = T[..., ::d, ::d]; Td[:,-1,-1] = cvmin; Td[:,-1,-2] = cvmax
 	
 	#pt.plot1by2([data1[0], data2[0]]); quit()
 
-	pt.animate1by1quiver(data1, data2, Xd, Yd, contour=contour, X=X, Y=Y, contourf=False, text_data=text_data, title=title)
+	pt.animate1by1quiver(data1, data2, Xd, Yd, C=Td, contour=contour, X=X, Y=Y, contourf=False, text_data=text_data, title=title, figsize=(7,4))
 
 #==
 
@@ -856,7 +882,7 @@ if TEST_getSubregionYZ:
 
 #==
 
-TEST_getSubregionXY = False
+TEST_getSubregiondiXY = False
 if TEST_getSubregionXY:
 
 	ti = -1
@@ -871,18 +897,62 @@ if TEST_getSubregionXY:
 
 #==
 
+TEST_btpcStrKN = False
+if TEST_btpcStrKN:
+
+	import utils 
+	from grid_KN import Grid as Grid_KN
+	
+	path = '/home/michai/Documents/data/PAS_851/run/'
+	grid = Grid_PAS(path)
+	u = np.load(path+'umean_PAS851.npy')
+	
+	#path = '/home/michai/Documents/data/MCS_038/run/'
+	#grid = Grid(path)
+
+	gridK = Grid_KN(path)
+
+	#u = readVariable('UVEL', path, file_format='nc', meta=False)[-10:]
+	#u = np.mean(u, axis=0)
+
+	X = grid.XC[1,:]
+	Y = grid.YC[:,1]
+	Z = grid.RC.squeeze()
+
+	u = ptt.maskBathyAll(u, grid, timeDep=False)
+
+	#T = tools.barotropicStreamfunction(u, grid)
+	T = - 1.e-6 * tools.barotropicStreamfunction(u, grid, timeDep=False, norm=False)
+	TK = utils.barotropic_streamfunction(u, gridK)
+
+	T = ptt.maskBathyXY(T, grid, 0, timeDep=False)
+
+	pt.plot1by2([T, TK], mesh=True)
+	quit()
+
+#==
+
 TEST_bathy = False
 if TEST_bathy:
-	bathy = grid.bathy
-	draft = grid.draft
+
+	from grid_KN import Grid as Grid_KN
+ 
+	path = '/home/michai/Documents/data/MCS_038/run/'
+	gridP = Grid_PAS(path)
+	grid = Grid(path)
+	gridK = Grid_KN(path)
+
+	#plt.plot(gridP.RF.squeeze()); plt.plot(grid.RF.squeeze()); plt.show(); quit()
+
+	bathy = grid.bathy; draft = grid.draft
+	bathyP = gridP.bathy; draftP = gridP.draft
+	bathyK = gridK.bathy; draftK = gridK.draft
 
 	landC = grid.landC
 	iceC = grid.iceC
-	
-	
-	pt.plot1by2([draft, grid_KN.draft], titles=['Bathymetry', 'KN Bathymetry'])
-	
-	pt.plot1by2([bathy, grid_KN.bathy], titles=['Draft', 'KN Draft'])
+
+	pt.plot1by2([bathyP, bathyK-bathyP], titles=['Bathymetry', 'KN Bathymetry'], mesh=True)
+	pt.plot1by2([draftP, draftK-draftP] , titles=['Draft', 'KN Draft'], mesh=True)
 
 	quit()
 	

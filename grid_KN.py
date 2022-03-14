@@ -75,19 +75,30 @@ class Grid:
         else:
             self.lon_2d = rdmds(path+'XC')
             self.lat_2d = rdmds(path+'YC')
-            self.lon_corners_2d = rdmds(path+'XG')
-            self.lat_corners_2d = rdmds(path+'YG')
+
             self.dx_s = rdmds(path+'DXG')
             self.dy_w = rdmds(path+'DYG')
             self.dA = rdmds(path+'RAC')
             # Remove singleton dimensions from 1D depth variables
             self.z = rdmds(path+'RC').squeeze()
-            self.z_edges = rdmds(path+'RF').squeeze()
             self.dz = rdmds(path+'DRF').squeeze()
-            self.dz_t = rdmds(path+'DRC').squeeze()
             self.hfac = rdmds(path+'hFacC')
             self.hfac_w = rdmds(path+'hFacW')
             self.hfac_s = rdmds(path+'hFacS')
+
+			#####
+
+			# MH. To make compatible with PAS, edited these inputs.
+			print('Grid KN currently in state for compatibility with PAS outputs.')
+            self.lon_corners_2d = rdmds(path+'XC')#rdmds(path+'XG')
+            self.lat_corners_2d = rdmds(path+'XC')#rdmds(path+'YG')
+            self.dz_t = rdmds(path+'DRF').squeeze()#rdmds(path+'DRC').squeeze()
+			
+            #self.z_edges = rdmds(path+'RF').squeeze()
+            self.z_edges = self.z + self.dz/2
+            self.z_edges = np.append(self.z_edges, [self.z_edges[-1]-self.dz[-1]], 0)
+
+			#####
 
         # Make 1D versions of latitude and longitude arrays (only useful for regular lat-lon grids)
         if len(self.lon_2d.shape) == 2:

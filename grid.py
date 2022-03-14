@@ -56,7 +56,7 @@ class Grid:
 			draft[index] = self.RF[k,0,0] - self.DRF[k,0,0] * (1 - self.hFacC[k][index])
     		# Set remaining NaNs to zero, representing land.
 		self.draft = np.nan_to_num(draft)
-		
+
 		# Bathymetry (sum cell heights scaled by land fraction, subtract depth, subtract ice shelf contribution).
 		self.bathy = np.sum(self.DRF * (1-self.hFacC), axis=0) + self.RF[-1,] + self.draft
 

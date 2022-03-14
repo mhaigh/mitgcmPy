@@ -47,9 +47,13 @@ bed = bed.T[:, ::-1]
 
 #plt.pcolormesh(bed); plt.colorbar(); plt.show(); quit()
 
+cmap = 'jet' #'plasma'
+vmin = -1000; vmax = 0
+#vmin = -440; vmax = -100
+
 plt.figure(dpi=200)
 plt.gca().patch.set_color('.25')
-cax = plt.pcolormesh(bed, vmin=-1000, vmax=0, cmap='plasma')
+cax = plt.pcolormesh(bed, vmin=vmin, vmax=vmax, cmap=cmap)
 plt.contour(bed, levels=lvls, colors='k', linestyles='solid', linewidths=0.8)
 plt.grid()
 plt.title('Amundsen Sea bathymetry (units m)')

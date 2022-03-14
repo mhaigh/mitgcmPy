@@ -35,7 +35,7 @@ iceC = grid.iceC
 # Plot land and ice shelf.
 if True:
 
-	quit()
+
 	
 	plt.subplot(121)
 	plt.pcolormesh(draft)

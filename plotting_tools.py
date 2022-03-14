@@ -38,7 +38,6 @@ def maskBathyXY(data, grid, zi, color='grey', subregion=False, lats=[], lons=[],
 			XC = grid.XC[lats[0]:lats[1]+1, lons[0]:lons[1]+1]
 			YC = grid.YC[lats[0]:lats[1]+1, lons[0]:lons[1]+1]
 			bathy = grid.bathy[lats[0]:lats[1]+1, lons[0]:lons[1]+1]
-			
 		except ValueError:
 			print('Error: plotting_tools.maskBathyXY. If subregion set to True, both lons and lats need to be defined.')
 			
@@ -197,6 +196,23 @@ def maskDraftYZ(data, grid, color='grey', xi=10, subregion=False, lats=[], depth
 
 #==
 
+def getTextData(TIME, t_format, xloc, yloc):
+	'''Get text data for animation plots.'''
+
+	if t_format == 'month':
+		tscale_val = 86400. * 30
+		t = TIME / tscale_val
+		text = [tscale + ' ' + str(int(tt)) for tt in t]
+
+	elif t_format == 'ctime':
+		from time import ctime
+		text = [ctime(TIME[:][ti]) for ti in range(len(TIME[:]))]
+
+	text_data = {'text':text, 'xloc':xloc, 'yloc':yloc, 'fontdict':{'fontsize':14, 'color':'k'}}
+	
+	return text_data
+
+#==
 
 def setText(ax, text_data, i=None, set_invisible=False):
 	'''Utility function for setting text on axis given text_data dictionary.'''
