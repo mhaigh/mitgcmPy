@@ -47,7 +47,7 @@ bed = bed.T[:, ::-1]
 
 #plt.pcolormesh(bed); plt.colorbar(); plt.show(); quit()
 
-cmap = 'jet' #'plasma'
+cmap = 'plasma'
 vmin = -1000; vmax = 0
 #vmin = -440; vmax = -100
 

@@ -423,5 +423,39 @@ def interp(data, edge):
 
 	return data_interp
 	
+#==
+
+def get05cosWind(nx, ny):
+	'''Return default 05cos wind with unit magnitude.'''
+
+	taux = np.zeros((ny,nx));
+
+	for j in range(1,ny+1):
+		taux[j-1,:] = - np.cos(np.pi*(j-1)/(ny-1))
+
+	return taux
+
+#==
+
+
+def getShiftedWind(nx, ny, shift, d_scale=False):
+	'''Return shifted 05cos wind.'''
+
+	taux = np.zeros((ny, nx));
+
+	if d_scale:
+		d = (ny - 1 - 2*shift) / (ny - 1 + 2*shift)
+	else:
+		d = 1
+
+	for j in range(1, int(np.floor(ny/2)+1-shift)):
+		taux[j-1,:] = - d * np.cos(np.pi*(j-1)/(ny-1-2*shift))
+
+	for j in range(int(np.floor(ny/2)+1-shift), ny+1):
+		taux[j-1,:] = - np.cos(np.pi*(j-1+2*shift)/(ny-1+2*shift))
+
+	return taux
+
+
 	
 

@@ -17,7 +17,7 @@ Rho = {'fname':'stateRho', 'VAR':'RHOAnoma', 'vmin':-.2, 'vmax':.2, 'cmap':'jet'
 Theta = {'fname':'stateTheta', 'VAR':'THETA', 'vmin':-1.8, 'vmax':1, 'cmap':'coolwarm', 'title':'THETA (deg. C)','TrefN':TrefN}
 Salt = {'fname':'stateSalt', 'VAR':'SALT', 'vmin':33.5, 'vmax':34.5, 'cmap':'jet', 'title':'Salinity (g/kg)', 'SrefN':SrefN}
 Uvel = {'fname':'stateUvel', 'VAR':'UVEL', 'vmin':-0.2, 'vmax':0.2, 'cmap':'coolwarm', 'title':'U (m/s)'}
-Vvel = {'fname':'stateVvel', 'VAR':'VVEL', 'vmin':-0.001, 'vmax':0.001, 'cmap':'coolwarm', 'title':'V (m/s)'}
+Vvel = {'fname':'stateVvel', 'VAR':'VVEL', 'vmin':-0.01, 'vmax':0.01, 'cmap':'coolwarm', 'title':'V (m/s)'}
 Wvel = {'fname':'stateWvel', 'VAR':'WVEL', 'vmin':-1.e-5, 'vmax':1.e-5, 'cmap':'coolwarm', 'title':'W (m/s)'}
 
 varDict={'ETAN':Eta, 'RHOAnoma':Rho, 'THETA':Theta, 'SALT':Salt, 'UVEL':Uvel, 'VVEL':Vvel, 'WVEL':Wvel}
