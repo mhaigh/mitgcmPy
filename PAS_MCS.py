@@ -67,16 +67,16 @@ ASF = False
 if ASF:
 
 	# Window 1
-	lat1 = [-75, -64]; lon1 = 249; depth1 = [0, -1000]
+	lat1 = [-75, -69]; lon1 = 249; depth1 = [0, -1000]
 
 	# Window 2
-	lat2 = [-75, -64]; lon2 = 250; depth2 = depth1
+	lat2 = [-75, -69]; lon2 = 250; depth2 = depth1
 	
 	# Window3
-	lat3 = [-76, -64]; lon3 = 255; depth3 = depth1
+	lat3 = [-76, -69]; lon3 = 255; depth3 = depth1
 
 	# Window4
-	lat4 = [-76, -64]; lon4 = 257; depth4 = depth1
+	lat4 = [-76, -69]; lon4 = 257; depth4 = depth1
 
 	lats = [lat1, lat2, lat3, lat4]
 	lons = [lon1, lon2, lon3, lon4]
@@ -86,9 +86,7 @@ if ASF:
 
 	path = '/home/michai/Documents/data/PAS_851/run/'
 	grid = Grid_PAS(path)
-	T = np.load(path+'Smean_PAS851.npy')
-
-	pt.plot1by1(T[0], vmin=33.4, vmax=34., mesh=True); quit()
+	T = np.load(path+'Tmean_PAS851.npy')
 
 	X = grid.XC#[1,:]
 	Y = grid.YC#[:,1]
@@ -120,7 +118,7 @@ if ASF:
 		# Mask and plot
 		T1 = ptt.maskBathyYZ(T1, grid, xi=lonsi, subregion=True, lats=latsi, depths=depthsi)
 		T1 = ptt.maskDraftYZ(T1, grid, xi=lonsi, subregion=True, lats=latsi, depths=depthsi)
-		pt.plot1by1(T1, X=Ysubr, Y=Zsubr, title=title, xlabel=xlabel, ylabel=ylabel, mesh=True)#, vmin=vmin, vmax=vmax)
+		pt.plot1by1(T1, X=Ysubr, Y=Zsubr, title=title, xlabel=xlabel, ylabel=ylabel, mesh=False)#, vmin=vmin, vmax=vmax)
 	
 	#==
 
@@ -289,7 +287,7 @@ if quiver:
 	else:
 
 		#path = '/home/michai/Documents/data/PAS_666/run/'
-		path = '/home/michai/Documents/data/MCS_036/run/'
+		path = '/home/michai/Documents/data/PISOMIP_004/run/'
 		ts = -1
 		
 		grid = Grid(path)
@@ -658,11 +656,12 @@ if animateUVT:
 			v[ti] = ptt.maskBathyXY(v[ti], grid, level, timeDep=False, subregion=True, lats=latsi, lons=lonsi)
 			T[ti] = ptt.maskBathyXY(T[ti], grid, level, timeDep=False, subregion=True, lats=latsi, lons=lonsi)
 
+	# IF MCS
 	else:
 
 		ts = 0; te = 112
 
-		path = '/home/michai/Documents/data/PISOMIP_003/run/'
+		path = '/home/michai/Documents/data/MCS_104/run/'
 		grid = Grid(path)
 		contour = grid.bathy
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
@@ -713,7 +712,7 @@ if animateUVT:
 #==
 
 # Animate velocity shear between two levels
-animateUVshear = True
+animateUVshear = False
 if animateUVshear:
 
 	PAS = False
@@ -726,7 +725,7 @@ if animateUVshear:
 
 		ts = 0; te = 112
 
-		path = '/home/michai/Documents/data/MCS_085/run/'
+		path = '/home/michai/Documents/data/MCS_084/run/'
 		grid = Grid(path)
 		contour = grid.bathy
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
@@ -756,6 +755,9 @@ if animateUVshear:
 		# Sample rate
 		d = 6
 
+		qlim = 0.2
+		u = tools.boundData(u, -qlim, qlim, 0.999); v = tools.boundData(v, -qlim, qlim, 0.999)
+
 		for ti in range(u.shape[0]):
 			u[ti] = ptt.maskBathyXY(u[ti], grid, level2, timeDep=False)
 			v[ti] = ptt.maskBathyXY(v[ti], grid, level2, timeDep=False)
@@ -764,11 +766,11 @@ if animateUVshear:
 
 	u = u[..., ::d, ::d]; v = v[..., ::d, ::d]
 	Xd = X[::d]; Yd = Y[::d]
-	u = tools.boundData(u, -0.1, 0.1, 0.999); v = tools.boundData(v, -0.1, 0.1, 0.999)
+
 	
 	cmap = 'YlGn' #'plasma'
 
-	pt.animate1by1quiver(u, v, Xd, Yd, contour=contour, X=X, Y=Y, cmap=cmap, contourf=False, vmin=vmin, vmax=vmax, text_data=text_data, title=title, figsize=(7,4), dpi=300)
+	pt.animate1by1quiver(u, v, Xd, Yd, qlim=qlim, contour=contour, X=X, Y=Y, cmap=cmap, contourf=False, vmin=vmin, vmax=vmax, text_data=text_data, title=title, figsize=(7,4), dpi=300)
 
 	quit()
 

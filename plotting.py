@@ -397,7 +397,7 @@ def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh
 			plt.contour(X, Y, contour, colors='k', linestyles='solid', linewidths=0.4)
 
 		def animate(i):
-			#ax.clear()
+			ax.clear()
 			#plt.grid()
 			#cax.set_data(data[i].flatten())			
 			if text_data is not None:
@@ -448,6 +448,8 @@ def animateLine(data, X=None, figsize=(5,4), title='', labels=None, fontsize=14,
 	if text_data is not None:
 		setText(ax, text_data, i=0, set_invisible=True)
 
+	if X is not None:
+		plt.xlim(X[0], X[-1])
 	plt.ylim(vmin, vmax)
 
 	if labels is not None:
@@ -479,7 +481,7 @@ def animateLine(data, X=None, figsize=(5,4), title='', labels=None, fontsize=14,
 
 #==
 
-def animate1by1quiver(u, v, Xd, Yd, C=None, ccmap='coolwarm', contour=None, X=None, Y=None, cmap='viridis', vmin=None, vmax=None, contourf=True, grid=True, figsize=(5,4), title='', fontsize=14, xlabel='', ylabel='', save=True, outpath='', outname='animate1by1.mp4', show=False, dpi=200, fps=8, bitrate=-1, text_data=None):
+def animate1by1quiver(u, v, Xd, Yd, qlim=0.1, C=None, ccmap='coolwarm', contour=None, X=None, Y=None, cmap='viridis', vmin=None, vmax=None, contourf=True, grid=True, figsize=(5,4), title='', fontsize=14, xlabel='', ylabel='', save=True, outpath='', outname='animate1by1.mp4', show=False, dpi=200, fps=8, bitrate=-1, text_data=None):
 
 	# Make animation
 	fig = plt.figure(figsize=figsize, dpi=dpi)
@@ -507,7 +509,7 @@ def animate1by1quiver(u, v, Xd, Yd, C=None, ccmap='coolwarm', contour=None, X=No
 		plt.colorbar(Q, ax=ax)
 	else:
 		Q = ax.quiver(Xd, Yd, u[0], v[0])
-	ax.quiverkey(Q, 0.1, 0.1, .2, '0.1 m/s', labelpos='E', coordinates='axes')
+	ax.quiverkey(Q, 0.1, 0.1, qlim, str(qlim) + ' m/s', labelpos='E', coordinates='axes')
 
 	if text_data is not None:
 		setText(ax, text_data, i=0)

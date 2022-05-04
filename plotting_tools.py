@@ -155,6 +155,37 @@ def maskBathyYZ_allX(data, grid, timeDep=False):
 	
 #==
 
+
+def maskDraftXY(data, grid, zi, color='grey', subregion=False, lats=[], lons=[], timeDep=False):
+	'''Function to be called before plotting to mask the draft in (X,Y)-slice.'''
+		
+	# If masking in subregion, grid needs to account for it.
+	if subregion == True:
+		try:
+			XC = grid.XC[lats[0]:lats[1]+1, lons[0]:lons[1]+1]
+			YC = grid.YC[lats[0]:lats[1]+1, lons[0]:lons[1]+1]
+			bathy = grid.bathy[lats[0]:lats[1]+1, lons[0]:lons[1]+1]
+		except ValueError:
+			print('Error: plotting_tools.maskBathyXY. If subregion set to True, both lons and lats need to be defined.')
+			
+	else:
+		XC = grid.XC
+		YC = grid.YC
+		draft = grid.draft
+	
+	# The depth of the slice.
+	z = grid.RC.squeeze()[zi]
+
+	# If data is time-dependent, assume time dimension is first and tile draft and z arrays.
+	if timeDep:
+		NT = data.shape[0]
+		z = np.tile(z, (NT, 1, 1))
+		draft = np.tile(draft, (NT, 1, 1))
+		
+	return np.ma.array(data, mask=z>draft)
+
+#==
+
 def maskDraftYZ(data, grid, color='grey', xi=10, subregion=False, lats=[], depths=[], timeDep=False):
 	'''Function to be called before plotting to mask the ice shelf draft.
 	If subregion is True, lats and depths lets grid know what the subregion is.'''
@@ -210,6 +241,9 @@ def getTextData(TIME, t_format, xloc, yloc, color='k', short_ctime=True):
 		
 		if short_ctime:
 			text = [t[4:8] + t[-4:] for t in text]
+
+	elif t_format == 'X':
+		text = ['x = ' + str(time_/1000) + ' km' for time_ in TIME]
 
 	text_data = {'text':text, 'xloc':xloc, 'yloc':yloc, 'fontdict':{'fontsize':14, 'color':color}}
 	
