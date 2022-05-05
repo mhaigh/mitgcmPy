@@ -310,7 +310,7 @@ if TEST_depthAverage:
 
 #==
 
-TEST_animate = False
+TEST_animate = True
 if TEST_animate:
 
 	#path = '/home/michai/Documents/data/MCS_002/run/'
@@ -326,11 +326,11 @@ if TEST_animate:
 
 	#VAR = 'ETAN'
 	#VAR = 'RHOAnoma'
-	#VAR = 'THETA'
+	VAR = 'THETA'
 	#VAR = 'PHIHYD'
 	#VAR = 'DFrE_TH';
 	#VAR = 'WVELTH'#','UVELTH','VVELTH','WVELTH', 'TOTTTEND'
-	VAR = 'SALT'	
+	#VAR = 'SALT'	
 	#VAR = 'UVEL'	
 	#VAR = 'VVEL'
 	#VAR = 'WVEL'
@@ -339,6 +339,8 @@ if TEST_animate:
 	#vmin = 33.32; vmax = 34.5
 	data = readVariable(VAR, path, file_format='nc', meta=True)
 	print(data)
+
+	plt.contourf(-grid.bathy); plt.colorbar(); plt.show(); quit()
 
 	text_data = ptt.getTextData(data.variables['TIME'][:], 'month', X[1], Y[-2], color='w')
 	data = data[VAR][:]
@@ -386,7 +388,7 @@ if TEST_animate:
 TEST_animateX = False
 if TEST_animateX:
 
-	path = '/home/michai/Documents/data/MCS_105/run/'
+	path = '/home/michai/Documents/data/PISOMIP_003/run/'
 
 	grid = Grid(path)
 	X = grid.YC[:,1]/1000.
@@ -411,7 +413,7 @@ if TEST_animateX:
 	
 	# PLOT.
 	xlabel = 'LATITUDE (km)'; ylabel = 'DEPTH (m)'
-	pt.animate1by1(data, X, Y, vmin=vmin, vmax=vmax, cmap=cmap, xl abel=xlabel, ylabel=ylabel, title=title, mesh=False, text_data=text_data)
+	pt.animate1by1(data, X, Y, vmin=vmin, vmax=vmax, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=False, text_data=text_data)
 
 	quit()
 
@@ -799,7 +801,7 @@ if animateUbots:
 	path_root = '/home/michai/Documents/data/'
 
 	# These are cases with CS walls.	
-	paths = [path_root+'MCS_105/run/', path_root+'MCS_106/run/', path_root+'MCS_105/run/', path_root+'MCS_106/run/']
+	paths = [path_root+'PISOMIP_003/run/', path_root+'PISOMIP_002/run/', path_root+'MCS_105/run/', path_root+'MCS_106/run/']
 	labels = ['wind16 rel300 x = 0', 'wind16 rel300 x = 120', 'wind16 rel200 x = 0', 'wind16 rel200 x = 120']
 	
 	grid = Grid(paths[0])

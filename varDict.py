@@ -27,8 +27,8 @@ varDict['TOTTTEND'] = {'fname':'stateTheta', 'vmin':-1.e-3, 'vmax':1.e-3, 'cmap'
 varDict['UVELTH'] = {'fname':'stateTheta', 'vmin':-1.e-1, 'vmax':1.e-1, 'cmap':'coolwarm', 'title':'Pot. Temp. U adv'}
 varDict['VVELTH'] = {'fname':'stateTheta', 'vmin':-1.e-2, 'vmax':1.e-2, 'cmap':'coolwarm', 'title':'Pot. Temp. V adv'}
 varDict['WVELTH'] = {'fname':'stateTheta', 'vmin':-1.e-5, 'vmax':1.e-5, 'cmap':'coolwarm', 'title':'Pot. Temp. W adv'}
-varDict['PHIHYD'] = {'fname':'stateTheta', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Hydr. pressure pot. anom.'}
-
+varDict['PHIHYD'] = {'fname':'state2D', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Hydr. pressure pot. anom.'}
+varDict['PHIBOT'] = {'fname':'state2D', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Bottom hydr. pressure pot. anom.'}
 
 #==
 

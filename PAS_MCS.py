@@ -63,20 +63,20 @@ if Bathy:
 #==
 
 # (Y,Z)-plots of Theta near continental shelf slope.
-ASF = False
+ASF = True
 if ASF:
 
 	# Window 1
-	lat1 = [-75, -69]; lon1 = 249; depth1 = [0, -1000]
+	lat1 = [-75, -69]; lon1 = 233; depth1 = [0, -1000]
 
 	# Window 2
-	lat2 = [-75, -69]; lon2 = 250; depth2 = depth1
+	lat2 = [-75, -69]; lon2 = 240; depth2 = depth1
 	
 	# Window3
-	lat3 = [-76, -69]; lon3 = 255; depth3 = depth1
+	lat3 = [-75, -69]; lon3 = 245; depth3 = depth1
 
 	# Window4
-	lat4 = [-76, -69]; lon4 = 257; depth4 = depth1
+	lat4 = [-75, -69]; lon4 = 250; depth4 = depth1
 
 	lats = [lat1, lat2, lat3, lat4]
 	lons = [lon1, lon2, lon3, lon4]
@@ -91,7 +91,14 @@ if ASF:
 	X = grid.XC#[1,:]
 	Y = grid.YC#[:,1]
 	Z = grid.RC.squeeze()
-	#print(X[1,1], X[1,2]); print(Y[1,1], Y[2,1]); quit()
+
+	##plt.plot(T[:20,180,20], Z[:20]); plt.xlim(33.5, 35.); plt.grid(); plt.show();
+
+	#T0 = ptt.maskBathyXY(T[0], grid, 0, timeDep=False)
+	#T0 = ptt.maskDraftXY(T0, grid, 0, timeDep=False)
+	#fig, ax = plt.subplots()
+	#plt.subplot(111); plt.gca().patch.set_color('.25')
+	#plt.pcolor(T0, vmin=33.4, vmax=34., cmap='plasma'); plt.colorbar(); plt.show(); quit()
 
 	vmin, vmax, cmap, title = getPlottingVars('THETA')
 	xlabel = 'LAT (deg.)'; ylabel = 'DEPTH (m)'
@@ -486,11 +493,11 @@ if brclnc:
 #==
 
 # Animate velocity vectors and temperature. Each frame is different level.
-animateUVTdepth = False
+animateUVTdepth = True
 if animateUVTdepth:
 
-	PAS = False
-	SUBR = False
+	PAS = True
+	SUBR = True
 
 	if PAS:
 		path = '/home/michai/Documents/data/PAS_851/run/'
@@ -509,6 +516,11 @@ if animateUVTdepth:
 		v = np.load(path+'vmean_PAS851.npy')
 		u = tools.interp(u, 'u'); v = tools.interp(v, 'v')
 
+		BOT = True
+		if BOT:
+			ubot = tools.bottom(u, grid, 'h', timeDep=False)
+			vbot = tools.bottom(v, grid, 'h', timeDep=False)
+
 		COLOUR = 'T'
 		if COLOUR == 'T': 
 			# Load temperature
@@ -524,7 +536,7 @@ if animateUVTdepth:
 
 		T = tools.boundData(T, cvmin, cvmax, 0.9999)
 		# Sample rate
-		d = 8
+		d = 4
 
 	#==
 
@@ -533,7 +545,7 @@ if animateUVTdepth:
 		#ts = 20
 		ts = 60; te = 120
 
-		path = '/home/michai/Documents/data/MCS_084/run/'
+		path = '/home/michai/Documents/data/PISOMIP_002/run/'
 		grid = Grid(path)
 		contour = grid.bathy; ctitle = 'bathy'
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
@@ -570,6 +582,9 @@ if animateUVTdepth:
 		T = tools.getSubregionXY(T, latsi, lonsi)
 		contour = tools.getSubregionXY(contour, latsi, lonsi); 
 		X = grid.Xsubr1D(lons); Y = grid.Ysubr1D(lats)
+		if BOT:
+			ubot = tools.getSubregionXY(ubot, latsi, lonsi)
+			vbot = tools.getSubregionXY(vbot, latsi, lonsi)
 
 	title = '(u, v); S; ' + ctitle
 	#title = '(u, v); T; bathy'
@@ -577,6 +592,7 @@ if animateUVTdepth:
 	outpath = '/home/michai/Documents/Python/mitgcmPy/images/testingMov/'
 
 	u = u[..., ::d, ::d]; v = v[..., ::d, ::d]; Td = T[..., ::d, ::d]
+
 	Xd = X[::d]; Yd = Y[::d]
 	#u[:,-1,-1] = 10.; v[:,-1,-1] = 10.;
 	Td[:,-1,-1] = cvmin; Td[:,-1,-2] = cvmax
@@ -586,7 +602,10 @@ if animateUVTdepth:
 	#	outname = f'{zi:03}'
 	#	text_data = {'text':'Z = ' + str(Z[zi]) + ' m', 'xloc':X[1], 'yloc':Y[1], 'fontdict':{'fontsize':14, 'color':'k'}}
 		
-		#pt.quiver1by1(u[zi], v[zi], Xd, Yd, C=Td[zi], ccmap=ccmap, cvmin=cvmin, cvmax=cvmax, contour=contour, X=X, Y=Y, contourf=False, vmin=vmin, vmax=vmax, text_data=text_data, title=title, show=False, save=True, outname=outname, outpath=outpath, figsize=(7,4))
+	if BOT:
+		ubot = ubot[..., ::d, ::d]; vbot = vbot[..., ::d, ::d]
+		pt.quiver1by1(ubot, vbot, Xd, Yd, contour=contour, X=X, Y=Y, contourf=False, vmin=vmin, vmax=vmax, show=True, figsize=(7,4))
+		quit()
 	
 	cmap = 'YlGn'#'plasma'
 	# Animating in normal way doesn't work.	
@@ -598,10 +617,10 @@ if animateUVTdepth:
 #==
 
 # Animate velocity vectors and temperature at fixed level.
-animateUVT = True
+animateUVT = False
 if animateUVT:
 
-	PAS = False
+	PAS = True
 	
 	if PAS:
 
@@ -614,8 +633,9 @@ if animateUVT:
 
 		vmin = -800; vmax = -100
 
-		level = 0
-		z = '0' # '257', '355'
+		level = 16
+		#print(grid.RC.squeeze()[level]); quit()
+		z = '455' # '257', '355'
 		
 		ts = 107; te = 502
 	
@@ -656,17 +676,18 @@ if animateUVT:
 			v[ti] = ptt.maskBathyXY(v[ti], grid, level, timeDep=False, subregion=True, lats=latsi, lons=lonsi)
 			T[ti] = ptt.maskBathyXY(T[ti], grid, level, timeDep=False, subregion=True, lats=latsi, lons=lonsi)
 
+
 	# IF MCS
 	else:
 
 		ts = 0; te = 112
 
-		path = '/home/michai/Documents/data/MCS_104/run/'
+		path = '/home/michai/Documents/data/PISOMIP_002/run/'
 		grid = Grid(path)
 		contour = grid.bathy
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
 
-		depth = -10; level = grid.getIndexFromDepth(depth)
+		depth = -490; level = grid.getIndexFromDepth(depth)
 
 		vmin = -1000; vmax = -300
 		X = grid.XC[1,:]/1000.
@@ -704,6 +725,11 @@ if animateUVT:
 	u = tools.boundData(u, -0.1, 0.1, 0.999); v = tools.boundData(v, -0.1, 0.1, 0.999)
 	
 	cmap = 'YlGn' #'plasma'
+
+
+	#plt.pcolor(X, Y, T[0], vmin=33.7, vmax=34.3, cmap='plasma'); plt.colorbar();
+	#plt.quiver(Xd, Yd, u[0], v[0]) 
+	#plt.show(); quit()
 
 	pt.animate1by1quiver(u, v, Xd, Yd, C=Td, contour=contour, X=X, Y=Y, cmap=cmap, contourf=False, vmin=vmin, vmax=vmax, text_data=text_data, title=title, figsize=(7,4), dpi=300)
 

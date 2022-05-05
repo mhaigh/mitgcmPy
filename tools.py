@@ -345,7 +345,7 @@ def bottom(data, grid, cellPos, timeDep=True):
 		hFac = grid.hFacW
 	elif cellPos == 'v':
 		hFac = grid.hFacS
-	elif cellPoss == 'h':
+	elif cellPos == 'h':
 		hFac = grid.hFacC
 	else:
 		print('Error: tools.bottom. Must provide valid cellPos.')
