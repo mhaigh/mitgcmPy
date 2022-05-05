@@ -24,6 +24,39 @@ import time
 
 #==========================================================
 
+FORMSTRESS = True
+if FORMSTRESS:
+
+	# account for SSH in new Pb calc.
+
+	path = '/home/michai/Documents/data/PAS_8512/run/'
+	grid = Grid_PAS(path)
+	Pb = np.load(path+'Pbmean_PAS851.npy')
+
+	lats = [-76, -71.5]; lons = [245, 260]#[230, 270]#
+	latsi = grid.getIndexFromLat(lats); lonsi = grid.getIndexFromLon(lons)
+
+	Pb = tools.getSubregionXY(Pb, latsi, lonsi)
+	H = - grid.bathy
+	Hx = tools.ddx(H, grid.DXG)
+	Hx = tools.getSubregionXY(Hx, latsi, lonsi)
+
+	Pb = ptt.maskBathyXY(Pb, grid, 0, timeDep=False, subregion=True, lats=latsi, lons=lonsi)
+
+	vmin = 0.2e7; vmax = 1.e7
+	Pb = tools.boundData(Pb, vmin, vmax, scale=0.999)
+
+	pt.plot1by1(Pb, vmin=vmin, vmax=vmax, mesh=True)
+
+	FS = Hx*Pb
+	print(np.sum(FS))
+	vmin = -1.e5; vmax = -vmin
+	pt.plot1by1(FS, vmin=vmin, vmax=vmax, mesh=True)
+
+	quit()
+	
+	
+#==
 
 Bathy = False
 if Bathy:
