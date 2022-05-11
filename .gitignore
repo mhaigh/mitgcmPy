@@ -1,4 +1,5 @@
 venv/
+*.bin
 *.pbs
 *.pdf
 *.jpg

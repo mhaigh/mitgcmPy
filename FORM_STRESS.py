@@ -32,7 +32,7 @@ path = path_root + run
 grid = Grid_PAS(path)
 depth = - grid.bathy
 SSH = readVariable('ETAN', path, file_format='nc', meta=False)
-depth += SSH
+depth = depth + SSH
 
 lats = [-76, -70.5]; lons = [245, 260]#[230, 270]#
 latsi = grid.getIndexFromLat(lats); lonsi = grid.getIndexFromLon(lons)

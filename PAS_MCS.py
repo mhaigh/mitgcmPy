@@ -31,27 +31,32 @@ if FORMSTRESS:
 
 	path = '/home/michai/Documents/data/PAS_8512/run/'
 	grid = Grid_PAS(path)
-	Pb = np.load(path+'Pbmean_PAS851.npy')
+	Pb = np.load(path+'Pb_ETAN_mean_PAS851.npy')
 
 	lats = [-76, -71.5]; lons = [245, 260]#[230, 270]#
 	latsi = grid.getIndexFromLat(lats); lonsi = grid.getIndexFromLon(lons)
+	X = grid.Xsubr1D(lons)
+	Y = grid.Ysubr1D(lats)
 
 	Pb = tools.getSubregionXY(Pb, latsi, lonsi)
 	H = - grid.bathy
 	Hx = tools.ddx(H, grid.DXG)
+	Hy = tools.ddy(H, grid.DYG)
 	Hx = tools.getSubregionXY(Hx, latsi, lonsi)
 
 	Pb = ptt.maskBathyXY(Pb, grid, 0, timeDep=False, subregion=True, lats=latsi, lons=lonsi)
+	Hx = ptt.maskBathyXY(Hx, grid, 0, timeDep=False, subregion=True, lats=latsi, lons=lonsi)
 
 	vmin = 0.2e7; vmax = 1.e7
-	Pb = tools.boundData(Pb, vmin, vmax, scale=0.999)
+	Pb = tools.boundData(Pb, vmin, vmax, scale=0.9999)
 
-	pt.plot1by1(Pb, vmin=vmin, vmax=vmax, mesh=True)
-
+	pt.plot1by1(Pb, X=X, Y=Y, vmin=vmin, vmax=vmax, mesh=True, title='Bottom pressure')
+	pt.plot1by1(Hx, X=X, Y=Y, mesh=True, title='Hx', vmin=-0.01, vmax=0.01)
+	#pt.plot1by1(H, mesh=True, title='H')
 	FS = Hx*Pb
 	print(np.sum(FS))
-	vmin = -1.e5; vmax = -vmin
-	pt.plot1by1(FS, vmin=vmin, vmax=vmax, mesh=True)
+	vmin = -2e5; vmax = -vmin
+	pt.plot1by1(FS, X=X, Y=Y, vmin=vmin, vmax=vmax, mesh=True, title='TFS')
 
 	quit()
 	
@@ -96,7 +101,7 @@ if Bathy:
 #==
 
 # (Y,Z)-plots of Theta near continental shelf slope.
-ASF = True
+ASF = False
 if ASF:
 
 	# Window 1
@@ -236,7 +241,7 @@ if thetaHeight:
 	else:
 
 
-		exp = 'MCS_085'
+		exp = 'MCS_111'
 		path = '/home/michai/Documents/data/'+exp+'/run/'
 		grid = Grid(path)
 		X = grid.XC[1,:]/1000.
@@ -252,10 +257,9 @@ if thetaHeight:
 			T = T['THETA'][ts:]
 
 			# Get z-indices of level with Theta closest to THERM.
-			Tz = np.argmin(np.abs(T-THERM),axis=1)
-			ThermZ = Z[Tz]
-			ThermZ = np.where(ThermZ<bathy, -1000, ThermZ)
+			ThermZ = tools.getIsothermHeight(T, THERM, grid, interp=True)
 			ThermZ = ptt.maskBathyXY(ThermZ, grid, 0, timeDep=True)
+
 			text_data = ptt.getTextData(TIME, 'month', X[1], Y[1])
 
 
@@ -269,7 +273,7 @@ if thetaHeight:
 
 		title = exp + ' ' + str(THERM) + ' deg. isotherm height'
 	
-		vmin = -600; vmax = -400	
+		vmin = -600; vmax = -300	
 		#vmin = -1000; vmax = -400
 		#vmin = None; vmax = None
 		xlabel = 'LON (km)'; ylabel = 'LAT (km)'
@@ -282,7 +286,7 @@ if thetaHeight:
 	cmap = 'jet'
 	
 	if ANIM:
-		pt.animate1by1(ThermZ, X, Y, vmin=vmin, vmax=vmax, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=False, outname='animate1by1Surf.mp4', text_data=text_data)
+		pt.animate1by1(ThermZ, X, Y, vmin=vmin, vmax=vmax, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=True, outname='animate1by1Surf.mp4', text_data=text_data)
 	
 	else:
 		pt.plot1by1(ThermZ, X=X, Y=Y, mesh=True, title=title, vmin=vmin, vmax=vmax, cmap='jet', xlabel=xlabel, ylabel=ylabel); quit()#
@@ -526,11 +530,12 @@ if brclnc:
 #==
 
 # Animate velocity vectors and temperature. Each frame is different level.
-animateUVTdepth = True
+animateUVTdepth = False
 if animateUVTdepth:
 
-	PAS = True
+	PAS = False
 	SUBR = True
+	BOT = False
 
 	if PAS:
 		path = '/home/michai/Documents/data/PAS_851/run/'
@@ -549,7 +554,6 @@ if animateUVTdepth:
 		v = np.load(path+'vmean_PAS851.npy')
 		u = tools.interp(u, 'u'); v = tools.interp(v, 'v')
 
-		BOT = True
 		if BOT:
 			ubot = tools.bottom(u, grid, 'h', timeDep=False)
 			vbot = tools.bottom(v, grid, 'h', timeDep=False)
@@ -578,7 +582,7 @@ if animateUVTdepth:
 		#ts = 20
 		ts = 60; te = 120
 
-		path = '/home/michai/Documents/data/PISOMIP_002/run/'
+		path = '/home/michai/Documents/data/MCS_110/run/'
 		grid = Grid(path)
 		contour = grid.bathy; ctitle = 'bathy'
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
@@ -653,7 +657,7 @@ if animateUVTdepth:
 animateUVT = False
 if animateUVT:
 
-	PAS = True
+	PAS = False
 	
 	if PAS:
 
@@ -713,9 +717,9 @@ if animateUVT:
 	# IF MCS
 	else:
 
-		ts = 0; te = 112
+		ts = 0; te = -1
 
-		path = '/home/michai/Documents/data/PISOMIP_002/run/'
+		path = '/home/michai/Documents/data/MCS_113/run/'
 		grid = Grid(path)
 		contour = grid.bathy
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
@@ -784,7 +788,7 @@ if animateUVshear:
 
 		ts = 0; te = 112
 
-		path = '/home/michai/Documents/data/MCS_084/run/'
+		path = '/home/michai/Documents/data/MCS_113/run/'
 		grid = Grid(path)
 		contour = grid.bathy
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
@@ -1119,7 +1123,7 @@ if T_transport:
 #==
 
 
-PAS_WIND = False
+PAS_WIND = True
 if PAS_WIND:
 
 	path = '/home/michai/Documents/data/PAS_8512/run/'
@@ -1140,6 +1144,9 @@ if PAS_WIND:
 	# Load time-mean velocities
 	uw = np.load(path+'uwindmean_PAS851.npy')
 	vw = np.load(path+'vwindmean_PAS851.npy')
+
+	#uw = np.load(path+'tauxmean_PAS851.npy')
+	#vw = np.load(path+'tauymean_PAS851.npy')
 
 
 	SUBR = True

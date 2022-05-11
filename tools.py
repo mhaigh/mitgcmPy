@@ -456,6 +456,68 @@ def getShiftedWind(nx, ny, shift, d_scale=False):
 
 	return taux
 
+#==
+
+def getTranslatedWind(nx, ny, tr):
+	'''Return translated 05cos wind.'''
+
+	taux = np.zeros((ny,nx))
+	taux_tr = np.zeros((ny,nx))
+
+	for j in range(1,ny+1):
+		taux[j-1,:] = - np.cos(np.pi*(j-1)/(ny-1))
+
+	if tr < 0:
+		tr = - tr
+		taux_tr[tr:,] = taux[:ny-tr] 
+		taux_tr[:tr,] = taux[0]
+	else:
+		taux_tr[:ny-tr,] = taux[tr:,]
+		taux_tr[ny-tr:,] = taux[ny-1]
+
+	return taux_tr
+
+#==
+
+def getIsothermHeight(T, THERM, grid, timeDep=True, interp=True, botVal=np.nan):
+	'''Return isotherm height from given temp. data.'''
+
+	if timeDep:
+		axis = 1
+	else:
+		axis = 0
+	
+	# Get isotherm height
+	Tz = np.argmin(np.abs(T-THERM), axis=axis)
+	ThermZ = grid.RC.squeeze()[Tz]
+	ThermZ_save = ThermZ.copy()
+
+	if interp and timeDep:
+
+		Nt, Nz, Ny, Nx = T.shape	
+
+		# Heights of levels above and below
+		ThermZup = grid.RC.squeeze()[Tz-1]
+		Tz1 = Tz+1; Tz1 = np.where(Tz1>=Nz, Tz1-1, Tz)
+		ThermZdown = grid.RC.squeeze()[Tz1]
+
+		Y = [[i]*Nx for i in range(Ny)]
+		Y = [i for subX in Y for i in subX]
+		X = [[i]*Ny for i in range(Nx)]
+		X = [X[j][i] for i in range(Ny) for j in range(Nx)]
+		for ti in range(T.shape[0]):
+			THERMUP = T[ti,Tz[ti].flatten()-1,Y,X].reshape((Ny,Nx))
+			THERMDOWN = T[ti,Tz1[ti].flatten(),Y,X].reshape((Ny,Nx))
+			THERM_Tz = T[ti,Tz[ti].flatten(),Y,X].reshape((Ny,Nx))
+		
+			ThermZ[ti] = ThermZdown[ti] + (ThermZup[ti]-ThermZdown[ti]) * (THERM - THERMDOWN) / (THERMUP-THERMDOWN)
+
+	# Mask where isotherm doesn't exist
+	ThermZ = np.where(ThermZ_save<grid.bathy, botVal, ThermZ)
+
+	return ThermZ
+
+
 
 
 	

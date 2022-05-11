@@ -431,11 +431,19 @@ def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh
 #==
 
 
-def animateLine(data, X=None, figsize=(5,4), title='', labels=None, fontsize=14, vmin=None, vmax=None, xlabel='', ylabel='', save=True, outpath='', outname='animateLine.mp4', show=False, dpi=200, fps=8, bitrate=-1, text_data=None):
+def animateLine(data, X=None, figsize=(5,4), title='', labels=None, fontsize=14, vmin=None, vmax=None, xlabel='', ylabel='', save=True, outpath='', outname='animateLine.mp4', show=False, dpi=200, fps=8, bitrate=-1, text_data=None, constLine=None, constLineLabel=None, constLineStyle=['solid', 'dashed', 'dotted']):
 
 	# Make animation
 	fig = plt.figure(figsize=figsize, dpi=dpi)
 	ax = fig.add_subplot()
+
+	if constLine is not None:
+		for li in range(len(constLine)):
+			if constLineLabel is not None:
+				label = constLineLabel[li]
+			else:
+				label = None
+			plt.plot(X, constLine[li], color='k', label=label, linestyle=constLineStyle[li])
 
 	lines = []
 	for di in range(len(data)):
@@ -445,6 +453,7 @@ def animateLine(data, X=None, figsize=(5,4), title='', labels=None, fontsize=14,
 			line, = ax.plot(X, data[di][0])
 		lines.append(line)
 
+	
 	if text_data is not None:
 		setText(ax, text_data, i=0, set_invisible=True)
 

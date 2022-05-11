@@ -29,6 +29,8 @@ varDict['VVELTH'] = {'fname':'stateTheta', 'vmin':-1.e-2, 'vmax':1.e-2, 'cmap':'
 varDict['WVELTH'] = {'fname':'stateTheta', 'vmin':-1.e-5, 'vmax':1.e-5, 'cmap':'coolwarm', 'title':'Pot. Temp. W adv'}
 varDict['PHIHYD'] = {'fname':'state2D', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Hydr. pressure pot. anom.'}
 varDict['PHIBOT'] = {'fname':'state2D', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Bottom hydr. pressure pot. anom.'}
+varDict['botTauX'] = {'fname':'state2D', 'vmin':-0.01, 'vmax':0.01, 'cmap':'coolwarm', 'title':'Zonal bottom stress'}
+varDict['botTauY'] = {'fname':'state2D', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Merid. bottom stress'}
 
 #==
 

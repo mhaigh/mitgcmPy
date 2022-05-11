@@ -310,13 +310,13 @@ if TEST_depthAverage:
 
 #==
 
-TEST_animate = True
+TEST_animate = False
 if TEST_animate:
 
 	#path = '/home/michai/Documents/data/MCS_002/run/'
 
-	#path = '/home/michai/Documents/data/MCS_085/run/'
-	path = '/home/michai/Documents/data/PISOMIP_003/run/'
+	path = '/home/michai/Documents/data/MCS_110/run/'
+	#path = '/home/michai/Documents/data/PISOMIP_003/run/'
 	#pathG = '/home/michai/Documents/data/MCS_018/run/'
 
 	grid = Grid(path)
@@ -340,7 +340,6 @@ if TEST_animate:
 	data = readVariable(VAR, path, file_format='nc', meta=True)
 	print(data)
 
-	plt.contourf(-grid.bathy); plt.colorbar(); plt.show(); quit()
 
 	text_data = ptt.getTextData(data.variables['TIME'][:], 'month', X[1], Y[-2], color='w')
 	data = data[VAR][:]
@@ -348,7 +347,7 @@ if TEST_animate:
 	#plt.plot(data[-1,:,-1,-1]); plt.show(); quit()
 
 	MEAN = False
-	ASYM = True
+	ASYM = False
 	if not MEAN:
 		for ti in range(data.shape[0]):
 			data[ti,] = ptt.maskBathyAll(data[ti,], grid)
@@ -388,7 +387,7 @@ if TEST_animate:
 TEST_animateX = False
 if TEST_animateX:
 
-	path = '/home/michai/Documents/data/PISOMIP_003/run/'
+	path = '/home/michai/Documents/data/MCS_103/run/'
 
 	grid = Grid(path)
 	X = grid.YC[:,1]/1000.
@@ -420,12 +419,12 @@ if TEST_animateX:
 	
 #==
 
-animateSurface = False
+animateSurface = True
 if animateSurface:
 
 	#path = '/home/michai/Documents/data/PAS_666/run/'
 	#path = '/home/michai/Documents/data/PISOMIP_112/run/'
-	path = '/home/michai/Documents/data/MCS_101/run/'
+	path = '/home/michai/Documents/data/MCS_113/run/'
 
 	grid = Grid(path)
 	#grid = Grid_PAS(path)
@@ -439,7 +438,7 @@ if animateSurface:
 	#plt.plot(bathy[:,215]); plt.plot(bathy[:, 120]); plt.show();
 	#pt.plot1by1(grid.bathy, mesh=True); quit()
 
-	VAR = 'ETAN'
+	#VAR = 'ETAN'
 	#VAR = 'RHOAnoma'
 	#VAR = 'THETA' 
 	#VAR = 'PHIHYD'
@@ -450,6 +449,10 @@ if animateSurface:
 	#VAR = 'VVEL'
 	#VAR = 'VVEL'
 	#VAR = 'WVEL'
+	VAR = 'botTauX'
+
+	flatVars = ['ETAN', 'botTauX']
+
 	vmin, vmax, cmap, title = getPlottingVars(VAR)
 
 	data = readVariable(VAR, path, file_format='nc', meta=True)
@@ -470,10 +473,12 @@ if animateSurface:
 	# DON'T CHANGE THIS. CHANGE ONE IN IF STATEMENT IF YOU WANT.
 	level = 0
 
-	if VAR != 'ETAN':
+	if VAR not in flatVars:
 		level = 0
 		data = data[:,level]
 		print('Z = ' + str(grid.RC.squeeze()[level]))
+
+	
 
 	print(data.shape)
 	#vmax = 1.; vmin = -0.4
@@ -727,8 +732,12 @@ if animateIsotherms:
 	path_root = '/home/michai/Documents/data/'
 
 	# These are cases with CS walls.	
-	paths = [path_root+'MCS_105/run/', path_root+'MCS_106/run/', path_root+'MCS_105/run/', path_root+'MCS_106/run/']
-	labels = ['wind16 rel300 x = 0', 'wind16 rel300 x = 120', 'wind16 rel200 x = 0', 'wind16 rel200 x = 120']
+	#paths = [path_root+'MCS_105/run/', path_root+'MCS_106/run/']; minus_dirs = 1
+	#labels = ['wind16 rel300 x = 0', 'wind16 rel300 x = 120', 'wind16 rel200 x = 0', 'wind16 rel200 x = 120']
+
+	# These are fully periodic sims.	
+	paths = [path_root+'MCS_101/run/', path_root+'MCS_104/run/', path_root+'MCS_102/run/', path_root+'MCS_103/run/']; minus_dirs = 1
+	labels = ['wind0 rel300', 'wind0 rel200', 'wind16 rel300', 'wind16 rel200']
 
 	grid = Grid(paths[0])
 	bathy = grid.bathy
@@ -752,41 +761,35 @@ if animateIsotherms:
 	text = [tscale_name + ' ' + str(int(tt)) for tt in t]
 	text_data = {'text':text, 'xloc':Y[1], 'yloc':vmin, 'fontdict':{'fontsize':14, 'color':'k'}}
 	
-	data_tmp = data_tmp[VAR]
+	data_tmp = data_tmp[VAR][:]
 
 	# Get z-indices of level with Theta closest to THERM.
 
-	#data_tmp = np.mean(data_tmp, axis=-1)
-
-	Tz = np.argmin(np.abs(data_tmp[...,0]-THERM),axis=1)
-	ThermZ = Z[Tz]
-	ThermZ = np.where(ThermZ<bathy[:,0], np.nan, ThermZ)
-	#ThermZ = ptt.maskBathyXY(ThermZ, grid, 0, timeDep=True)
-	data.append(ThermZ)
-
-	Tz = np.argmin(np.abs(data_tmp[...,120]-THERM),axis=1)
-	ThermZ = Z[Tz]
-	ThermZ = np.where(ThermZ<bathy[:,120], np.nan, ThermZ)
-	#ThermZ = ptt.maskBathyXY(ThermZ, grid, 0, timeDep=True)
-	data.append(ThermZ)
+	# Two zonal slices.
+	if minus_dirs == 3:	
+		ThermZ = tools.getIsothermHeight(data_tmp, THERM, grid, interp=True)
+		data.append(ThermZ[...,0]); data.append(ThermZ[...,120]);
+	elif minus_dirs == 1:
+		Nx = data_tmp.shape[-1]
+		data_tmp = np.mean(data_tmp, axis=-1)
+		data_tmp = np.tile(data_tmp, (Nx,1,1,1)).transpose([1,2,3,0])
+		ThermZ = tools.getIsothermHeight(data_tmp, THERM, grid, interp=True)
+		data.append(ThermZ[...,0])
 
 	# Now get other SSHs.
-	for di in range(len(paths)-3):
+	for di in range(len(paths)-minus_dirs):
 		data_tmp = readVariable(VAR, paths[di+1], file_format='nc', meta=False)
 
-		#data_tmp = np.mean(data_tmp, axis=-1)
-		
-		Tz = np.argmin(np.abs(data_tmp[...,0]-THERM),axis=1)
-		ThermZ = Z[Tz]
-		ThermZ = np.where(ThermZ<bathy[:,0], np.nan, ThermZ)
-		#ThermZ = ptt.maskBathyXY(ThermZ, grid, 0, timeDep=True)
-		data.append(ThermZ)
-
-		Tz = np.argmin(np.abs(data_tmp[...,120]-THERM),axis=1)
-		ThermZ = Z[Tz]
-		ThermZ = np.where(ThermZ<bathy[:,120], np.nan, ThermZ)
-		#ThermZ = ptt.maskBathyXY(ThermZ, grid, 0, timeDep=True)
-		data.append(ThermZ)
+		# Two zonal slices.
+		if minus_dirs == 3:	
+			ThermZ = tools.getIsothermHeight(data_tmp, THERM, grid, interp=True)
+			data.append(ThermZ[...,0]); data.append(ThermZ[...,120]);
+		elif minus_dirs == 1:
+			Nx = data_tmp.shape[-1]
+			data_tmp = np.mean(data_tmp, axis=-1)
+			data_tmp = np.tile(data_tmp, (Nx,1,1,1)).transpose([1,2,3,0])
+			ThermZ = tools.getIsothermHeight(data_tmp, THERM, grid, interp=True)
+			data.append(ThermZ[...,0])
 
 	pt.animateLine(data, X=Y, vmin=vmin, vmax=vmax, xlabel=xlabel, ylabel=ylabel, labels=labels, text_data=text_data)
 	quit()
@@ -801,7 +804,7 @@ if animateUbots:
 	path_root = '/home/michai/Documents/data/'
 
 	# These are cases with CS walls.	
-	paths = [path_root+'PISOMIP_003/run/', path_root+'PISOMIP_002/run/', path_root+'MCS_105/run/', path_root+'MCS_106/run/']
+	paths = [path_root+'MCS_103/run/', path_root+'MCS_104/run/', path_root+'MCS_105/run/', path_root+'MCS_106/run/']
 	labels = ['wind16 rel300 x = 0', 'wind16 rel300 x = 120', 'wind16 rel200 x = 0', 'wind16 rel200 x = 120']
 	
 	grid = Grid(paths[0])
@@ -815,33 +818,130 @@ if animateUbots:
 	data = []
 
 	# Get metadata from first run.
-	data_tmp = readVariable(VAR, paths[0], file_format='nc', meta=True)
+	u = readVariable(VAR, paths[0], file_format='nc', meta=True)
 
 	tscale = 86400. * 30
 	tscale_name = 'month'
-	t = data_tmp.variables['TIME'][:] / tscale
+	t = u.variables['TIME'][:] / tscale
 	text = [tscale_name + ' ' + str(int(tt)) for tt in t]
 	text_data = {'text':text, 'xloc':Y[1], 'yloc':vmin, 'fontdict':{'fontsize':14, 'color':'k'}}
 
 	# Get bottom val
-	data_tmp = tools.bottom(data_tmp[VAR][:], grid, 'u')
-	print(data_tmp.shape)
-	#data.append(np.mean(data_tmp[:,1:-1,:], axis=-1))
-	data.append(data_tmp[:,1:-1,0])
-	data.append(data_tmp[:,1:-1,120])
+	ub = tools.bottom(u[VAR][:], grid, 'u')
+	print(ub.shape)
+
+	# COMMENT OUT AS APPROPRIATE
+
+	# Two bottom velocities
+	data.append(ub[:,1:-1,0]); data.append(ub[:,1:-1,120])
+
+	# Zonal-mean bottom vel.
+	#data.append(np.mean(ub[:,1:-1,:], axis=-1))
 
 	# Now get other SSHs.
 	for di in range(len(paths)-3):
-		data_tmp = readVariable(VAR, paths[di+1], file_format='nc', meta=False)
-		data_tmp = tools.bottom(data_tmp, grid, 'u')
+		ub = readVariable(VAR, paths[di+1], file_format='nc', meta=False)
+		ub = tools.bottom(ub, grid, 'u')
 		print(data_tmp.shape)
-		#data.append(np.mean(data_tmp[:,1:-1,:], axis=-1))
-		data.append(data_tmp[:,1:-1,0])
-		data.append(data_tmp[:,1:-1,120])
+		#data.append(np.mean(ub[:,1:-1,:], axis=-1))
+		data.append(ub[:,1:-1,0]); data.append(ub[:,1:-1,120])
 
 	print(data[-1].shape)
 
+	vmin *= vmax; vmax *= vmax
+
 	pt.animateLine(data, X=Y[1:-1], vmin=vmin, vmax=vmax, xlabel=xlabel, ylabel=ylabel, labels=labels, text_data=text_data)
+	quit()
+
+
+#==
+
+animateDragBot = False
+if animateDragBot:
+	# Animate zonal mean Ubots for multiple MITgcm runs.
+	# Assumes that all use the same grid and have the same time dependencies.
+
+	path_root = '/home/michai/Documents/data/'
+
+	# These are cases with CS walls.	
+	paths = [path_root+'MCS_103/run/', path_root+'MCS_104/run/']
+	labels = ['wind16 botStress', 'wind0 botStress', 'wind0 x = 0', 'wind0 x = 120']
+	
+	grid = Grid(paths[0])
+	Y = grid.YC
+	xlabel = 'Y (km)'
+	ylabel = 'bottom stress'
+	Ny, Nx = Y.shape
+
+	Y = Y[:,1]/1000.
+
+	Cd = 2.5e-3
+	rho0 = 1030.0
+	VAR = 'UVEL'
+	vmin, vmax, cmap, title = getPlottingVars(VAR)
+	
+	data = []
+
+	# Get metadata from first run.
+	u = readVariable(VAR, paths[0], file_format='nc', meta=True)
+
+	u16 = 0.025 * tools.getTranslatedWind(Nx, Ny, 16) / rho0
+	u0 = 0.025 * tools.getTranslatedWind(Nx, Ny, 0) / rho0
+	#u_16 = 0.025 * tools.getTranslatedWind(Nx, Ny, -16) / rho0
+	#plt.plot(u16[:,0], Y, label='16');plt.plot(u_16[:,0], Y, label='-16'); plt.legend(); plt.show(); quit()
+
+	tscale = 86400. * 30
+	tscale_name = 'month'
+	t = u.variables['TIME'][:] / tscale
+	text = [tscale_name + ' ' + str(int(tt)) for tt in t]
+	text_data = {'text':text, 'xloc':Y[1], 'yloc':vmin, 'fontdict':{'fontsize':14, 'color':'k'}}
+
+	# Get bottom val
+	ub = tools.bottom(u[VAR][:], grid, 'u')
+	print(ub.shape)
+
+	vb = readVariable('VVEL', paths[0], file_format='nc', meta=False)
+	vb = tools.bottom(vb, grid, 'v')
+
+	hFacCb = tools.bottom(grid.hFacC, grid, 'h', timeDep=False)
+	ub = tools.interp(ub, 'u'); vb = tools.interp(vb, 'v'); 
+	KE = 0.5 * (ub**2 + vb**2) * hFacCb
+	drag = Cd * np.sqrt(2*KE) * ub
+	drag = ptt.maskBathyXY(drag, grid, 0, timeDep=True)
+
+	# COMMENT OUT AS APPROPRIATE
+
+	# Two quadr drags
+	#data.append(drag[:,1:-1,0]); data.append(drag[:,1:-1,120])
+
+	# Zonal mean
+	data.append(np.ma.mean(drag[:,1:-1,:], axis=-1))
+
+	# Now get other SSHs.
+	for di in range(len(paths)-1):
+		ub = readVariable(VAR, paths[di+1], file_format='nc', meta=False)
+		ub = tools.bottom(ub, grid, 'u')
+		vb = readVariable('VVEL', paths[0], file_format='nc', meta=False)
+		vb = tools.bottom(vb, grid, 'v')
+
+		ub = tools.interp(ub, 'u'); vb = tools.interp(vb, 'v'); 
+		KE = 0.5 * (ub**2 + vb**2) * hFacCb
+		drag = Cd * np.sqrt(2*KE) * ub
+		drag = ptt.maskBathyXY(drag, grid, 0, timeDep=True)
+
+		# COMMENT OUT AS APPROPRIATE
+		# Two quadr drags
+		#data.append(drag[:,1:-1,0]); data.append(drag[:,1:-1,120])
+		# Zonal mean
+		data.append(np.ma.mean(drag[:,1:-1,:], axis=-1))
+
+	#==
+
+	print(len(data))
+	vmin=-4e-5; vmax=-vmin
+	constLineLabel = ['wind16', 'wind0']
+
+	pt.animateLine(data, X=Y[1:-1], vmin=vmin, vmax=vmax, xlabel=xlabel, ylabel=ylabel, labels=labels, text_data=text_data, constLine=[u16[1:-1,0], u0[1:-1,0]], constLineLabel=constLineLabel)
 	quit()
 
 

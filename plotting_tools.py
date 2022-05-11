@@ -29,6 +29,17 @@ def maskBathyAll(data, grid, color='grey', timeDep=False):
 
 #==
 
+def maskBathyAllT(data, grid):
+	'''Calls above function in temporal for loop, to get around high mem. demands.'''
+
+	Nt = data.shape[0]
+	for ti in range(Nt):
+		data[ti] = maskBathyAll(data[ti], grid)
+
+	return data
+
+#==
+
 def maskBathyXY(data, grid, zi, color='grey', subregion=False, lats=[], lons=[], timeDep=False):
 	'''Function to be called before plotting to mask the bathymetry in (X,Y)-slice.'''
 		
