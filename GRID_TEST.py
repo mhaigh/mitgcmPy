@@ -478,12 +478,16 @@ if animateSurface:
 		data = data[:,level]
 		print('Z = ' + str(grid.RC.squeeze()[level]))
 
-	
-
 	print(data.shape)
 	#vmax = 1.; vmin = -0.4
-	data = tools.boundData(data, vmin, vmax, scale=0.99999)
+	#data = tools.boundData(data, vmin, vmax, scale=0.99999)
 	data = ptt.maskBathyXY(data, grid, level, timeDep=True)
+
+	drag = tools.computeBotDragQuadr2(path, grid)
+	drag = ptt.maskBathyXY(drag, grid, 0, timeDep=True)
+
+	vmin = -4.e-6; vmax = 4.e-6
+	pt.plot1by2([drag[-1], drag[-1]-data[-1]/1030.], vmin=[vmin, vmin], vmax=[vmax,vmax]); quit()
 
 	#data = np.mean(data, axis=3)
 

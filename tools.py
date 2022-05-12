@@ -518,7 +518,105 @@ def getIsothermHeight(T, THERM, grid, timeDep=True, interp=True, botVal=np.nan):
 	return ThermZ
 
 
+#==
 
+def computeBotDragQuadr0(path, grid, direction='zonal', Cd=2.5e-3):
+	'''Compute quadratic bottom drag in given direction.
+	0 refers to value of selectBotDragQuadr (0 in MCS, 2 in PAS).'''
 
+	from readData import readVariable
 	
+	ub = readVariable('UVEL', path, file_format='nc', meta=False)
+	ub = bottom(ub, grid, 'u')
+
+	vb = readVariable('VVEL', path, file_format='nc', meta=False)
+	vb = bottom(vb, grid, 'v')
+
+	hFacCb = bottom(grid.hFacC, grid, 'h', timeDep=False)
+	hFacSb = bottom(grid.hFacS, grid, 'v', timeDep=False)
+	hFacWb = bottom(grid.hFacW, grid, 'u', timeDep=False)
+
+	KE = np.zeros(ub.shape)
+	KE[..., 0:-1, 0:-1] = 0.25 * (\
+ub[...,0:-1,0:-1]**2 * hFacWb[0:-1,0:-1] + ub[...,0:-1,1:]**2 * hFacWb[0:-1,1:] + \
+vb[...,0:-1,0:-1]**2 * hFacSb[0:-1,0:-1] + vb[...,1:,0:-1]**2 * hFacSb[1:,0:-1]) \
+/ hFacCb[0:-1,0:-1]
+
+	KE[:,:,1:] = 0.5 * (KE[:,:,1:] + KE[:,:,0:-1])
+
+	# Now do KE at boundaries
+	ub = interp(ub, 'u'); vb = interp(vb, 'v')
+	KE[:,0,:] = 0.5 * (ub[:,0,:]**2 + vb[:,0,:]**2) * hFacCb[0,:]
+	KE[:,-1,:] = 0.5 * (ub[:,-1,:]**2 + vb[:,-1,:]**2) * hFacCb[-1,:]
+	KE[:,:,0] = 0.5 * (ub[:,:,0]**2 + vb[:,:,0]**2) * hFacCb[:,0]
+	KE[:,:,-1] = 0.5 * (ub[:,:,-1]**2 + vb[:,:,-1]**2) * hFacCb[:,-1]
+
+	drag = - Cd * np.sqrt(2*KE) * ub
+
+	return drag
+
+#==
+
+def computeBotDragQuadr2(path, grid, direction='zonal', Cd=2.5e-3):
+	'''Compute quadratic bottom drag in given direction.
+	0 refers to value of selectBotDragQuadr (0 in MCS, 2 in PAS).'''
+
+	from readData import readVariable
+	
+	ub = readVariable('UVEL', path, file_format='nc', meta=False)
+	ub = bottom(ub, grid, 'u')
+
+	vb = readVariable('VVEL', path, file_format='nc', meta=False)
+	vb = bottom(vb, grid, 'v')
+
+	hFacS = bottom(grid.hFacS, grid, 'v', timeDep=False)
+	hFacC = bottom(grid.hFacC, grid, 'h', timeDep=False)
+
+	KE = np.zeros(ub.shape)
+	hFac = np.zeros(ub.shape)
+
+	hFac[:, 0:-1, 1:] = hFacS[0:-1, 0:-1] + hFacS[0:-1, 1:] + hFacS[1:, 0:-1] + hFacS[1:, 1:]
+		
+	usq = ub**2
+	KE[:, 0:-1, 1:] = ub[:, 0:-1, 1:]**2 + (vb[:, 0:-1,0:-1]**2 * hFacS[0:-1, 0:-1] \
++ vb[:, 0:-1, 1:]**2 * hFacS[0:-1, 1:] + vb[:, 1:, 0:-1]**2 * hFacS[1:, 0:-1] \
++ vb[:, 1:, 1:]**2 * hFacS[1:, 1:]) / hFac[:,0:-1, 1:]
+
+	KE = np.where(hFac>0, KE, usq)
+
+	# Now do KE at boundaries
+	ub = interp(ub, 'u'); vb = interp(vb, 'v')
+	KE[:,0,:] = 0.5 * (ub[:,0,:]**2 + vb[:,0,:]**2) * hFacC[0,:]
+	KE[:,-1,:] = 0.5 * (ub[:,-1,:]**2 + vb[:,-1,:]**2) * hFacC[-1,:]
+	KE[:,:,0] = 0.5 * (ub[:,:,0]**2 + vb[:,:,0]**2) * hFacC[:,0]
+	KE[:,:,-1] = 0.5 * (ub[:,:,-1]**2 + vb[:,:,-1]**2) * hFacC[:,-1]
+
+	drag = - Cd * np.sqrt(KE) * ub
+
+	return drag
+
+#==
+
+def computeBotDragQuadr_interp(path, grid, direction='zonal', Cd=2.5e-3):
+	'''Compute quadratic bottom drag in given direction.'''
+
+	from readData import readVariable
+	
+	ub = readVariable('UVEL', path, file_format='nc', meta=False)
+	ub = bottom(ub, grid, 'u')
+
+	vb = readVariable('VVEL', path, file_format='nc', meta=False)
+	vb = bottom(vb, grid, 'v')
+
+	hFacCb = bottom(grid.hFacC, grid, 'h', timeDep=False)
+
+	ub = interp(ub, 'u')
+	vb = interp(vb, 'v'); 
+
+	KE = 0.5 * (ub**2 + vb**2) * hFacCb
+	drag = - Cd * np.sqrt(2*KE) * ub
+
+	return drag
+
+
 
