@@ -18,41 +18,35 @@ import time
 
 #==========================================================
 
-g = 9.81
+
+path = '/home/michai/Documents/data/PAS_851/run/'
+grid = Grid_PAS(path)
+
+
 rho0 = 1028.5
 
-path_root = '/data/oceans_output/shelf/pahol/mitgcm/'
-run = 'PAS_851/run/'
-# With PAS_851, Paul suggests looking at dates 1979-2012.
-# Pre 1979 is spin up, post 2012 is cold anomaly.
+drag = np.load(path + 'umom_drag_PAS851.npy')
+taux = np.load(path + 'umom_oceTAUX_PAS851.npy')
+TFS = np.load(path + 'umom_TFS2_PAS851.npy')
 
-path = path_root + run
 
-# Load grid
-grid = Grid_PAS(path)
-depth = - grid.bathy
-SSH = readVariable('ETAN', path, file_format='nc', meta=False)
-depth = depth + SSH
-
-lats = [-76, -70.5]; lons = [245, 260]#[230, 270]#
+lats = [-76, -71.5]; lons = [245, 260]#[230, 270]#
 latsi = grid.getIndexFromLat(lats); lonsi = grid.getIndexFromLon(lons)
 
-# Load PHIBOT.
-PHIBOT = readVariable('PHIBOT', path, file_format='nc', meta=True)
+drag = ptt.maskBathyXY(drag, grid, 0, timeDep=False)*rho0
+taux = ptt.maskBathyXY(taux, grid, 0, timeDep=False)
+TFS = ptt.maskBathyXY(TFS, grid, 0, timeDep=False)
 
-ts = 107; te = 502
-TIME = PHIBOT['TIME'][:]
-print(time.ctime(TIME[ts]))
-print(time.ctime(TIME[te]))
+print(np.mean(drag))
+print(np.mean(taux))
+print(np.mean(TFS))
 
-PHIBOT = PHIBOT['PHIBOT'][:]
-print(PHIBOT.shape)
+TFS = tools.getSubregionXY(TFS, latsi, lonsi)
 
-Pb = depth * rho0 * g + PHIBOT * rho0
+vmin = -1.e-1; vmax = -vmin
+s=1.e7
+vmin = [vmin, vmin, s*vmin]; vmax = [vmax, vmax, s*vmax]
 
-Pb = np.mean(Pb[ts:te+1], axis=0)
-Pb = np.ma.filled(Pb, fill_value=0)
-np.save('Pb_ETAN_mean_PAS851', Pb)
-
+pt.plot1by3([drag, taux, TFS], vmin=vmin, vmax=vmax)
 
 

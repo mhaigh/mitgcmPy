@@ -445,11 +445,11 @@ if animateSurface:
 	#VAR = 'WVELTH';
 	#VAR = 'WVELTH'#','UVELTH','VVELTH','WVELTH', 'TOTTTEND'
 	#VAR = 'SALT'	
-	#VAR = 'UVEL'
+	VAR = 'UVEL'
 	#VAR = 'VVEL'
 	#VAR = 'VVEL'
 	#VAR = 'WVEL'
-	VAR = 'botTauX'
+	#VAR = 'botTauX'
 
 	flatVars = ['ETAN', 'botTauX']
 
@@ -473,21 +473,23 @@ if animateSurface:
 	# DON'T CHANGE THIS. CHANGE ONE IN IF STATEMENT IF YOU WANT.
 	level = 0
 
+	#u1 = -np.trapz(data[-1]*grid.hFacW, zc, axis=0)
+	u1 = np.sum(data[-1]*grid.hFacW*grid.DRF, axis=0)
+	u2 = np.sum(data*grid.hFacW*grid.DRF, axis=1)
+
+	vmin = -100; vmax=-vmin; vmin = [vmin, vmin]; vmax = [vmax, vmax]
+	pt.plot1by2([u1, u2[-1]-u1], mesh=True, vmin=vmin, vmax=vmax); quit()
+
 	if VAR not in flatVars:
 		level = 0
 		data = data[:,level]
 		print('Z = ' + str(grid.RC.squeeze()[level]))
 
+
 	print(data.shape)
 	#vmax = 1.; vmin = -0.4
 	#data = tools.boundData(data, vmin, vmax, scale=0.99999)
 	data = ptt.maskBathyXY(data, grid, level, timeDep=True)
-
-	drag = tools.computeBotDragQuadr2(path, grid)
-	drag = ptt.maskBathyXY(drag, grid, 0, timeDep=True)
-
-	vmin = -4.e-6; vmax = 4.e-6
-	pt.plot1by2([drag[-1], drag[-1]-data[-1]/1030.], vmin=[vmin, vmin], vmax=[vmax,vmax]); quit()
 
 	#data = np.mean(data, axis=3)
 

@@ -44,6 +44,21 @@ latsi = grid.getIndexFromLat(lats); lonsi = grid.getIndexFromLon(lons)
 
 #==========================================================
 
+## PGF ##
+
+dpdx = readVariable('Um_dPhiX', path, file_format='nc', meta=False)[ts:te+1]
+dpdx = np.mean(dpdx, axis=0)
+
+# Take depth integral
+dpdx = np.sum(dpdx*grid.hFacW*grid.DRF, axis=1)
+
+dpdx = np.ma.filled(dpdx, fill_value=0)
+np.save('umom_dpdx_PAS851', dpdx)
+
+quit()
+
+#==
+
 ## Surface stress ##
 
 taux = readVariable('oceTAUX', path, file_format='nc', meta=False)[ts:te+1]
@@ -62,12 +77,13 @@ drag = np.mean(drag, axis=0)
 drag = np.ma.filled(drag, fill_value=0)
 np.save('umom_drag_PAS851', drag)
 
+
 #==
 
 ## TFS ##
 
 depth = - grid.bathy
-SSH = readVariable('ETAN', path, file_format='nc', meta=False)
+SSH = readVariable('ETAN', path, file_format='nc', meta=False)[ts:te+1]
 depth = depth + SSH
 
 # Load PHIBOT.
@@ -75,6 +91,7 @@ PHIBOT = readVariable('PHIBOT', path, file_format='nc', meta=False)[ts:te+1]
 
 # Compute full bottom pressure.
 Pb = depth * rho0 * g + PHIBOT * rho0
+Pb = np.mean(Pb, axis=0)
 
 # Depth gradient
 Hx = tools.ddx(depth, grid.DXG)
@@ -82,7 +99,7 @@ Hx = tools.ddx(depth, grid.DXG)
 # TFS
 TFS = Pb * Hx
 
-TFS = np.mean(TFS, axis=0)
+#TFS = np.mean(TFS, axis=0)
 TFS = np.ma.filled(TFS, fill_value=0)
 np.save('umom_TFS_PAS851', TFS)
 

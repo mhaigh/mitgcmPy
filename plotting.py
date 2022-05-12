@@ -353,7 +353,125 @@ def plot1by2(data, X=None, Y=None, figsize=(9,4), titles=None, fontsize=14, mesh
 		
 	if show:
 		plt.show()
+
+#==
+		
+def plot1by3(data, X=None, Y=None, figsize=(11,3), titles=None, fontsize=14, mesh=False, cmap='jet', vmin=[None,None,None], vmax=[None,None,None], text_data=[None,None,None], xlabels=None, ylabels=None, grid=True, contourfNlevels=9, save=False, outpath='', outname='plot1by2.png', show=True, dpi=200):
 	
+	fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
+
+	plt.subplot(131)
+	plt.gca().patch.set_color('.25')
+
+	if mesh:
+		if X is not None and Y is not None:
+			plt.pcolormesh(X[0], Y[0], data[0], cmap=cmap, vmin=vmin[0], vmax=vmax[0])
+		else: 
+			plt.pcolormesh(data[0], cmap=cmap, vmin=vmin[0], vmax=vmax[0])
+	else:
+		levels = getContourfLevels(vmin[0], vmax[0], contourfNlevels)
+		if X is not None and Y is not None:
+			plt.contourf(X[0], Y[0], data[0], cmap=cmap, levels=levels)
+		else: 
+			plt.contourf(data[0], cmap=cmap, levels=levels)
+			
+	if xlabels is not None:
+		plt.xlabel(xlabels[0], fontsize=fontsize)
+	if ylabels is not None:
+		plt.ylabel(ylabels[0], fontsize=fontsize)
+	
+	if grid:
+		plt.grid()
+
+	if text_data[0] is not None:
+		setText(plt.gca(), text_data[0], set_invisible=False)
+
+	plt.colorbar()
+	
+	if titles is not None:
+		plt.title(titles[0], fontsize=fontsize)
+	
+
+	#==
+	# Second Panel
+	#==
+	
+	plt.subplot(132)
+	plt.gca().patch.set_color('.25')
+	
+	if mesh:
+		if X is not None and Y is not None:
+			plt.pcolormesh(X[1], Y[1], data[1], cmap='jet', vmin=vmin[1], vmax=vmax[1])
+		else: 
+			plt.pcolormesh(data[1], cmap=cmap,  vmin=vmin[1], vmax=vmax[1])
+	else:
+		levels = getContourfLevels(vmin[1], vmax[1], contourfNlevels)
+		if X is not None and Y is not None:
+			plt.contourf(X[1], Y[1], data[1], cmap=cmap, levels=levels)
+		else: 
+			plt.contourf(data[1], cmap=cmap, levels=levels)
+	
+	if xlabels is not None:
+		plt.xlabel(xlabels[1], fontsize=fontsize)
+	if ylabels is not None:
+		plt.ylabel(ylabels[1], fontsize=fontsize)
+		
+	if grid:
+		plt.grid()
+	
+	if text_data[1] is not None:
+		setText(plt.gca(), text_data[1], set_invisible=False)
+
+	plt.colorbar()
+	
+	if titles is not None:
+		plt.title(titles[1], fontsize=fontsize)
+
+	#==
+	# Third Panel
+	#==
+	
+	plt.subplot(133)
+	plt.gca().patch.set_color('.25')
+	
+	if mesh:
+		if X is not None and Y is not None:
+			plt.pcolormesh(X[2], Y[2], data[2], cmap='jet', vmin=vmin[2], vmax=vmax[2])
+		else: 
+			plt.pcolormesh(data[2], cmap=cmap,  vmin=vmin[2], vmax=vmax[2])
+	else:
+		levels = getContourfLevels(vmin[2], vmax[2], contourfNlevels)
+		if X is not None and Y is not None:
+			plt.contourf(X[2], Y[2], data[2], cmap=cmap, levels=levels)
+		else: 
+			plt.contourf(data[2], cmap=cmap, levels=levels)
+	
+	if xlabels is not None:
+		plt.xlabel(xlabels[2], fontsize=fontsize)
+	if ylabels is not None:
+		plt.ylabel(ylabels[2], fontsize=fontsize)
+		
+	if grid:
+		plt.grid()
+	
+	if text_data[2] is not None:
+		setText(plt.gca(), text_data[2], set_invisible=False)
+
+	plt.colorbar()
+	
+	if titles is not None:
+		plt.title(titles[2], fontsize=fontsize)
+
+	#==
+	
+	plt.tight_layout()
+	if save:
+		plt.savefig(outpath + outname)
+		
+	if show:
+		plt.show()
+	
+
 #==
 
 def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh=True, cmap='jet', vmin=None, vmax=None, xlabel='', ylabel='', save=True, outpath='', outname='animate1by1.mp4', show=False, dpi=200, fps=8, bitrate=-1, text_data=None, contour=None):

@@ -42,21 +42,23 @@ if FORMSTRESS:
 	H = - grid.bathy
 	Hx = tools.ddx(H, grid.DXG)
 	Hy = tools.ddy(H, grid.DYG)
-	Hx = tools.getSubregionXY(Hx, latsi, lonsi)
+
 
 	Pb = ptt.maskBathyXY(Pb, grid, 0, timeDep=False, subregion=True, lats=latsi, lons=lonsi)
+
+	Hx = tools.getSubregionXY(Hx, latsi, lonsi)
 	Hx = ptt.maskBathyXY(Hx, grid, 0, timeDep=False, subregion=True, lats=latsi, lons=lonsi)
 
 	vmin = 0.2e7; vmax = 1.e7
 	Pb = tools.boundData(Pb, vmin, vmax, scale=0.9999)
 
-	pt.plot1by1(Pb, X=X, Y=Y, vmin=vmin, vmax=vmax, mesh=True, title='Bottom pressure')
-	pt.plot1by1(Hx, X=X, Y=Y, mesh=True, title='Hx', vmin=-0.01, vmax=0.01)
+	#pt.plot1by1(Pb, X=X, Y=Y, vmin=vmin, vmax=vmax, mesh=True, title='Bottom pressure')
+	#pt.plot1by1(Hx, X=X, Y=Y, mesh=True, title='Hx', vmin=-0.01, vmax=0.01)
 	#pt.plot1by1(H, mesh=True, title='H')
-	FS = Hx*Pb
-	print(np.sum(FS))
-	vmin = -2e5; vmax = -vmin
-	pt.plot1by1(FS, X=X, Y=Y, vmin=vmin, vmax=vmax, mesh=True, title='TFS')
+
+	TFS = Hx*Pb
+	vmin = -1e6; vmax = -vmin
+	pt.plot1by1(TFS, X=X, Y=Y, vmin=vmin, vmax=vmax, mesh=False, title='TFS')
 
 	quit()
 	
