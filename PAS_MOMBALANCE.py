@@ -46,11 +46,11 @@ latsi = grid.getIndexFromLat(lats); lonsi = grid.getIndexFromLon(lons)
 
 ## Surface stress ##
 
-taux = readVariable('oceTauX', path, file_format='nc', meta=False)[ts:te+1]
+taux = readVariable('oceTAUX', path, file_format='nc', meta=False)[ts:te+1]
 taux = np.mean(taux, axis=0)
 
 taux = np.ma.filled(taux, fill_value=0)
-np.save('oceTaux_PAS851', taux)
+np.save('umom_oceTAUX_PAS851', taux)
 
 #==
 
@@ -60,7 +60,7 @@ drag = tools.computeBotDragQuadr2(path, grid)[ts:te+1]
 drag = np.mean(drag, axis=0)
 
 drag = np.ma.filled(drag, fill_value=0)
-np.save('dragX_PAS851', drag)
+np.save('umom_drag_PAS851', drag)
 
 #==
 
@@ -84,7 +84,7 @@ TFS = Pb * Hx
 
 TFS = np.mean(TFS, axis=0)
 TFS = np.ma.filled(TFS, fill_value=0)
-np.save('TFS_PAS851', TFS)
+np.save('umom_TFS_PAS851', TFS)
 
 
 

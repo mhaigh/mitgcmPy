@@ -31,6 +31,8 @@ varDict['PHIHYD'] = {'fname':'state2D', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwar
 varDict['PHIBOT'] = {'fname':'state2D', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Bottom hydr. pressure pot. anom.'}
 varDict['botTauX'] = {'fname':'state2D', 'vmin':-0.01, 'vmax':0.01, 'cmap':'coolwarm', 'title':'Zonal bottom stress'}
 varDict['botTauY'] = {'fname':'state2D', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Merid. bottom stress'}
+varDict['oceTAUX'] = {'fname':'state2D', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Zonal surface stress'}
+varDict['oceTAUY'] = {'fname':'state2D', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Merid. surface stress'}
 
 #==
 
