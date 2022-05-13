@@ -44,13 +44,38 @@ latsi = grid.getIndexFromLat(lats); lonsi = grid.getIndexFromLon(lons)
 
 #==========================================================
 
+## Advection ##
+
+u = readVariable('UVEL', path, file_format='nc', meta=False)[ts:te+1]
+v = readVariable('VVEL', path, file_format='nc', meta=False)[ts:te+1]
+
+u = tools.interp(u, 'u')
+v = tools.interp(v, 'v')
+
+uu = np.mean(u*u, axis=0)
+uv = np.mean(u*v, axis=0)
+
+w = readVariable('WVEL', path, file_format='nc', meta=False)[ts:te+1]
+uw = np.mean(u*w, axis=0)
+
+conv = - tools.ddx(uu, grid.DXG) - tools.ddy(uv, grid.DYG) - tools.ddz(uw, grid. DRF)
+
+conv = np.sum(conv*grid.hFacC*grid.DRF, axis=0)
+
+conv = np.ma.filled(conv, fill_value=0)
+np.save('umom_conv_PAS851', conv)
+
+quit()
+
+#==
+
 ## PGF ##
 
 dpdx = readVariable('Um_dPhiX', path, file_format='nc', meta=False)[ts:te+1]
 dpdx = np.mean(dpdx, axis=0)
 
 # Take depth integral
-dpdx = np.sum(dpdx*grid.hFacW*grid.DRF, axis=1)
+dpdx = np.sum(dpdx*grid.hFacW*grid.DRF, axis=0)
 
 dpdx = np.ma.filled(dpdx, fill_value=0)
 np.save('umom_dpdx_PAS851', dpdx)

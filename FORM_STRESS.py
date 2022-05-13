@@ -26,27 +26,35 @@ grid = Grid_PAS(path)
 rho0 = 1028.5
 
 drag = np.load(path + 'umom_drag_PAS851.npy')
+conv = np.load(path + 'umom_conv_PAS851.npy')*rho0
 taux = np.load(path + 'umom_oceTAUX_PAS851.npy')
-TFS = np.load(path + 'umom_TFS2_PAS851.npy')
+TFS = np.load(path + 'umom_dpdx_PAS851.npy')
+print(TFS.shape)
 
 
 lats = [-76, -71.5]; lons = [245, 260]#[230, 270]#
 latsi = grid.getIndexFromLat(lats); lonsi = grid.getIndexFromLon(lons)
 
 drag = ptt.maskBathyXY(drag, grid, 0, timeDep=False)*rho0
+conv = ptt.maskBathyXY(conv, grid, 0, timeDep=False)
 taux = ptt.maskBathyXY(taux, grid, 0, timeDep=False)
+taux = ptt.maskDraftXY(taux, grid, 0, timeDep=False)
 TFS = ptt.maskBathyXY(TFS, grid, 0, timeDep=False)
 
-print(np.mean(drag))
-print(np.mean(taux))
-print(np.mean(TFS))
+#TFS = tools.getSubregionXY(TFS, latsi, lonsi)
 
-TFS = tools.getSubregionXY(TFS, latsi, lonsi)
+print(np.ma.mean(drag))
+print(np.ma.mean(conv))
+print(np.ma.mean(taux))
+print(np.ma.mean(TFS))
 
-vmin = -1.e-1; vmax = -vmin
-s=1.e7
-vmin = [vmin, vmin, s*vmin]; vmax = [vmax, vmax, s*vmax]
+#TFS = tools.getSubregionXY(TFS, latsi, lonsi)
 
-pt.plot1by3([drag, taux, TFS], vmin=vmin, vmax=vmax)
+vmin = -.5e-0; vmax = -vmin
+s=1.
+
+vmin = [vmin, s*vmin, vmin]; vmax = [vmax, s*vmax, vmax]
+
+pt.plot1by3([conv, taux, TFS], vmin=vmin, vmax=vmax)
 
 
