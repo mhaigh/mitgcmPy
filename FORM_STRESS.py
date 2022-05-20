@@ -41,7 +41,9 @@ taux = ptt.maskBathyXY(taux, grid, 0, timeDep=False)
 taux = ptt.maskDraftXY(taux, grid, 0, timeDep=False)
 TFS = ptt.maskBathyXY(TFS, grid, 0, timeDep=False)
 
-#TFS = tools.getSubregionXY(TFS, latsi, lonsi)
+conv = tools.getSubregionXY(conv, latsi, lonsi)
+taux = tools.getSubregionXY(taux, latsi, lonsi)
+TFS = tools.getSubregionXY(TFS, latsi, lonsi)
 
 print(np.ma.mean(drag))
 print(np.ma.mean(conv))
@@ -50,7 +52,7 @@ print(np.ma.mean(TFS))
 
 #TFS = tools.getSubregionXY(TFS, latsi, lonsi)
 
-vmin = -.5e-0; vmax = -vmin
+vmin = -.5e-1; vmax = -vmin
 s=1.
 
 vmin = [vmin, s*vmin, vmin]; vmax = [vmax, s*vmax, vmax]

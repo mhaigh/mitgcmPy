@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib.gridspec as gridspec
 
-from plotting_tools import setText, getContourfLevels
+from plotting_tools import setText, getContourfLevels, maskBathyXY, maskDraftXY
+
 #==========================================================
 	
 #==
@@ -136,7 +137,6 @@ def plot1by1(data, X=None, Y=None, contour=None, contourlevels=None, figsize=(5,
 	
 #==
 
-
 def quiver1by1(u, v, Xd, Yd, C=None, ccmap='bwr', contour=None, X=None, Y=None, contourf=True, figsize=(5,4), title='', fontsize=14, mesh=True, cmap='jet', vmin=None, vmax=None, xlabel='', ylabel='', save=False, outpath='', outname='quiver1by1.mp4', show=True, dpi=200, text_data=None):
 
 	fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
@@ -169,6 +169,135 @@ def quiver1by1(u, v, Xd, Yd, C=None, ccmap='bwr', contour=None, X=None, Y=None, 
 	
 	if title is not None:
 		plt.title(title, fontsize=fontsize)
+
+	#==
+	
+	plt.tight_layout()
+		
+	if show:
+		plt.show()
+
+	if save:
+		plt.savefig(outpath + outname)
+		plt.close()
+
+#==
+
+def quiver1by2Basemap(u, v, Xd, Yd, lat_0, lon_0, C=None, ccmap='bwr', contourf=None, contourfNlevels=9, X=None, Y=None, mesh=False, contour=None, contourLevels=None, figsize=(8,3), title=None, fontsize=14, cmap='jet', vmin=None, vmax=None, xlabel=None, ylabel=None, save=False, outpath='', outname='quiver1by2.mp4', show=True, dpi=200, text_data=None, parallels=None, meridians=None, width_ratios=None, labelData=None):
+	
+	from mpl_toolkits.basemap import Basemap
+		
+	m = Basemap(llcrnrlon=X[0][0,0],llcrnrlat=Y[0][0,0],urcrnrlon=X[0][-1,-1],urcrnrlat=Y[0][-1,-1], projection='merc',lat_0=lat_0+3,lon_0=lon_0-10)
+
+	fig = plt.figure(figsize=figsize, dpi=dpi)
+
+	if width_ratios is not None:
+		gs = gridspec.GridSpec(ncols=2, nrows=1, figure=fig, width_ratios=width_ratios)
+		ax = fig.add_subplot(gs[0,0])
+	else:
+		plt.subplot(121)
+		ax = plt.gca()
+
+	ax.patch.set_color('.5')
+
+	X0, Y0 = m(X[0],Y[0])
+	Xd0, Yd0 = m(Xd[0],Yd[0])
+
+	if contourf is not None:
+		if mesh:
+			m.pcolormesh(X0, Y0, contourf[0], vmin=vmin[0], vmax=vmax[0], cmap=cmap)		
+		else:
+			levels = getContourfLevels(vmin[0], vmax[0], contourfNlevels)
+			m.contourf(X0, Y0, contourf[0], cmap=cmap, levels=levels)
+
+		if width_ratios is None:
+			plt.colorbar()
+
+	if contour is not None:
+		if contourLevels is not None:
+			m.contour(X0, Y0, contour[0], levels=contourLevels[0], colors='k', linestyles='solid', linewidths=0.4)
+		else:
+			m.contour(X0, Y0, contour[0], levels=contourLevels[0], colors='k', linestyles='solid', linewidths=0.4)
+
+	if C is not None:
+		cax = ax.quiver(Xd0, Yd0, u[0], v[0], C[0], cmap=ccmap, scale=2)
+		if width_ratios is None:
+			plt.colorbar(cax, ax=ax)
+	else:
+		cax = m.quiver(Xd0, Yd0, u[0], v[0], scale=2.5)
+	ax.quiverkey(cax, 0.12, 0.03, .2, '0.2 m/s', labelpos='E', coordinates='axes')
+			
+	if xlabel is not None:
+		plt.xlabel(xlabel[0], fontsize=fontsize)
+	if ylabel is not None:
+		plt.ylabel(ylabel[0], fontsize=fontsize)
+
+	if text_data is not None:
+		setText(ax, text_data[0], set_invisible=False)
+	
+	if title is not None:
+		plt.title(title[0], fontsize=fontsize)
+
+	ax.set_aspect(1)
+	if parallels is not None:
+		# Latitudes
+		m.drawparallels(parallels,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[2,1])
+	if meridians is not None:
+		# Longitudes
+		m.drawmeridians(meridians,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[2,1])
+
+	if labelData is not None:
+		for li in labelData[0]:
+			plt.scatter(li['x'][0], li['x'][1], s=1, color='r')
+			plt.annotate(li['t'], li['x'])
+
+	#==
+
+	plt.subplot(122)
+	ax = plt.gca()
+	ax.patch.set_color('.5')
+
+	X0, Y0 = m(X[1],Y[1])
+	Xd0, Yd0 = m(Xd[1],Yd[1])
+
+	if contourf is not None:
+		if mesh:
+			m.pcolormesh(X0, Y0, contourf[1], vmin=vmin[1], vmax=vmax[1], cmap=cmap)		
+		else:
+			levels = getContourfLevels(vmin[1], vmax[1], contourfNlevels)
+			m.contourf(X0, Y0, contourf[1], cmap=cmap, levels=levels)
+		plt.colorbar()
+
+	if C is not None:
+		cax = m.quiver(Xd0, Yd0, u[1], v[1], C[1], cmap=ccmap, scale=1., linewidths=2)
+		plt.colorbar(cax, ax=ax)
+	else:
+		cax = ax.quiver(Xd0, Yd0, u[1], v[1], scale=2)
+	ax.quiverkey(cax, 0.22, 0.03, .2, '0.2 m/s', labelpos='E', coordinates='axes')
+			
+	if xlabel is not None:
+		plt.xlabel(xlabel[1], fontsize=fontsize)
+	if ylabel is not None:
+		plt.ylabel(ylabel[1], fontsize=fontsize)
+
+	if text_data is not None:
+		setText(ax, text_data[1], set_invisible=False)
+	
+	if title is not None:
+		plt.title(title[1], fontsize=fontsize)
+
+	ax.set_aspect(1)
+	if parallels is not None:
+		# Latitudes
+		m.drawparallels(parallels,labels=[False,False,False,False], color='k', linewidth=0.5,dashes=[2,1])
+	if meridians is not None:
+		# Longitudes
+		m.drawmeridians(meridians,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[2,1])
+
+	if labelData is not None:
+		for li in labelData[1]:
+			plt.scatter(li['x'][0], li['x'][1], s=1, color='k')
+			plt.annotate(li['t'], li['x'])
 
 	#==
 	
@@ -279,7 +408,7 @@ def plot1by2(data, X=None, Y=None, figsize=(9,4), titles=None, fontsize=14, mesh
 	fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
 
 	plt.subplot(121)
-	plt.gca().patch.set_color('.25')
+	plt.gca().patch.set_color('.5')
 
 	if mesh:
 		if X is not None and Y is not None:
@@ -356,7 +485,7 @@ def plot1by2(data, X=None, Y=None, figsize=(9,4), titles=None, fontsize=14, mesh
 
 #==
 		
-def plot1by3(data, X=None, Y=None, figsize=(11,3), titles=None, fontsize=14, mesh=False, cmap='jet', vmin=[None,None,None], vmax=[None,None,None], text_data=[None,None,None], xlabels=None, ylabels=None, grid=True, contourfNlevels=9, save=False, outpath='', outname='plot1by2.png', show=True, dpi=200):
+def plot1by3(data, X=None, Y=None, figsize=(11,3), titles=None, fontsize=14, mesh=False, cmap='jet', vmin=[None,None,None], vmax=[None,None,None], text_data=[None,None,None], xlabels=None, ylabels=None, grid=True, contourfNlevels=9, save=False, outpath='', outname='plot1by3.png', show=True, dpi=200):
 	
 	fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
 
@@ -674,44 +803,306 @@ def animate1by1quiver(u, v, Xd, Yd, qlim=0.1, C=None, ccmap='coolwarm', contour=
 	if show:
 		plt.show()	
 
+#==
+
+def plot1by1Basemap(data, X, Y, lat_0, lon_0, contour=None, contourlevels=None, figsize=(5,4), title=None, fontsize=14, mesh=False, cmap='jet', vmin=None, vmax=None, text_data=None, xlabel=None, ylabel=None, grid=True, contourfNlevels=9, save=False, outpath='', outname='plot1by1.png', show=True, dpi=200, yline=None, parallels=None, meridians=None, labelData=None):
+	
+	from mpl_toolkits.basemap import Basemap
+		
+	m = Basemap(llcrnrlon=X[0,0],llcrnrlat=Y[0,0],urcrnrlon=X[-1,-1],urcrnrlat=Y[-1,-1], projection='merc',lat_0=lat_0+3,lon_0=lon_0-10)
+
+	X,Y = m(X,Y)
+
+	fig = plt.figure(figsize=figsize, dpi=dpi)
+
+	ax = fig.add_subplot()
+	plt.gca().patch.set_color('.5')
+
+	if mesh:
+		if X is not None and Y is not None:
+			cax = m.pcolormesh(X, Y, data, cmap=cmap, vmin=vmin, vmax=vmax)
+		else: 
+			cax = m.pcolormesh(data, cmap=cmap, vmin=vmin, vmax=vmax)
+	else:
+		levels = getContourfLevels(vmin, vmax, contourfNlevels)
+		if X is not None and Y is not None:
+			cax = m.contourf(X, Y, data, cmap=cmap, levels=levels)
+		else: 
+			cax = m.contourf(data, cmap=cmap, levels=levels)
+
+	if contour is not None:
+		m.contour(X, Y, contour, colors='k', linestyles='solid', linewidths=0.4, levels=contourlevels)
+			
+	if xlabel is not None:
+		plt.xlabel(xlabel, fontsize=fontsize)
+	if ylabel is not None:
+		plt.ylabel(ylabel, fontsize=fontsize)
+	
+	if grid:
+		plt.grid()
+
+	if text_data is not None:
+		setText(plt.gca(), text_data, set_invisible=False)
+
+	plt.colorbar(cax, ax=ax)
+	
+	if title is not None:
+		plt.title(title, fontsize=fontsize)
+
+	if yline is not None:
+		plt.plot(yline, Y, color='k', linewidth=1.2)
+		plt.axvline(x=X[X.shape[0]//2-1], color='k', linewidth=1.0, linestyle='--')
+
+	ax.set_aspect(1)
+	if parallels is not None:
+		# Latitudes
+		m.drawparallels(parallels,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[2,1])
+	if meridians is not None:
+		# Longitudes
+		m.drawmeridians(meridians,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[2,1])
+
+	for li in labelData:
+		plt.scatter(li['x'][0], li['x'][1], s=1, color='y')
+		plt.annotate(li['t'], li['x'])
+
+	#==
+	
+	plt.tight_layout()
+	if save:
+		plt.savefig(outpath + outname)
+		
+	if show:
+		plt.show()
+
+#==
+		
+def plot1by2Basemap(data, X, Y, lat_0, lon_0, contour=None, contourlevels=None, figsize=(8,3), titles=None, fontsize=14, mesh=False, cmap='jet', vmin=None, vmax=None, text_data=[None,None], xlabels=None, ylabels=None, grid=True, contourfNlevels=9, save=False, outpath='', outname='plot1by1.png', show=True, dpi=200, yline=None, parallels=None, meridians=None, labelData=None):
+	
+	from mpl_toolkits.basemap import Basemap
+		
+	m = Basemap(llcrnrlon=X[0][0,0],llcrnrlat=Y[0][0,0],urcrnrlon=X[0][-1,-1],urcrnrlat=Y[0][-1,-1], projection='merc',lat_0=lat_0+3,lon_0=lon_0-10)
+
+	fig = plt.figure(figsize=figsize, dpi=dpi)
+
+	plt.subplot(121)
+	ax = plt.gca()
+	ax.patch.set_color('.5')
+
+	X0, Y0 = m(X[0],Y[0])
+
+	if mesh:
+		m.pcolormesh(X0, Y0, data[0], cmap=cmap, vmin=vmin[0], vmax=vmax[0])
+	else:
+		levels = getContourfLevels(vmin[0], vmax[0], contourfNlevels)
+		m.contourf(X0, Y0, data[0], cmap=cmap, levels=levels)
+			
+	if xlabels is not None:
+		plt.xlabel(xlabels[0], fontsize=fontsize)
+	if ylabels is not None:
+		plt.ylabel(ylabels[0], fontsize=fontsize)
+	
+	if grid:
+		plt.grid()
+
+	if text_data[0] is not None:
+		setText(plt.gca(), text_data[0], set_invisible=False)
+
+	plt.colorbar()
+	
+	if titles is not None:
+		plt.title(titles[0], fontsize=fontsize)
+	
+	ax.set_aspect(1)
+	if parallels is not None:
+		# Latitudes
+		m.drawparallels(parallels,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[2,1])
+	if meridians is not None:
+		# Longitudes
+		m.drawmeridians(meridians,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[2,1])
+
+
+	#==
+	# Second Panel
+	#==
+	
+	plt.subplot(122)
+	ax = plt.gca()
+	ax.patch.set_color('.5')
+
+
+	X0, Y0 = m(X[1],Y[1])
+
+	if mesh:
+		m.pcolormesh(X0, Y0, data[1], cmap='jet', vmin=vmin[1], vmax=vmax[1])
+	else:
+		levels = getContourfLevels(vmin[1], vmax[1], contourfNlevels)
+		m.contourf(X0, Y0, data[1], cmap=cmap, levels=levels)
+	
+	if xlabels is not None:
+		plt.xlabel(xlabels[1], fontsize=fontsize)
+	if ylabels is not None:
+		plt.ylabel(ylabels[1], fontsize=fontsize)
+		
+	if grid:
+		plt.grid()
+	
+	if text_data[1] is not None:
+		setText(plt.gca(), text_data[1], set_invisible=False)
+
+	plt.colorbar()
+	
+	if titles is not None:
+		plt.title(titles[1], fontsize=fontsize)
+
+	ax.set_aspect(1)
+	if parallels is not None:
+		# Latitudes
+		m.drawparallels(parallels,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[2,1])
+	if meridians is not None:
+		# Longitudes
+		m.drawmeridians(meridians,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[2,1])
+
+	#==
+	
+	plt.tight_layout()
+	if save:
+		plt.savefig(outpath + outname)
+		
+	if show:
+		plt.show()
 
 #==
 
-def quiver1by1Basemap(u, v, Xd, Yd, lat_0, lon_0, width=2.e6, height=1.7e6, contourf=None, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh=True, cmap='jet', vmin=None, vmax=None, xlabel='', ylabel='', save=False, outpath='', outname='quiver1by1Basemap.mp4', show=True, dpi=200, text_data=None, parallels=None, meridians=None):
+# This is the same as above, but only the first panel uses Basemap 
+def plot1by2Basemap1(data, X, Y, lat_0, lon_0, contour=None, contourlevels=None, figsize=(7.5,3), titles=None, fontsize=14, mesh=False, cmaps=['jet', 'jet'], vmin=None, vmax=None, text_data=[None,None], xlabels=[None, None], ylabels=[None, None], grid=True, contourfNlevels=9, save=False, outpath='', outname='plot1by1.png', show=True, dpi=200, yline=None, parallels=None, meridians=None, labelData=None):
+	
+	from mpl_toolkits.basemap import Basemap
+		
+	m = Basemap(llcrnrlon=X[0][0,0],llcrnrlat=Y[0][0,0],urcrnrlon=X[0][-1,-1],urcrnrlat=Y[0][-1,-1], projection='merc',lat_0=lat_0+3,lon_0=lon_0-10)
+
+	fig = plt.figure(figsize=figsize, dpi=dpi)
+
+	plt.subplot(121)
+	ax = plt.gca()
+	ax.patch.set_color('.5')
+
+	X0, Y0 = m(X[0],Y[0])
+
+	if mesh:
+		m.pcolormesh(X0, Y0, data[0], cmap=cmaps[0], vmin=vmin[0], vmax=vmax[0])
+	else:
+		levels = getContourfLevels(vmin[0], vmax[0], contourfNlevels)
+		m.contourf(X0, Y0, data[0], cmap=cmaps[0], levels=levels)
+			
+	if xlabels[0] is not None:
+		plt.xlabel(xlabels[0], fontsize=fontsize)
+	if ylabels[0] is not None:
+		plt.ylabel(ylabels[0], fontsize=fontsize)
+	
+	if grid:
+		plt.grid()
+
+	if text_data[0] is not None:
+		setText(plt.gca(), text_data[0], set_invisible=False)
+
+	plt.colorbar()
+	
+	if titles is not None:
+		plt.title(titles[0], fontsize=fontsize)
+
+	if yline[0] is not None:
+		x0, y0 = m(yline[0], 0)
+		plt.axvline(x=x0, color='k', linewidth=1.0, linestyle='--')
+	
+	ax.set_aspect(1)
+	if parallels is not None:
+		# Latitudes
+		m.drawparallels(parallels,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[2,1])
+	if meridians is not None:
+		# Longitudes
+		m.drawmeridians(meridians,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[2,1])
+
+	#==
+	# Second Panel
+	#==
+	
+	plt.subplot(122)
+	ax = plt.gca()
+	ax.patch.set_color('.5')
+
+	if mesh:
+		plt.pcolormesh(X[1], Y[1], data[1], cmaps=cmaps[1], vmin=vmin[1], vmax=vmax[1])
+	else:
+		levels = getContourfLevels(vmin[1], vmax[1], contourfNlevels)
+		plt.contourf(X[1], Y[1], data[1], cmap=cmaps[1], levels=levels)
+	
+	if xlabels[1] is not None:
+		plt.xlabel(xlabels[1], fontsize=fontsize)
+	if ylabels[1] is not None:
+		plt.ylabel(ylabels[1], fontsize=fontsize)
+		
+	#plt.xlim(-75,-70); plt.ylim(-1000,0)
+	if grid:
+		plt.grid()
+	
+	if text_data[1] is not None:
+		setText(plt.gca(), text_data[1], set_invisible=False)
+
+	plt.colorbar()
+	
+	if titles is not None:
+		plt.title(titles[1], fontsize=fontsize)
+		
+	#==
+	
+	plt.tight_layout()
+	if save:
+		plt.savefig(outpath + outname)
+		
+	if show:
+		plt.show()
+
+#==
+
+def quiver1by1Basemap(u, v, X, Y, d, lat_0, lon_0, width=2.8e6, height=1.7e6, contourf=None, figsize=(5,4), title='', fontsize=14, mesh=True, cmap='jet', vmin=None, vmax=None, xlabel='', ylabel='', save=False, outpath='', outname='quiver1by1Basemap.mp4', show=True, dpi=200, text_data=None, parallels=None, meridians=None, isf=None, outline=None):
 
 	from mpl_toolkits.basemap import Basemap
+	
+	#m = Basemap(width=width,height=height, projection='gnom',lat_0=lat_0,lon_0=lon_0)
+	m = Basemap(llcrnrlon=X[0,0],llcrnrlat=Y[0,0],urcrnrlon=X[-1,-1],urcrnrlat=Y[-1,-1], projection='merc',lat_0=lat_0+3,lon_0=lon_0-10)
 
-	m = Basemap(width=width,height=height, projection='gnom',lat_0=lat_0,lon_0=lon_0)
-
+	Xd = X[::d,::d]; Yd = Y[::d,::d]
 	X,Y = m(X,Y)
 	Xd,Yd = m(Xd,Yd)
 
 	fig = plt.figure(figsize=figsize, dpi=dpi)
 	ax = fig.add_subplot()
-	#plt.gca().patch.set_color('.25')
+	plt.gca().patch.set_color('.5')
 
 	if contourf is not None:
+		if mesh:
+			m.pcolormesh(X, Y, contourf, cmap=cmap)
+			m.colorbar()
+		else:
+			m.contour(X, Y, contourf, levels=[-3000, -2000, -1000])
+			m.colorbar()
 
-		# Plot
-		m.contourf(X, Y, contourf)
-		plt.colorbar()
+	if isinstance(u, (list)):
+		q = m.quiver(Xd,Yd,u[0][::d, ::d],v[0][::d, ::d], color='r', scale=2)
+		#plt.quiverkey(q,0.1, -0.1, 0.1, r'0.1 N m$^{-2}$',labelpos='W')
+		q = m.quiver(Xd,Yd,u[1][::d, ::d],v[1][::d, ::d], color='k', scale=2)
+		plt.quiverkey(q,0.1, -0.12, 0.1, r'0.1 N m$^{-2}$',labelpos='W')
 
-	q = m.quiver(Xd,Yd,u[0],v[0])
-
+	else:
+		u = u[::d, ::d]; v = v[::d, ::d]
+		q = m.quiver(Xd,Yd,u,v)
+		plt.quiverkey(q,0.0, -0.1, 0.1,'0.1 N m^-2',labelpos='W')
 	#m.fillcontinents(color='#cc9955', zorder = 0)
-	
-	if parallels is not None:
-		# Latitudes
-		parallels = m.drawparallels(parallels)
-		m.drawparallels(parallels,labels=[True,False,False,True])
-	if meridians is not None:
-		# Longitudes
-		meridians = m.drawmeridians(meridians)
-		m.drawmeridians(meridians,labels=[True,False,False,True])
 
-	#plt.xlabel('Longitude')
-	#plt.ylabel('Latitude')
-	plt.quiverkey(q,0.9, 0.05, 6,'6 m/s',labelpos='W')
+	if xlabel is not None:
+		plt.xlabel(xlabel, labelpad=20)
+	if ylabel is not None:
+		plt.ylabel(ylabel, labelpad=35)
 
 	if title is not None:
 		plt.title(title) 
@@ -719,20 +1110,38 @@ def quiver1by1Basemap(u, v, Xd, Yd, lat_0, lon_0, width=2.e6, height=1.7e6, cont
 	if text_data is not None:
 		setText(ax, text_data, i=0)
 
-	def animate(i):
-		q.set_UVC(u[i], v[i])
-		if text_data is not None:
-			setText(ax, text_data, i=i, set_invisible=True)
-		
-		# End if mesh	
+	ax.set_aspect(1)
+	if parallels is not None:
+		# Latitudes
+		m.drawparallels(parallels,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[2,1])
+	if meridians is not None:
+		# Longitudes
+		m.drawmeridians(meridians,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[2,1])
 
-	anim = animation.FuncAnimation(fig, animate, interval=50, frames=u.shape[0])
-	plt.draw()
+
+	if isf is not None:
+		#x, y = m(isf[0], isf[1])  # transform coordinates
+		#m.scatter(x, y, color='k', s=1)
+		extent = [X[0,0], X[0,-1], -Y[0,0], -Y[-1,0]]
+		m.imshow(1-isf, cmap=plt.cm.gray, interpolation='nearest', extent=extent, zorder=3);
+		#m.contour(X, Y, isf, levels=[1], colors='k')
+
+	if outline is not None:
+		lons = outline[0]
+		lats = outline[1]
+		lons, lats = m(lons, lats)
+
+		m.plot([lons[0], lons[0]], [lats[0], lats[1]], color='k', linestyle='--')
+		m.plot([lons[1], lons[1]], [lats[0], lats[1]], color='k', linestyle='--')
+		m.plot([lons[0], lons[1]], [lats[0], lats[0]], color='k', linestyle='--')
+		m.plot([lons[0], lons[1]], [lats[1], lats[1]], color='k', linestyle='--')
+
+	plt.tight_layout()
 
 	#==
 	
 	if save:
-		anim.save(outpath+outname,metadata={'artist':'Guido'},writer='ffmpeg',fps=fps,bitrate=bitrate)
+		plt.savefig(outpath + outname)
 		
 	if show:
 		plt.show()	

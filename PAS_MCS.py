@@ -24,44 +24,259 @@ import time
 
 #==========================================================
 
-FORMSTRESS = True
-if FORMSTRESS:
+HEAT_TRANSPORT = False
+if HEAT_TRANSPORT:
+	
+	ts = 0	
+	
+	Cp = 3974.0
+	rho0 = 1030.
 
-	# account for SSH in new Pb calc.
+	path = '/home/michai/Documents/data/MCS_114/run/'
+	grid = Grid(path)
 
-	path = '/home/michai/Documents/data/PAS_8512/run/'
-	grid = Grid_PAS(path)
-	Pb = np.load(path+'Pb_ETAN_mean_PAS851.npy')
+	X = grid.XC[1,:] / 1000.
+	Y = grid.YC[:,1] / 1000.
+	Z = grid.RC.squeeze()
 
-	lats = [-76, -71.5]; lons = [245, 260]#[230, 270]#
-	latsi = grid.getIndexFromLat(lats); lonsi = grid.getIndexFromLon(lons)
-	X = grid.Xsubr1D(lons)
-	Y = grid.Ysubr1D(lats)
+	# Subregions for heat transport.
 
-	Pb = tools.getSubregionXY(Pb, latsi, lonsi)
-	H = - grid.bathy
-	Hx = tools.ddx(H, grid.DXG)
-	Hy = tools.ddy(H, grid.DYG)
+	lat = 96
+
+	# troughW
+	lon1 = [100e3, 200e3]; depth1 = [-10, -600]
+	lon1 = grid.getIndexFromLon(lon1)
+	depth1 = grid.getIndexFromDepth(depth1)
+	label1 = 'trough W'
+
+	# troughE
+	lon2 = [410e3, 520e3]; depth2 = [-10, -600]
+	lon2 = grid.getIndexFromLon(lon2)
+	depth2 = grid.getIndexFromDepth(depth2)
+	label2 = 'trough E'
+
+	# troughE AND sill
+	lon3 = [410e3, 600e3]; depth3 = [-10, -600]
+	lon3 = grid.getIndexFromLon(lon3)
+	depth3 = grid.getIndexFromDepth(depth3)
+	label3 = 'trough E + sill'
+
+	# For the rest, just subtract.
+	label4 = 'All'
+	label5 = 'The rest'
+
+		
+	#==
+
+	T = readVariable('SALT', path, meta=False)[ts,:,:lat+1,:]#[ts:,...,lat:lat+2,:]
+	Tf, Thf = tools.theta_f(grid, S=T)
 
 
-	Pb = ptt.maskBathyXY(Pb, grid, 0, timeDep=False, subregion=True, lats=latsi, lons=lonsi)
+	T = readVariable('THETA', path, meta=False)[ts:,...,:,:]
 
-	Hx = tools.getSubregionXY(Hx, latsi, lonsi)
-	Hx = ptt.maskBathyXY(Hx, grid, 0, timeDep=False, subregion=True, lats=latsi, lons=lonsi)
+	HC = rho0 * Cp * (T[:,:,:lat+1,:] - Tf)
+	HC = np.sum((HC * grid.DXG[:lat+1,:] * grid.hFacS[:,:lat+1,:] * grid.DRF), axis=(1,2,3))
+	plt.plot(HC); plt.show(); quit()
 
-	vmin = 0.2e7; vmax = 1.e7
-	Pb = tools.boundData(Pb, vmin, vmax, scale=0.9999)
+	v = tools.interp(readVariable('VVEL', path, meta=False)[ts:,...,lat,:], 'v')
+	Tf = Tf[...,lat,:]
 
-	#pt.plot1by1(Pb, X=X, Y=Y, vmin=vmin, vmax=vmax, mesh=True, title='Bottom pressure')
-	#pt.plot1by1(Hx, X=X, Y=Y, mesh=True, title='Hx', vmin=-0.01, vmax=0.01)
-	#pt.plot1by1(H, mesh=True, title='H')
 
-	TFS = Hx*Pb
-	vmin = -1e6; vmax = -vmin
-	pt.plot1by1(TFS, X=X, Y=Y, vmin=vmin, vmax=vmax, mesh=False, title='TFS')
+	area = grid.DXG[lat] * grid.hFacS[:,lat] * grid.DRF[:,0]
+	area = ptt.maskBathyXZ(area, grid, yi=lat, timeDep=False)
+
+	HC = rho0 * Cp * T
+	T = rho0 * Cp * v * (T - Tf)
+	T = ptt.maskBathyXZ(T, grid, yi=lat, timeDep=True)
+
+	T *= area
+
+	# Get various T slices
+	T1 = np.ma.sum(T[:, depth1[0]:depth1[1], lon1[0]:lon1[1]], axis=(1,2))
+	T2 = np.ma.sum(T[:, depth2[0]:depth2[1], lon2[0]:lon2[1]], axis=(1,2))
+	T3 = np.ma.sum(T[:, depth3[0]:depth3[1], lon3[0]:lon3[1]], axis=(1,2))
+	T4 = np.ma.sum(T, axis=(1,2))
+	T5 = T4 - T1 - T3
+	
+
+	# Normalise slices
+	norm = True
+	if norm:
+		area1 = np.ma.sum(area[depth1[0]:depth1[1], lon1[0]:lon1[1]])
+		T1 = T1 / area1
+		area2 = np.ma.sum(area[depth2[0]:depth2[1], lon2[0]:lon2[1]])
+		T2 = T2 / area2 
+		area3 = np.ma.sum(area[depth3[0]:depth3[1], lon3[0]:lon3[1]])
+		T3 = T3 / area3
+		area4 = np.ma.sum(area)
+		T4 = T4 / area4
+		area5 = area4 - area1 - area3
+		T5 = T5 / area5
+
+	smooth = True
+	if smooth:
+		T1 = tools.smooth3(T1)
+		T2 = tools.smooth3(T2)
+		T3 = tools.smooth3(T3)
+		T4 = tools.smooth3(T4)
+		T5 = tools.smooth3(T5)
+
+	# NOW PLOT
+
+	Ts = [T1, T2, T3, T4, T5]
+	labels = [label1, label2, label3, label4, label5]
+
+	for i in range(5):
+		plt.plot(Ts[i], label=labels[i])
+
+	plt.grid();	plt.legend(); plt.show()
+	quit()
+	
+	T = np.mean(T, axis=0)
+	T = ptt.maskBathyXZ(T, grid, yi=lat, timeDep=False)
+
+	vmin = -2e5; vmax = -vmin
+	T = tools.boundData(T, vmin, vmax, scale=0.9999)
+
+	pt.plot1by2([T, T], X=[X,X], Y=[Z,Z], vmin=[vmin,vmin], vmax=[vmax,vmax])
+
+	
+	
+
+
 
 	quit()
 	
+	# Four windows:
+
+	lat2 = -71.6; lon2 = [360-115, 360-112]; depth2 = [-250, -750]
+	lat3 = [-71.8, -71.2]; lon3 = [360-115, 360-112]; depth3 = -500
+	lat4 = lat1; lon4 = 360-112; depth4 = depth1
+
+	# Convert physical values to indices.
+	lats1 = grid.getIndexFromLat(lat1); depths1 = grid.getIndexFromDepth(depth1)
+	xi1= grid.getIndexFromLon(lon1)
+	
+	lons2 = grid.getIndexFromLon(lon2); depths2 = grid.getIndexFromDepth(depth2)
+	yi2 = grid.getIndexFromLat(lat2)
+	
+	lats3 = grid.getIndexFromLat(lat3); lons3 = grid.getIndexFromLon(lon3)
+	zi3 = grid.getIndexFromDepth(depth3)
+	
+	lats4 = grid.getIndexFromLat(lat4); depths4 = grid.getIndexFromDepth(depth4)
+	xi4= grid.getIndexFromLon(lon4)
+	
+	#==
+	
+	# Get zonal transport
+	fname = 'stateUvel.nc'; var = 'UVEL'; cmap = 'coolwarm'; vmax = 0.1; vmin = -vmax
+	#data = io.readData('Uvel', path,)
+	ncfile = nc.Dataset(path+'', 'r'); data = ncfile.variables[var]
+	ut = tools.zonalTransport(data, grid)
+	
+	# Zonal transport through windows 1 and 4.
+	ut1 = tools.getSubregionYZ(ut[..., xi1], grid, lats1, depths1)
+	ut4 = tools.getSubregionYZ(ut[..., xi4], grid, lats4, depths4)
+
+	# Get meridional transport through window 2.
+	fname = 'stateVvel.nc'; var = 'VVEL'; vmin = -0.2; vmax = 0.2
+	ncfile = nc.Dataset(path+fname, 'r'); data = ncfile.variables[var]
+	vt = tools.meridTransport(data, grid)
+	vt2 = tools.getSubregionXZ(vt[:, :, yi2, ], grid, lons2, depths2)
+	
+	# Get vertical transport through window 3.
+	#fname = 'stateWvel.nc'; var = 'WVEL'; cmap = 'coolwarm'; vmax = 0.01; vmin = -vmax
+	#ncfile = nc.Dataset(path+fname, 'r'); data = ncfile.variables[var]
+	wt = tools.meridTransport(data, grid)
+	wt3 = tools.getSubregionXY(wt[:, zi3, ], grid, lats3, lons3)
+		
+	# Transports are already scaled by grid size, so can just sum to get total transport.
+	ut1 = np.sum(ut1, axis=(1,2))
+	ut4 = np.sum(ut4, axis=(1,2))
+	vt2 = np.sum(vt2, axis=(1,2))
+	wt3 = np.sum(wt3, axis=(1,2))
+
+	data = [ut1, ut4, vt2, wt3]
+	labels = ['ut window 1', 'ut window 4', 'vt window 2', 'wt window 3']
+	TIME = ncfile.variables['TIME'][:]
+	pt.timeSeries(data, TIME=TIME, labels=labels, ylabel='Volume transport')
+	
+
+FORMSTRESS = False
+if FORMSTRESS:
+
+	PAS = False
+	
+	if PAS:
+
+		path = '/home/michai/Documents/data/PAS_8512/run/'
+		grid = Grid_PAS(path)
+		Pb = np.load(path+'Pb_ETAN_mean_PAS851.npy')
+
+		lats = [-76, -71.5]; lons = [245, 260]#[230, 270]#
+		latsi = grid.getIndexFromLat(lats); lonsi = grid.getIndexFromLon(lons)
+		X = grid.Xsubr1D(lons)
+		Y = grid.Ysubr1D(lats)
+
+		Pb = tools.getSubregionXY(Pb, latsi, lonsi)
+		H = - grid.bathy
+		Hx = tools.ddx(H, grid.DXG)
+		Hy = tools.ddy(H, grid.DYG)
+
+
+		Pb = ptt.maskBathyXY(Pb, grid, 0, timeDep=False, subregion=True, lats=latsi, lons=lonsi)
+
+		Hx = tools.getSubregionXY(Hx, latsi, lonsi)
+		Hx = ptt.maskBathyXY(Hx, grid, 0, timeDep=False, subregion=True, lats=latsi, lons=lonsi)
+
+		vmin = 0.2e7; vmax = 1.e7
+		Pb = tools.boundData(Pb, vmin, vmax, scale=0.9999)
+
+		#pt.plot1by1(Pb, X=X, Y=Y, vmin=vmin, vmax=vmax, mesh=True, title='Bottom pressure')
+		#pt.plot1by1(Hx, X=X, Y=Y, mesh=True, title='Hx', vmin=-0.01, vmax=0.01)
+		#pt.plot1by1(H, mesh=True, title='H')
+
+		TFS = Hx*Pb
+		vmin = -1e6; vmax = -vmin
+		pt.plot1by1(TFS, X=X, Y=Y, vmin=vmin, vmax=vmax, mesh=False, title='TFS')
+
+
+	else:
+
+		rho0 = 1030.
+		g = 9.81
+
+		path = '/home/michai/Documents/data/MCS_113/run/'
+		grid = Grid(path)
+
+		depth = - grid.bathy
+		SSH = readVariable('ETAN', path, meta=False)
+		depth = depth + SSH
+
+
+		Pb = readVariable('PHIBOT', path, meta=False)
+		Pb = depth * rho0 * g + Pb * rho0
+
+		depth = ptt.maskBathyXY(depth, grid, 0, timeDep=True)
+		Hx = tools.ddx(depth, grid.DXG)
+
+		Hx = np.where(np.abs(Hx)>0.05, 0, Hx)
+
+		Pb = ptt.maskBathyXY(Pb, grid, 0, timeDep=True)
+
+		TFS = Pb * Hx		
+
+		#vmin = 0.2e7; vmax = 1.e7
+		#Pb = tools.boundData(Pb, vmin, vmax, scale=0.9999)
+
+		vmin = -1.e5; vmax = -vmin
+		TFS = tools.boundData(TFS, vmin, vmax, scale=0.9999)
+		print(np.mean(TFS[-1]))
+
+		pt.plot1by1(TFS[-1], mesh=False, title='TFS')
+
+	quit()
+		
 	
 #==
 
@@ -103,7 +318,7 @@ if Bathy:
 #==
 
 # (Y,Z)-plots of Theta near continental shelf slope.
-ASF = False
+ASF = True
 if ASF:
 
 	# Window 1
@@ -126,7 +341,7 @@ if ASF:
 
 	path = '/home/michai/Documents/data/PAS_851/run/'
 	grid = Grid_PAS(path)
-	T = np.load(path+'Tmean_PAS851.npy')
+	T = np.load(path+'Smean_PAS851.npy')
 
 	X = grid.XC#[1,:]
 	Y = grid.YC#[:,1]
@@ -134,11 +349,6 @@ if ASF:
 
 	##plt.plot(T[:20,180,20], Z[:20]); plt.xlim(33.5, 35.); plt.grid(); plt.show();
 
-	#T0 = ptt.maskBathyXY(T[0], grid, 0, timeDep=False)
-	#T0 = ptt.maskDraftXY(T0, grid, 0, timeDep=False)
-	#fig, ax = plt.subplots()
-	#plt.subplot(111); plt.gca().patch.set_color('.25')
-	#plt.pcolor(T0, vmin=33.4, vmax=34., cmap='plasma'); plt.colorbar(); plt.show(); quit()
 
 	vmin, vmax, cmap, title = getPlottingVars('THETA')
 	xlabel = 'LAT (deg.)'; ylabel = 'DEPTH (m)'
@@ -173,7 +383,7 @@ if ASF:
 
 #==
 
-thetaHeight = False
+thetaHeight = True
 if thetaHeight:
 
 	PAS = False
@@ -243,7 +453,7 @@ if thetaHeight:
 	else:
 
 
-		exp = 'MCS_111'
+		exp = 'MCS_114'
 		path = '/home/michai/Documents/data/'+exp+'/run/'
 		grid = Grid(path)
 		X = grid.XC[1,:]/1000.
@@ -254,7 +464,7 @@ if thetaHeight:
 		if ANIM:
 
 			ts = 0
-			T = readVariable('THETA', path, file_format='nc', meta=True)
+			T = readVariable('THETA', path, meta=True)
 			TIME = T['TIME'][ts:]
 			T = T['THETA'][ts:]
 
@@ -266,7 +476,7 @@ if thetaHeight:
 
 
 		else:
-			T = np.mean(readVariable('THETA', path, file_format='nc', meta=False)[58:], axis=0)
+			T = np.mean(readVariable('THETA', path, meta=False)[58:], axis=0)
 			# Get z-indices of level with Theta closest to THERM.
 			Tz = np.argmin(np.abs(T-THERM),axis=0)
 			ThermZ = Z[Tz]
@@ -346,9 +556,9 @@ if quiver:
 		VAR = 'ETAN'
 		vmin, vmax, cmap, title = getPlottingVars(VAR)
 
-		contour = readVariable(VAR, path, file_format='nc', meta=False)[ts]
-		u = readVariable('UVEL', path, file_format='nc', meta=False)[ts]
-		v = readVariable('VVEL', path, file_format='nc', meta=False)[ts]
+		contour = readVariable(VAR, path, meta=False)[ts]
+		u = readVariable('UVEL', path, meta=False)[ts]
+		v = readVariable('VVEL', path, meta=False)[ts]
 		
 	#==
 
@@ -416,7 +626,7 @@ if btpcStr:
 		Y = grid.YC[:,1]/1000.
 		Z = grid.RC.squeeze()
 
-		u = readVariable('UVEL', path, file_format='nc', meta=False)[-1]
+		u = readVariable('UVEL', path, meta=False)[-1]
 		u = ptt.maskBathyAll(u, grid, timeDep=False)
 		T = tools.barotropicStreamfunction(u, grid, timeDep=False)
 		bathy = grid.bathy
@@ -495,8 +705,8 @@ if brclnc:
 		Z = grid.RC.squeeze()
 
 		# Load time-mean velocities
-		u = readVariable('UVEL', path, file_format='nc', meta=False)[60:]
-		v = readVariable('VVEL', path, file_format='nc', meta=False)[60:]
+		u = readVariable('UVEL', path, meta=False)[60:]
+		v = readVariable('VVEL', path, meta=False)[60:]
 		u = np.mean(u, axis=0); v = np.mean(v, axis=0)
 	
 		# Transfer to t-points.
@@ -595,13 +805,13 @@ if animateUVTdepth:
 		Z = grid.RC.squeeze()
 
 		# Load time-mean velocities
-		u = readVariable('UVEL', path, file_format='nc', meta=False)[ts:]
-		v = readVariable('VVEL', path, file_format='nc', meta=False)[ts:]
+		u = readVariable('UVEL', path, meta=False)[ts:]
+		v = readVariable('VVEL', path, meta=False)[ts:]
 		u = np.mean(u, axis=0); v = np.mean(v, axis=0)
 		u = tools.interp(u, 'u'); v = tools.interp(v, 'v')
 
 		# Load temperature
-		T = readVariable('THETA', path, file_format='nc', meta=False)[ts:]
+		T = readVariable('THETA', path, meta=False)[ts:]
 		T = np.mean(T, axis=0)
 		cvmin, cvmax, ccmap, title = getPlottingVars('THETA')
 
@@ -721,7 +931,7 @@ if animateUVT:
 
 		ts = 0; te = -1
 
-		path = '/home/michai/Documents/data/MCS_113/run/'
+		path = '/home/michai/Documents/data/MCS_114/run/'
 		grid = Grid(path)
 		contour = grid.bathy
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
@@ -734,13 +944,13 @@ if animateUVT:
 		Z = grid.RC.squeeze()
 
 		# Load time-mean velocities
-		u = readVariable('UVEL', path, file_format='nc', meta=False)[ts:, level]
+		u = readVariable('UVEL', path, meta=False)[ts:, level]
 		print(u.shape)
-		v = readVariable('VVEL', path, file_format='nc', meta=False)[ts:, level]
+		v = readVariable('VVEL', path, meta=False)[ts:, level]
 		u = tools.interp(u, 'u'); v = tools.interp(v, 'v')
 
 		# Load temperature
-		T = readVariable('THETA', path, file_format='nc', meta=False)[ts:, level]
+		T = readVariable('THETA', path, meta=False)[ts:, level]
 		cvmin, cvmax, ccmap, title = getPlottingVars('THETA')
 		title = '(u, v); T; bathy; Z = ' + str(grid.RC.squeeze()[level]) + ' m'
 
@@ -804,8 +1014,8 @@ if animateUVshear:
 		Z = grid.RC.squeeze()
 
 		# Load time-mean velocities
-		u = readVariable('UVEL', path, file_format='nc', meta=False)[ts:]
-		v = readVariable('VVEL', path, file_format='nc', meta=False)[ts:]
+		u = readVariable('UVEL', path, meta=False)[ts:]
+		v = readVariable('VVEL', path, meta=False)[ts:]
 
 		u = u[:,level2] - u[:,level1]
 		v = v[:,level2] - v[:,level1]
@@ -1016,15 +1226,15 @@ if T_transportDepth:
 		#ts = 0; te = 10
 
 		# Load variables and define fluxes
-		T = readVariable('THETA', path, file_format='nc', meta=False)[ts:te]
+		T = readVariable('THETA', path, meta=False)[ts:te]
 
-		u = readVariable('UVEL', path, file_format='nc', meta=False)[ts:te]
+		u = readVariable('UVEL', path, meta=False)[ts:te]
 		u = tools.interp(u, 'u'); uT = np.mean(u*T, axis=0);
 
-		u = readVariable('VVEL', path, file_format='nc', meta=False)[ts:te]
+		u = readVariable('VVEL', path, meta=False)[ts:te]
 		u = tools.interp(u, 'v'); vT = np.mean(u*T, axis=0);
 
-		u = readVariable('WVEL', path, file_format='nc', meta=False)[ts:te]
+		u = readVariable('WVEL', path, meta=False)[ts:te]
 		u = tools.interp(u, 'w'); wT = np.mean(u*T, axis=0);
 
 		# Compute convergences.		
@@ -1083,20 +1293,20 @@ if T_transport:
 
 
 		# Load variables and define fluxes
-		T = readVariable('THETA', path, file_format='nc', meta=True)
+		T = readVariable('THETA', path, meta=True)
 		TIME = T['TIME'][:]
 		T = T['THETA'][:, level]
 		text_data = ptt.getTextData(TIME, 'month', X[1], Y[1])
 		print(len(text_data['text']))
 		print(T.shape)
 
-		u = readVariable('UVEL', path, file_format='nc', meta=False)
+		u = readVariable('UVEL', path, meta=False)
 		u = tools.interp(u[:,level], 'u'); uT = u*T
 
-		u = readVariable('VVEL', path, file_format='nc', meta=False)
+		u = readVariable('VVEL', path, meta=False)
 		u = tools.interp(u[:,level], 'v'); vT = u*T
 
-		u = readVariable('WVEL', path, file_format='nc', meta=False)
+		u = readVariable('WVEL', path, meta=False)
 		u = tools.interp(u[:,level], 'w'); wT = u*T
 
 		# Compute convergences.		

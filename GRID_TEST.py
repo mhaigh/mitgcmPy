@@ -423,12 +423,13 @@ animateSurface = True
 if animateSurface:
 
 	#path = '/home/michai/Documents/data/PAS_666/run/'
-	#path = '/home/michai/Documents/data/PISOMIP_112/run/'
-	path = '/home/michai/Documents/data/MCS_113/run/'
+	path = '/home/michai/Documents/data/PISOMIP_003/run/'
+	#path = '/home/michai/Documents/data/MCS_114/run/'
 
 	grid = Grid(path)
 	#grid = Grid_PAS(path)
 	bathy = grid.bathy
+
 
 	X = grid.XC[1,:]/1000.
 	Y = grid.YC[:,1]/1000.
@@ -438,14 +439,17 @@ if animateSurface:
 	#plt.plot(bathy[:,215]); plt.plot(bathy[:, 120]); plt.show();
 	#pt.plot1by1(grid.bathy, mesh=True); quit()
 
-	#VAR = 'ETAN'
+	print(grid.landC)
+	pt.plot1by1(grid.landC); quit()
+	
+	VAR = 'ETAN'
 	#VAR = 'RHOAnoma'
 	#VAR = 'THETA' 
 	#VAR = 'PHIHYD'
 	#VAR = 'WVELTH';
 	#VAR = 'WVELTH'#','UVELTH','VVELTH','WVELTH', 'TOTTTEND'
 	#VAR = 'SALT'	
-	VAR = 'UVEL'
+	#VAR = 'UVEL'
 	#VAR = 'VVEL'
 	#VAR = 'VVEL'
 	#VAR = 'WVEL'
@@ -473,15 +477,8 @@ if animateSurface:
 	# DON'T CHANGE THIS. CHANGE ONE IN IF STATEMENT IF YOU WANT.
 	level = 0
 
-	#u1 = -np.trapz(data[-1]*grid.hFacW, zc, axis=0)
-	u1 = np.sum(data[-1]*grid.hFacW*grid.DRF, axis=0)
-	u2 = np.sum(data*grid.hFacW*grid.DRF, axis=1)
-
-	vmin = -100; vmax=-vmin; vmin = [vmin, vmin]; vmax = [vmax, vmax]
-	pt.plot1by2([u1, u2[-1]-u1], mesh=True, vmin=vmin, vmax=vmax); quit()
-
 	if VAR not in flatVars:
-		level = 0
+		level = 20
 		data = data[:,level]
 		print('Z = ' + str(grid.RC.squeeze()[level]))
 
@@ -870,7 +867,7 @@ if animateDragBot:
 	path_root = '/home/michai/Documents/data/'
 
 	# These are cases with CS walls.	
-	paths = [path_root+'MCS_103/run/', path_root+'MCS_104/run/']
+	paths = [path_root+'MCS_113/run/', path_root+'MCS_104/run/']
 	labels = ['wind16 botStress', 'wind0 botStress', 'wind0 x = 0', 'wind0 x = 120']
 	
 	grid = Grid(paths[0])
@@ -902,17 +899,10 @@ if animateDragBot:
 	text = [tscale_name + ' ' + str(int(tt)) for tt in t]
 	text_data = {'text':text, 'xloc':Y[1], 'yloc':vmin, 'fontdict':{'fontsize':14, 'color':'k'}}
 
-	# Get bottom val
-	ub = tools.bottom(u[VAR][:], grid, 'u')
-	print(ub.shape)
+	drag = -tools.computeBotDragQuadr0(paths[0], grid)
+	drag = -readVariable('botTauX', paths[0], file_format='nc', meta=False)/rho0
 
-	vb = readVariable('VVEL', paths[0], file_format='nc', meta=False)
-	vb = tools.bottom(vb, grid, 'v')
-
-	hFacCb = tools.bottom(grid.hFacC, grid, 'h', timeDep=False)
-	ub = tools.interp(ub, 'u'); vb = tools.interp(vb, 'v'); 
-	KE = 0.5 * (ub**2 + vb**2) * hFacCb
-	drag = Cd * np.sqrt(2*KE) * ub
+	u16 = ptt.maskBathyXY(u16, grid, 0, timeDep=False)
 	drag = ptt.maskBathyXY(drag, grid, 0, timeDep=True)
 
 	# COMMENT OUT AS APPROPRIATE
@@ -925,15 +915,9 @@ if animateDragBot:
 
 	# Now get other SSHs.
 	for di in range(len(paths)-1):
-		ub = readVariable(VAR, paths[di+1], file_format='nc', meta=False)
-		ub = tools.bottom(ub, grid, 'u')
-		vb = readVariable('VVEL', paths[0], file_format='nc', meta=False)
-		vb = tools.bottom(vb, grid, 'v')
 
-		ub = tools.interp(ub, 'u'); vb = tools.interp(vb, 'v'); 
-		KE = 0.5 * (ub**2 + vb**2) * hFacCb
-		drag = Cd * np.sqrt(2*KE) * ub
-		drag = ptt.maskBathyXY(drag, grid, 0, timeDep=True)
+		print(paths[di+1])
+		drag = -tools.computeBotDragQuadr0(paths[di+1], grid)
 
 		# COMMENT OUT AS APPROPRIATE
 		# Two quadr drags
@@ -947,7 +931,10 @@ if animateDragBot:
 	vmin=-4e-5; vmax=-vmin
 	constLineLabel = ['wind16', 'wind0']
 
-	pt.animateLine(data, X=Y[1:-1], vmin=vmin, vmax=vmax, xlabel=xlabel, ylabel=ylabel, labels=labels, text_data=text_data, constLine=[u16[1:-1,0], u0[1:-1,0]], constLineLabel=constLineLabel)
+	u0 = np.ma.sum(u0, axis=-1) / Nx
+	u16 = np.ma.sum(u16, axis=-1) / Nx
+
+	pt.animateLine(data, X=Y[1:-1], vmin=vmin, vmax=vmax, xlabel=xlabel, ylabel=ylabel, labels=labels, text_data=text_data, constLine=[u16[1:-1], u0[1:-1]], constLineLabel=constLineLabel)
 	quit()
 
 
