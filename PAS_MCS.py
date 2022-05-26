@@ -322,16 +322,16 @@ ASF = True
 if ASF:
 
 	# Window 1
-	lat1 = [-75, -69]; lon1 = 233; depth1 = [0, -1000]
+	lat1 = [-75, -69]; lon1 = 250; depth1 = [0, -1000]
 
 	# Window 2
-	lat2 = [-75, -69]; lon2 = 240; depth2 = depth1
+	lat2 = [-75, -69]; lon2 = 257; depth2 = depth1
 	
 	# Window3
-	lat3 = [-75, -69]; lon3 = 245; depth3 = depth1
+	lat3 = [-75, -69]; lon3 = 258; depth3 = depth1
 
 	# Window4
-	lat4 = [-75, -69]; lon4 = 250; depth4 = depth1
+	lat4 = [-75, -69]; lon4 = 254; depth4 = depth1
 
 	lats = [lat1, lat2, lat3, lat4]
 	lons = [lon1, lon2, lon3, lon4]
@@ -341,7 +341,7 @@ if ASF:
 
 	path = '/home/michai/Documents/data/PAS_851/run/'
 	grid = Grid_PAS(path)
-	T = np.load(path+'Smean_PAS851.npy')
+	T = np.load(path+'Tmean_PAS851.npy')
 
 	X = grid.XC#[1,:]
 	Y = grid.YC#[:,1]

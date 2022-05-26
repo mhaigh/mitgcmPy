@@ -310,13 +310,13 @@ if TEST_depthAverage:
 
 #==
 
-TEST_animate = False
+TEST_animate = True
 if TEST_animate:
 
 	#path = '/home/michai/Documents/data/MCS_002/run/'
 
-	path = '/home/michai/Documents/data/MCS_110/run/'
-	#path = '/home/michai/Documents/data/PISOMIP_003/run/'
+	#path = '/home/michai/Documents/data/MCS_104/run/'
+	path = '/home/michai/Documents/data/PISOMIP_003/run/'
 	#pathG = '/home/michai/Documents/data/MCS_018/run/'
 
 	grid = Grid(path)
@@ -326,14 +326,16 @@ if TEST_animate:
 
 	#VAR = 'ETAN'
 	#VAR = 'RHOAnoma'
-	VAR = 'THETA'
+	#VAR = 'THETA'
 	#VAR = 'PHIHYD'
 	#VAR = 'DFrE_TH';
 	#VAR = 'WVELTH'#','UVELTH','VVELTH','WVELTH', 'TOTTTEND'
-	#VAR = 'SALT'	
+	VAR = 'SALT'	
 	#VAR = 'UVEL'	
 	#VAR = 'VVEL'
 	#VAR = 'WVEL'
+
+	plt.contourf(grid.bathy); plt.colorbar(); plt.show()
 
 	vmin, vmax, cmap, title = getPlottingVars(VAR)
 	#vmin = 33.32; vmax = 34.5
@@ -344,7 +346,8 @@ if TEST_animate:
 	text_data = ptt.getTextData(data.variables['TIME'][:], 'month', X[1], Y[-2], color='w')
 	data = data[VAR][:]
 
-	#plt.plot(data[-1,:,-1,-1]); plt.show(); quit()
+	d = np.mean(data[-1,:,-2,:], axis=-1)
+	plt.plot(d, Y); plt.grid(); plt.show(); quit()
 
 	MEAN = False
 	ASYM = False
@@ -419,12 +422,12 @@ if TEST_animateX:
 	
 #==
 
-animateSurface = True
+animateSurface = False
 if animateSurface:
 
 	#path = '/home/michai/Documents/data/PAS_666/run/'
-	path = '/home/michai/Documents/data/PISOMIP_003/run/'
-	#path = '/home/michai/Documents/data/MCS_114/run/'
+	#path = '/home/michai/Documents/data/PISOMIP_003/run/'
+	path = '/home/michai/Documents/data/MCS_114/run/'
 
 	grid = Grid(path)
 	#grid = Grid_PAS(path)
@@ -435,21 +438,15 @@ if animateSurface:
 	Y = grid.YC[:,1]/1000.
 	xlabel = 'LON (km)'; ylabel = 'LAT (km)'
 	ny, nx = bathy.shape
-
-	#plt.plot(bathy[:,215]); plt.plot(bathy[:, 120]); plt.show();
-	#pt.plot1by1(grid.bathy, mesh=True); quit()
-
-	print(grid.landC)
-	pt.plot1by1(grid.landC); quit()
 	
-	VAR = 'ETAN'
+	#VAR = 'ETAN'
 	#VAR = 'RHOAnoma'
 	#VAR = 'THETA' 
 	#VAR = 'PHIHYD'
 	#VAR = 'WVELTH';
 	#VAR = 'WVELTH'#','UVELTH','VVELTH','WVELTH', 'TOTTTEND'
 	#VAR = 'SALT'	
-	#VAR = 'UVEL'
+	VAR = 'UVEL'
 	#VAR = 'VVEL'
 	#VAR = 'VVEL'
 	#VAR = 'WVEL'
@@ -465,9 +462,9 @@ if animateSurface:
 	text_data = ptt.getTextData(data.variables['TIME'][:], 'month', X[1], Y[1])
 	data = data[VAR][:]
 
-	PLOT_MEAN = False
+	PLOT_MEAN = True
 	if PLOT_MEAN:
-		data_mean = np.mean(data[60:,], axis=0)
+		data_mean = np.mean(data[60:,0,], axis=0)
 		data_mean = tools.boundData(data_mean, vmin, vmax, scale=0.99999)
 		data_mean = ptt.maskBathyXY(data_mean, grid, 0, timeDep=False)
 		taux = 300+150*tools.get05cosWind(nx,ny)[:,0]
