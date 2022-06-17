@@ -58,7 +58,7 @@ uv = np.mean(u*v, axis=0)
 w = readVariable('WVEL', path, file_format='nc', meta=False)[ts:te+1]
 uw = np.mean(u*w, axis=0)
 
-conv = - tools.ddx(uu, grid.DXG) - tools.ddy(uv, grid.DYG) - tools.ddz(uw, grid. DRF)
+conv = - tools.ddx(uu, grid.DXG) - tools.ddy(uv, grid.DYG) - tools.ddz(uw, grid.DRF)
 
 conv = np.sum(conv*grid.hFacC*grid.DRF, axis=0)
 
