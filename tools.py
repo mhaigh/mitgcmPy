@@ -78,11 +78,14 @@ def zonalTransport(u, grid):
 
 #==
 
-def meridTransport(v, grid):
+def meridTransport(v, grid, yi=None):
 	'''Return meridional transport.'''
 	
-	return v * grid.DXG * grid.hFacS * grid.DRF
+	if yi is None:
+		return v * grid.DXG * grid.hFacS * grid.DRF
 	
+	else:
+		return v * grid.DXG[yi] * grid.hFacS[:,yi] * grid.DRF[:,0]
 #==
 
 def vertTransport(w, grid):
@@ -492,9 +495,11 @@ def getIsothermHeight(T, THERM, grid, timeDep=True, interp=True, botVal=np.nan):
 	ThermZ = grid.RC.squeeze()[Tz]
 	ThermZ_save = ThermZ.copy()
 
-	if interp and timeDep:
+	if interp:
 
-		Nt, Nz, Ny, Nx = T.shape	
+		shape = T.shape
+		
+		Nz, Ny, Nx = shape[-3], shape[-2], shape[-1]
 
 		# Heights of levels above and below
 		ThermZup = grid.RC.squeeze()[Tz-1]
@@ -505,12 +510,22 @@ def getIsothermHeight(T, THERM, grid, timeDep=True, interp=True, botVal=np.nan):
 		Y = [i for subX in Y for i in subX]
 		X = [[i]*Ny for i in range(Nx)]
 		X = [X[j][i] for i in range(Ny) for j in range(Nx)]
-		for ti in range(T.shape[0]):
-			THERMUP = T[ti,Tz[ti].flatten()-1,Y,X].reshape((Ny,Nx))
-			THERMDOWN = T[ti,Tz1[ti].flatten(),Y,X].reshape((Ny,Nx))
-			THERM_Tz = T[ti,Tz[ti].flatten(),Y,X].reshape((Ny,Nx))
-		
-			ThermZ[ti] = ThermZdown[ti] + (ThermZup[ti]-ThermZdown[ti]) * (THERM - THERMDOWN) / (THERMUP-THERMDOWN)
+
+		if timeDep:
+			Nt = shape[0]
+			for ti in range(T.shape[0]):
+				THERMUP = T[ti,Tz[ti].flatten()-1,Y,X].reshape((Ny,Nx))
+				THERMDOWN = T[ti,Tz1[ti].flatten(),Y,X].reshape((Ny,Nx))
+				THERM_Tz = T[ti,Tz[ti].flatten(),Y,X].reshape((Ny,Nx))
+				ThermZ[ti] = ThermZdown[ti] + (ThermZup[ti]-ThermZdown[ti]) * (THERM - THERMDOWN) / (THERMUP-THERMDOWN)
+
+		else:
+			THERMUP = T[Tz.flatten()-1,Y,X].reshape((Ny,Nx))
+			THERMDOWN = T[Tz1.flatten(),Y,X].reshape((Ny,Nx))
+			THERM_Tz = T[Tz.flatten(),Y,X].reshape((Ny,Nx))
+			ThermZ = ThermZdown + (ThermZup-ThermZdown) * (THERM - THERMDOWN) / (THERMUP-THERMDOWN)
+
+		#==
 
 	# Mask where isotherm doesn't exist
 	ThermZ = np.where(ThermZ_save<grid.bathy, botVal, ThermZ)
@@ -618,5 +633,94 @@ def computeBotDragQuadr_interp(path, grid, direction='zonal', Cd=2.5e-3):
 
 	return drag
 
+#==
+
+def theta_f(grid, S=None, p=None, rho0=1030., g=9.81, nonlinear=True, path=None):
+	'''Compute in-situ freezing point of seawater from linear EOS.'''
+
+	if nonlinear:
+		a0 = -0.0575
+		a1 = 1.710523e-3
+		a2 = -2.154996e-4
+		b  = -7.53e-4
+		c0 = 0.0
+	
+	else:
+		a0 = -0.0575
+		a1 = 0.0
+		a2 = 0.0
+		c0 = 0.0901
+		b = -7.61e-4
+
+
+	# First get pressure
+
+	if not isinstance(p, (np.ndarray)):
+		
+		# Get basic state hydrostatic pressure in decibars
+		if p == None:
+			patm = 10.1325
+			p = patm - rho0 * g * grid.RC / 10000.
+			
+		# Compute p from file.
+		elif p == 'file':
+			print('compute p from file')
+
+	# Else, assume p provided is full p.
+		
+	#==
+
+	# Next get salinity
+	if not isinstance(p, (np.ndarray)):
+		if S == None or S == 'file':
+			print('Get S from file')
+		else:
+			print('Error: tools.theta_f. If S array not provided, S must be None or file.')
+
+	# Else, assume S provided.
+	
+	Tf = S * (a0 + a1 * np.sqrt(S) + a2 * S) + b * p + c0
+	Thf = Tf * ((patm)/p)**(2./7.)
+
+	return Tf, Thf
+
+#==
+
+def smooth3(data):
+	'''Apply running average over 3 time samples to smooth data.	
+	Assumes that time is on zeroth axis.'''
+
+	Nt = data.shape[0]
+	data_out = data.copy()
+
+	data_out[1:Nt-1] = (data_out[0:Nt-2] + data_out[1:Nt-1] + data_out[2:]) / 3.
+
+	return data_out
+
+#==
+
+def getTSrel(grid, salttoptop=33.2, salttop=33.8, saltbot=34.7, temptop=-1.8, tempbot=1.0, tclinewid=260., tclinetop=-200, hclinewid=400, hclinetop=-60, shift=0, nztophc=4):
+	'''Return T/S relaxation profiles used in MCS simulations.'''
+
+	tclinetop += shift
+	tclinebot = tclinetop - tclinewid
+
+	hclinetop += shift
+	hclinebot = hclinetop - hclinewid
+
+	zc = grid.RC.squeeze()
+	
+	botweight = np.minimum(1, np.maximum(0, (zc - tclinetop) / (tclinebot - tclinetop)))
+	Trel = (1 - botweight) * temptop + botweight * tempbot
+
+	botweight = np.minimum(1, np.maximum(0, (zc - hclinetop) / (hclinebot - hclinetop)))
+	Srel = (1 - botweight) * salttop + botweight * saltbot
+
+	# Do surface values of salinity.
+	dstop = (salttop - salttoptop) / nztophc
+	for zi in range(1, nztophc+1):
+		Srel[zi-1] = salttop - (nztophc - zi+1) * dstop
+
+	return Trel, Srel
 
 

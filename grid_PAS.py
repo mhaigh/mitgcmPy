@@ -50,12 +50,12 @@ class Grid:
 		# For these grid points at level k, set draft to z  - dz * (1-hFaC).  
 		# Above will set draft to zero for all open ocean cells (hFacC = 1) for k=0.
 		# At an ice shelf, first wet cell (hFacC > 0) will be given non-nan draft.
-		# After all levels, anywhere with draft = nan has to be land.
+		# After all levels, aself.Nywhere with draft = nan has to be land.
 
 		# Ice shelf draft
-		nz, ny, nx = self.hFacC.shape
-		draft = np.zeros((ny, nx)) * np.nan
-		for k in range(nz):
+		self.Nz, self.Ny, self.Nx = self.hFacC.shape
+		draft = np.zeros((self.Ny, self.Nx)) * np.nan
+		for k in range(self.Nz):
 			# Get indices of wet cells with draft not already computed.
 			index = (self.hFacC[k,] != 0) * np.isnan(draft)
 			# Set draft  = top of cell - dz * (fraction of cell not water).
@@ -67,9 +67,9 @@ class Grid:
 		self.bathy = np.sum(self.DRF * (1-self.hFacC), axis=0) + self.RF[-1,] + self.draft
 
 		# Ice shelf draft
-		nz, ny, nx = self.hFacC.shape
-		draft = np.zeros((ny, nx)) * np.nan
-		for k in range(nz):
+		self.Nz, self.Ny, self.Nx = self.hFacC.shape
+		draft = np.zeros((self.Ny, self.Nx)) * np.nan
+		for k in range(self.Nz):
 			# Get indices of wet cells with draft not already computed.
 			index = (self.hFacC[k,] != 0) * np.isnan(draft)
 			# Set draft  = top of cell - dz * (fraction of cell not water).
@@ -113,7 +113,28 @@ class Grid:
 			
 		else:
 			return np.argmin(np.abs(self.RC.squeeze() - depths))
+	
 			
+	#==
+	
+	def XYsubr(self, lons, lats):
+		'''Return 1D array of subregion of longitudes.
+		Input lons should be list/tuple with two entries.'''
+		
+		if len(lons) != 2 or len(lats) != 2:
+			print('Error: grid.Xsubr. lats and lons must have two entries.')
+			sys.exit()
+			
+		i0 = 0
+
+		ys = np.argmin(np.abs(self.YC[:, i0] - lats[0]))
+		yn = np.argmin(np.abs(self.YC[:, i0] - lats[1]))
+
+		iw = np.argmin(np.abs(self.XC[i0, :] - lons[0]))
+		ie = np.argmin(np.abs(self.XC[i0, :] - lons[1]))
+		
+		return self.XC[ys:yn+1, iw:ie+1] , self.YC[ys:yn+1, iw:ie+1]
+	
 	#==
 	
 	def Xsubr1D(self, lons, yi=0):

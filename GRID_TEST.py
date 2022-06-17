@@ -165,7 +165,34 @@ if TEST_rho:
 	
 	vmin = -0.2; vmax = -vmin
 	pt.plot1by2([Rho1[-1,...,-1]-Rho2[-1,...,-1], Rho2[-1,...,-1]], X=[Y,Y], Y=[Z,Z], vmin=[vmin,vmin], vmax=[vmax,vmax])
+
+#==
+
+# Plot T/S at northern boundary to ensure rel. profile correct.
+TEST_rel = False
+if TEST_rel:
+
+	path = '/home/michai/Documents/data/MCS_116/run/'
 	
+	grid = Grid(path)
+	
+	X = grid.XC[1,:]/1000.
+	Y = grid.YC[:,1]/1000.
+	Z = grid.RC.squeeze()
+
+	T = readVariable('THETA', path, file_format='nc', meta=False)[-1]
+	S = readVariable('SALT', path, file_format='nc', meta=False)[-1]
+
+	Tref, Sref = getTrefSref()
+	
+	T = np.mean(T[...,-2,:], axis=-1)
+	S = np.mean(S[...,-2,:], axis=-1)
+
+	plt.subplot(121)
+	plt.plot(T, Z); plt.grid()
+	plt.subplot(122)
+	plt.plot(S, Z); plt.grid()
+	plt.show()
 
 #==
 
@@ -315,8 +342,8 @@ if TEST_animate:
 
 	#path = '/home/michai/Documents/data/MCS_002/run/'
 
-	path = '/home/michai/Documents/data/MCS_110/run/'
-	#path = '/home/michai/Documents/data/PISOMIP_003/run/'
+	#path = '/home/michai/Documents/data/MCS_104/run/'
+	path = '/home/michai/Documents/data/PISOMIP_003/run/'
 	#pathG = '/home/michai/Documents/data/MCS_018/run/'
 
 	grid = Grid(path)
@@ -326,14 +353,16 @@ if TEST_animate:
 
 	#VAR = 'ETAN'
 	#VAR = 'RHOAnoma'
-	VAR = 'THETA'
+	#VAR = 'THETA'
 	#VAR = 'PHIHYD'
 	#VAR = 'DFrE_TH';
 	#VAR = 'WVELTH'#','UVELTH','VVELTH','WVELTH', 'TOTTTEND'
-	#VAR = 'SALT'	
+	VAR = 'SALT'	
 	#VAR = 'UVEL'	
 	#VAR = 'VVEL'
 	#VAR = 'WVEL'
+
+	plt.contourf(grid.bathy); plt.colorbar(); plt.show(); quit()
 
 	vmin, vmax, cmap, title = getPlottingVars(VAR)
 	#vmin = 33.32; vmax = 34.5
@@ -344,7 +373,8 @@ if TEST_animate:
 	text_data = ptt.getTextData(data.variables['TIME'][:], 'month', X[1], Y[-2], color='w')
 	data = data[VAR][:]
 
-	#plt.plot(data[-1,:,-1,-1]); plt.show(); quit()
+	d = np.mean(data[-1,:,-2,:], axis=-1)
+	plt.plot(d, Y); plt.grid(); plt.show(); quit()
 
 	MEAN = False
 	ASYM = False
@@ -423,21 +453,19 @@ animateSurface = True
 if animateSurface:
 
 	#path = '/home/michai/Documents/data/PAS_666/run/'
-	#path = '/home/michai/Documents/data/PISOMIP_112/run/'
-	path = '/home/michai/Documents/data/MCS_113/run/'
+	#path = '/home/michai/Documents/data/PISOMIP_003/run/'
+	path = '/home/michai/Documents/data/MCS_114/run/'
 
 	grid = Grid(path)
 	#grid = Grid_PAS(path)
 	bathy = grid.bathy
+	pt.plot1by1(bathy, vmin=-1000, vmax=-300, mesh=True); quit()
 
 	X = grid.XC[1,:]/1000.
 	Y = grid.YC[:,1]/1000.
 	xlabel = 'LON (km)'; ylabel = 'LAT (km)'
 	ny, nx = bathy.shape
-
-	#plt.plot(bathy[:,215]); plt.plot(bathy[:, 120]); plt.show();
-	#pt.plot1by1(grid.bathy, mesh=True); quit()
-
+	
 	#VAR = 'ETAN'
 	#VAR = 'RHOAnoma'
 	#VAR = 'THETA' 
@@ -463,7 +491,7 @@ if animateSurface:
 
 	PLOT_MEAN = False
 	if PLOT_MEAN:
-		data_mean = np.mean(data[60:,], axis=0)
+		data_mean = np.mean(data[60:,0,], axis=0)
 		data_mean = tools.boundData(data_mean, vmin, vmax, scale=0.99999)
 		data_mean = ptt.maskBathyXY(data_mean, grid, 0, timeDep=False)
 		taux = 300+150*tools.get05cosWind(nx,ny)[:,0]
@@ -473,15 +501,8 @@ if animateSurface:
 	# DON'T CHANGE THIS. CHANGE ONE IN IF STATEMENT IF YOU WANT.
 	level = 0
 
-	#u1 = -np.trapz(data[-1]*grid.hFacW, zc, axis=0)
-	u1 = np.sum(data[-1]*grid.hFacW*grid.DRF, axis=0)
-	u2 = np.sum(data*grid.hFacW*grid.DRF, axis=1)
-
-	vmin = -100; vmax=-vmin; vmin = [vmin, vmin]; vmax = [vmax, vmax]
-	pt.plot1by2([u1, u2[-1]-u1], mesh=True, vmin=vmin, vmax=vmax); quit()
-
 	if VAR not in flatVars:
-		level = 0
+		level = 24
 		data = data[:,level]
 		print('Z = ' + str(grid.RC.squeeze()[level]))
 
@@ -862,7 +883,7 @@ if animateUbots:
 
 #==
 
-animateDragBot = False
+animateDragBot = True
 if animateDragBot:
 	# Animate zonal mean Ubots for multiple MITgcm runs.
 	# Assumes that all use the same grid and have the same time dependencies.
@@ -870,9 +891,12 @@ if animateDragBot:
 	path_root = '/home/michai/Documents/data/'
 
 	# These are cases with CS walls.	
-	paths = [path_root+'MCS_103/run/', path_root+'MCS_104/run/']
-	labels = ['wind16 botStress', 'wind0 botStress', 'wind0 x = 0', 'wind0 x = 120']
+	#paths = [path_root+'MCS_113/run/', path_root+'MCS_104/run/']
+	#labels = ['wind16 botStress', 'wind0 botStress', 'wind0 x = 0', 'wind0 x = 120']
 	
+	paths = [path_root+'MCS_108/run/', path_root+'MCS_108/run/']
+	labels = ['wind16 botStress', 'wind0 botStress', 'wind0 x = 0', 'wind0 x = 120']
+
 	grid = Grid(paths[0])
 	Y = grid.YC
 	xlabel = 'Y (km)'
@@ -902,17 +926,10 @@ if animateDragBot:
 	text = [tscale_name + ' ' + str(int(tt)) for tt in t]
 	text_data = {'text':text, 'xloc':Y[1], 'yloc':vmin, 'fontdict':{'fontsize':14, 'color':'k'}}
 
-	# Get bottom val
-	ub = tools.bottom(u[VAR][:], grid, 'u')
-	print(ub.shape)
+	drag = -tools.computeBotDragQuadr0(paths[0], grid)
+	#drag = -readVariable('botTauX', paths[0], file_format='nc', meta=False)/rho0
 
-	vb = readVariable('VVEL', paths[0], file_format='nc', meta=False)
-	vb = tools.bottom(vb, grid, 'v')
-
-	hFacCb = tools.bottom(grid.hFacC, grid, 'h', timeDep=False)
-	ub = tools.interp(ub, 'u'); vb = tools.interp(vb, 'v'); 
-	KE = 0.5 * (ub**2 + vb**2) * hFacCb
-	drag = Cd * np.sqrt(2*KE) * ub
+	u16 = ptt.maskBathyXY(u16, grid, 0, timeDep=False)
 	drag = ptt.maskBathyXY(drag, grid, 0, timeDep=True)
 
 	# COMMENT OUT AS APPROPRIATE
@@ -925,15 +942,9 @@ if animateDragBot:
 
 	# Now get other SSHs.
 	for di in range(len(paths)-1):
-		ub = readVariable(VAR, paths[di+1], file_format='nc', meta=False)
-		ub = tools.bottom(ub, grid, 'u')
-		vb = readVariable('VVEL', paths[0], file_format='nc', meta=False)
-		vb = tools.bottom(vb, grid, 'v')
 
-		ub = tools.interp(ub, 'u'); vb = tools.interp(vb, 'v'); 
-		KE = 0.5 * (ub**2 + vb**2) * hFacCb
-		drag = Cd * np.sqrt(2*KE) * ub
-		drag = ptt.maskBathyXY(drag, grid, 0, timeDep=True)
+		print(paths[di+1])
+		drag = -tools.computeBotDragQuadr0(paths[di+1], grid)
 
 		# COMMENT OUT AS APPROPRIATE
 		# Two quadr drags
@@ -947,7 +958,10 @@ if animateDragBot:
 	vmin=-4e-5; vmax=-vmin
 	constLineLabel = ['wind16', 'wind0']
 
-	pt.animateLine(data, X=Y[1:-1], vmin=vmin, vmax=vmax, xlabel=xlabel, ylabel=ylabel, labels=labels, text_data=text_data, constLine=[u16[1:-1,0], u0[1:-1,0]], constLineLabel=constLineLabel)
+	u0 = np.ma.sum(u0, axis=-1) / Nx
+	u16 = np.ma.sum(u16, axis=-1) / Nx
+
+	pt.animateLine(data, X=Y[1:-1], vmin=vmin, vmax=vmax, xlabel=xlabel, ylabel=ylabel, labels=labels, text_data=text_data, constLine=[u16[1:-1], u0[1:-1]], constLineLabel=constLineLabel)
 	quit()
 
 

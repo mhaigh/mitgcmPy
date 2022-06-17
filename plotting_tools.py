@@ -175,7 +175,7 @@ def maskDraftXY(data, grid, zi, color='grey', subregion=False, lats=[], lons=[],
 		try:
 			XC = grid.XC[lats[0]:lats[1]+1, lons[0]:lons[1]+1]
 			YC = grid.YC[lats[0]:lats[1]+1, lons[0]:lons[1]+1]
-			bathy = grid.bathy[lats[0]:lats[1]+1, lons[0]:lons[1]+1]
+			draft = grid.draft[lats[0]:lats[1]+1, lons[0]:lons[1]+1]
 		except ValueError:
 			print('Error: plotting_tools.maskBathyXY. If subregion set to True, both lons and lats need to be defined.')
 			
