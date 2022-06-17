@@ -699,7 +699,7 @@ def smooth3(data):
 
 #==
 
-def getTSrel(grid, salttoptop=33.2, salttop=33.8, saltbot=34.7, temptop=-1.8, tempbot=1.0, tclinewid=260., tclinetop=-200, hclinewid=400, hclinetop=-60, shift=0):
+def getTSrel(grid, salttoptop=33.2, salttop=33.8, saltbot=34.7, temptop=-1.8, tempbot=1.0, tclinewid=260., tclinetop=-200, hclinewid=400, hclinetop=-60, shift=0, nztophc=4):
 	'''Return T/S relaxation profiles used in MCS simulations.'''
 
 	tclinetop += shift
@@ -717,11 +717,10 @@ def getTSrel(grid, salttoptop=33.2, salttop=33.8, saltbot=34.7, temptop=-1.8, te
 	Srel = (1 - botweight) * salttop + botweight * saltbot
 
 	# Do surface values of salinity.
-	nztophc = int(-hclinetop / (zc[0]-zc[1])) # This must be integer. Redefine values if it isn't.
-	print(nztophc)
 	dstop = (salttop - salttoptop) / nztophc
 	for zi in range(1, nztophc+1):
 		Srel[zi-1] = salttop - (nztophc - zi+1) * dstop
 
 	return Trel, Srel
+
 

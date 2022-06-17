@@ -29,11 +29,12 @@ import time
 print(' I could change all Lats to Lat.s, or to Latitudes')
 
 # Plot ERA5 winds, ocean surface stress and bathymetry in PAS.
-FIGURE1a = 1
+FIGURE1a = 0
 if FIGURE1a:
 
-	rho0 = 1028.5; Cd = 0.006
-	rho0 = 1.3; Cd= 0.006
+	#rho0 = 1028.5; Cd = 0.006
+	rho0 = 1.3; Cd = 0.006
+	#rho0 = 1.3; Cd = 0.006
 	
 	# These from MITgcm default params.
 	cDrag_1 = 2.70e-3
@@ -69,7 +70,7 @@ if FIGURE1a:
 	windx = ptt.maskDraftXY(windx, grid, zi=0); windy = ptt.maskDraftXY(windy, grid, zi=0)	
 	taux = ptt.maskBathyXY(taux, grid, zi=0); tauy = ptt.maskBathyXY(tauy, grid, zi=0)	
 	taux = ptt.maskDraftXY(taux, grid, zi=0); tauy = ptt.maskDraftXY(tauy, grid, zi=0)	
-
+		
 	#pt.plot1by2([taux**2+tauy**2, windx**2+windy**2], vmin=[0,0], vmax=[0.01, 0.01]);
 
 	vecx = [windx, taux]; vecy = [windy, tauy]
@@ -131,7 +132,7 @@ if FIGURE1b:
 FIGURE2 = 0
 if FIGURE2:
 
-	levels = [0,15]	
+	levels = [0,16]	
 
 	path = '/home/michai/Documents/data/PAS_851/run/'
 	grid = Grid_PAS(path)
@@ -156,6 +157,10 @@ if FIGURE2:
 
 	# Load temperature
 	T = np.load(path+'Tmean_PAS851.npy')
+
+	#u[levels[1]] = 0.5 * (u[levels[1]]+u[levels[1]+1])
+	#v[levels[1]] = 0.5 * (v[levels[1]]+v[levels[1]+1])
+	#T[levels[1]] = 0.5 * (T[levels[1]]+T[levels[1]+1])
 
 	# Get two levels
 	u = u[levels]
@@ -285,7 +290,7 @@ if FIGURE3:
 	X, Y = grid.XYsubr(lons, lats)
 	Xp = [X, Ysubr]; Yp = [Y, Zsubr]
 
-	xlabels = [None, 'LAT (deg.)']; ylabels = [None, 'DEPTH (m)']
+	xlabels = [None, 'Lat (deg.)']; ylabels = [None, 'Depth (m)']
 	titles = ['(a) -0.5 deg. isotherm depth (m)', '(b) Pot. Temp. (deg. C)']
 
 	pt.plot1by2Basemap1([ThermZ, T], Xp, Yp, lat_0, lon_0, mesh=False, contour=bathy, contourlevels=contourlevels, contourfNlevels=17, vmin=vmin, vmax=vmax, parallels=paras, meridians=merids, yline=[slice_lon, None], xlabels=xlabels, ylabels=ylabels, fontsize=11, titles=titles, cmaps=['jet', 'seismic'])
@@ -300,7 +305,7 @@ if FIGURE4:
 	grid = Grid(path)
 	bathy = grid.bathy
 
-	Trel, Srel = tools.getTSrel(grid)
+	Trel, Srel = tools.getTSrel(grid, salttoptop=33.2, salttop=33.5, saltbot=34.5, temptop=-1.8, tempbot=1.0, tclinewid=160., tclinetop=-200, hclinewid=160, hclinetop=-200, shift=0)
 
 	X = grid.XC[1,:]/1000.
 	Y = grid.YC[:,1]/1000.
@@ -402,6 +407,7 @@ if FIGURE5:
 	T = ptt.maskBathyYZ(T, grid, timeDep=False, xi=120)
 
 	vmin = -0.2; vmax = 0.2
+	u[-1,-1] = vmin
 	u = tools.boundData(u, vmin, vmax, scale=0.9999)
 
 	#==
@@ -432,7 +438,7 @@ if FIGURE5:
 	ax = fig.add_subplot(gs[1,0])
 	ax.patch.set_color('.5')
 
-	plt.contourf(Y, Z, u, vmin=vmin, vmax=vmax, cmap='coolwarm', levels=13)
+	plt.contourf(Y, Z, u, vmin=vmin, vmax=vmax, cmap='coolwarm', levels=15)
 	plt.colorbar()
 
 	plt.contour(Y, Z, T, levels=Tlevels, colors='k', linestyles='solid', linewidths=0.8)
@@ -450,24 +456,26 @@ if FIGURE5:
 FIGURE6 = 0
 if FIGURE6:
 
-	path = '/home/michai/Documents/data/MCS_104/run/'
+	path = '/home/michai/Documents/data/MCS_108/run/'
 	grid = Grid(path)
 
 	X = grid.XC[1,:]/1000.
 	Y = grid.YC[:,1]/1000.
 	Z = grid.RC.squeeze()
 
-	# These for snapshot at end of simulation
-	#u = np.mean(readVariable('UVEL', path, meta=False)[-1], axis=-1)
-	#T = np.mean(readVariable('THETA', path, meta=False)[-1], axis=-1)
-	#h = np.mean(readVariable('ETAN', path, meta=False)[-1], axis=-1)
-
 	xis = [0, 120]
-	ts = -12
+
+	# These for snapshot at end of simulation
+	ts = -1#116
+	u = readVariable('UVEL', path, meta=False)[ts][...,xis]
+	T = readVariable('THETA', path, meta=False)[ts][...,xis]
+	h = readVariable('ETAN', path, meta=False)[ts]
+
 	# These for mean over last ts months
-	u = np.mean(readVariable('UVEL', path, meta=False)[ts:,...,xis], axis=0)
-	T = np.mean(readVariable('THETA', path, meta=False)[ts:,...,xis], axis=0)
-	h = np.mean(readVariable('ETAN', path, meta=False)[ts:], axis=0)
+	#ts = -12
+	#u = np.mean(readVariable('UVEL', path, meta=False)[ts:,...,xis], axis=0)
+	#T = np.mean(readVariable('THETA', path, meta=False)[ts:,...,xis], axis=0)
+	#h = np.mean(readVariable('ETAN', path, meta=False)[ts:], axis=0)
 
 	u0 = ptt.maskBathyYZ(u[...,0], grid, timeDep=False, xi=xis[0])
 	T0 = ptt.maskBathyYZ(T[...,0], grid, timeDep=False, xi=xis[0])
@@ -492,7 +500,7 @@ if FIGURE6:
 	data = [h, u0, u1]	
 	cmaps = ['jet', 'coolwarm', 'coolwarm']
 	contour = [grid.bathy, T0, T1]
-	contourlevels = [[-1000, -750, -500], [-0.5, 0., 0.5], [-0.5, 0., 0.5]]
+	contourlevels = [[-950, -750, -550], [-0.5, 0., 0.5], [-0.5, 0., 0.5]]
 	vmin = [vminh, vmin, vmin]; vmax = [vmaxh, vmax, vmax]
 
 	cbar = [True, False, True]
@@ -509,13 +517,109 @@ if FIGURE6:
 	yticks = [latticks, zticks, zticks]
 	yticksvis = [True, True, False]
 
-	pt.plot1by3(data, X=X, Y=Y, cmaps=cmaps, contour=contour, vmin=vmin, vmax=vmax, contourfNlevels=17, cbar=cbar, xlabels=xlabels, ylabels=ylabels, titles=titles, fontsize=fs, figsize=figsize, width_ratios=width_ratios, xticks=xticks, yticks=yticks, yticksvis=yticksvis, save=True, show=False)
+	pt.plot1by3(data, X=X, Y=Y, cmaps=cmaps, contour=contour, contourlevels=contourlevels, vmin=vmin, vmax=vmax, contourfNlevels=17, cbar=cbar, xlabels=xlabels, ylabels=ylabels, titles=titles, fontsize=fs, figsize=figsize, width_ratios=width_ratios, xticks=xticks, yticks=yticks, yticksvis=yticksvis, save=True, show=False)
 
 #==
 
-
-FIGURE7 = 1
+# Show bottom flow for bathyE, bathyS and bathyES cases.
+FIGURE7 = 0
 if FIGURE7:
 
-	a=1
+	root_ = '/home/michai/Documents/data/'
+	runs = ['MCS_116', 'MCS_117', 'MCS_118']
+	#runs = [runs[0]]
+
+	bathy = []	
+	uvec = []
+	vvec = []
+	
+	d = 8
+	level = 22
+
+	for run in runs:
+		path = root_ + run + '/run/'
+		grid = Grid(path)
+
+
+		ts = 108; te = 120
+		u = np.mean(readVariable('UVEL', path, meta=False)[ts:te, level], axis=0)
+		v = np.mean(readVariable('VVEL', path, meta=False)[ts:te, level], axis=0)
+		
+		u = ptt.maskBathyXY(u, grid, zi=level, timeDep=False)
+		v = ptt.maskBathyXY(v, grid, zi=level, timeDep=False)
+
+		print(np.max(u**2+v**2)**0.5)
+
+		bathy.append(ptt.maskBathyXY(grid.bathy, grid, zi=0, timeDep=False))
+		uvec.append(u[::d, ::d])
+		vvec.append(v[::d, ::d])
+		#bathy.append(ptt.maskBathyXY(grid.bathy, grid, zi=0, timeDep=False))
+		#uvec.append(u[::d, ::d])
+		#vvec.append(v[::d, ::d])
+		#bathy.append(ptt.maskBathyXY(grid.bathy, grid, zi=0, timeDep=False))
+		#uvec.append(u[::d, ::d])
+		#vvec.append(v[::d, ::d])
+
+	#==
+
+	X = grid.XC[1,:]/1000.
+	Y = grid.YC[:,1]/1000.
+	Z = grid.RC.squeeze()
+	print(Z[level])
+	
+	Xd = X[::d]; Yd = Y[::d]
+	titlea = '(a) Eastern trough'
+	titleb = '(b) Eastern sill'
+	titlec = '(c) Eastern trough and sill'
+	title = [titlea, titleb, titlec]
+	
+	cbar = [False, False, True]
+	yticksvis = [True, False, False]
+	xlabel = 'Lon (km)'
+	ylabel = ['Lat (km)', None, None]
+
+	yticks = 3*[[0, 100, 200, 300, 400, 500]]
+	
+	figsize = (11.5, 3)
+	fontsize = 12
+	width_ratios = [1,1,1.2]
+
+	fontdict = {'fontsize':12, 'color':'k'}
+	text = {'text':'Z = '+str(Z[level])+' m', 'xloc':X[1], 'yloc':Y[-22], 'fontdict':fontdict}
+	text_data = [text, text, text]
+
+	pt.quiver1byN(uvec, vvec, Xd, Yd, contourf=bathy, X=X, Y=Y, mesh=True, cmap='YlGn', vmin=-1000, vmax=-400, cbar=cbar, figsize=figsize, yticks=yticks, yticksvis=yticksvis, save=True, ylabel=ylabel, xlabel=xlabel, title=title, fontsize=fontsize, text_data=text_data, width_ratios=width_ratios, scale=1)
+	
+#==
+
+# A sequence of isotherm heights from different experiments.
+FIGURE8 = 1
+if FIGURE8:
+
+	path = '/home/michai/Documents/data/'	
+	path_THERMZ = path + 'THERMZnpy/'
+	runs = ['MCS_114', 'MCS_114']
+
+	THERM = -0.5; THERMt = 'm05'
+
+	data = []
+
+	x = 0
+	for run in runs:
+
+		grid = Grid(path+run+'/run/')
+		
+		ThermZ = np.load(path_THERMZ+'ThermZ_'+THERMt+'_'+run+'.npy')
+				
+		if x == 0: 
+			ThermZ = ptt.maskBathyXY(ThermZ, grid, 0, timeDep=False)
+			ThermZ = np.where(ThermZ<grid.bathy+10, np.nan, ThermZ)
+		x += 1
+
+		data.append(ThermZ)
+
+
+	pt.plot1by2(data, mesh=True, vmin=-500, vmax=-250)
+
+
 

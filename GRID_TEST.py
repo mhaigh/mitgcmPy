@@ -165,7 +165,34 @@ if TEST_rho:
 	
 	vmin = -0.2; vmax = -vmin
 	pt.plot1by2([Rho1[-1,...,-1]-Rho2[-1,...,-1], Rho2[-1,...,-1]], X=[Y,Y], Y=[Z,Z], vmin=[vmin,vmin], vmax=[vmax,vmax])
+
+#==
+
+# Plot T/S at northern boundary to ensure rel. profile correct.
+TEST_rel = False
+if TEST_rel:
+
+	path = '/home/michai/Documents/data/MCS_116/run/'
 	
+	grid = Grid(path)
+	
+	X = grid.XC[1,:]/1000.
+	Y = grid.YC[:,1]/1000.
+	Z = grid.RC.squeeze()
+
+	T = readVariable('THETA', path, file_format='nc', meta=False)[-1]
+	S = readVariable('SALT', path, file_format='nc', meta=False)[-1]
+
+	Tref, Sref = getTrefSref()
+	
+	T = np.mean(T[...,-2,:], axis=-1)
+	S = np.mean(S[...,-2,:], axis=-1)
+
+	plt.subplot(121)
+	plt.plot(T, Z); plt.grid()
+	plt.subplot(122)
+	plt.plot(S, Z); plt.grid()
+	plt.show()
 
 #==
 
@@ -310,7 +337,7 @@ if TEST_depthAverage:
 
 #==
 
-TEST_animate = True
+TEST_animate = False
 if TEST_animate:
 
 	#path = '/home/michai/Documents/data/MCS_002/run/'
@@ -335,7 +362,7 @@ if TEST_animate:
 	#VAR = 'VVEL'
 	#VAR = 'WVEL'
 
-	plt.contourf(grid.bathy); plt.colorbar(); plt.show()
+	plt.contourf(grid.bathy); plt.colorbar(); plt.show(); quit()
 
 	vmin, vmax, cmap, title = getPlottingVars(VAR)
 	#vmin = 33.32; vmax = 34.5
@@ -422,7 +449,7 @@ if TEST_animateX:
 	
 #==
 
-animateSurface = False
+animateSurface = True
 if animateSurface:
 
 	#path = '/home/michai/Documents/data/PAS_666/run/'
@@ -432,7 +459,7 @@ if animateSurface:
 	grid = Grid(path)
 	#grid = Grid_PAS(path)
 	bathy = grid.bathy
-
+	pt.plot1by1(bathy, vmin=-1000, vmax=-300, mesh=True); quit()
 
 	X = grid.XC[1,:]/1000.
 	Y = grid.YC[:,1]/1000.
@@ -462,7 +489,7 @@ if animateSurface:
 	text_data = ptt.getTextData(data.variables['TIME'][:], 'month', X[1], Y[1])
 	data = data[VAR][:]
 
-	PLOT_MEAN = True
+	PLOT_MEAN = False
 	if PLOT_MEAN:
 		data_mean = np.mean(data[60:,0,], axis=0)
 		data_mean = tools.boundData(data_mean, vmin, vmax, scale=0.99999)
@@ -475,7 +502,7 @@ if animateSurface:
 	level = 0
 
 	if VAR not in flatVars:
-		level = 20
+		level = 24
 		data = data[:,level]
 		print('Z = ' + str(grid.RC.squeeze()[level]))
 
@@ -856,7 +883,7 @@ if animateUbots:
 
 #==
 
-animateDragBot = False
+animateDragBot = True
 if animateDragBot:
 	# Animate zonal mean Ubots for multiple MITgcm runs.
 	# Assumes that all use the same grid and have the same time dependencies.
@@ -864,9 +891,12 @@ if animateDragBot:
 	path_root = '/home/michai/Documents/data/'
 
 	# These are cases with CS walls.	
-	paths = [path_root+'MCS_113/run/', path_root+'MCS_104/run/']
-	labels = ['wind16 botStress', 'wind0 botStress', 'wind0 x = 0', 'wind0 x = 120']
+	#paths = [path_root+'MCS_113/run/', path_root+'MCS_104/run/']
+	#labels = ['wind16 botStress', 'wind0 botStress', 'wind0 x = 0', 'wind0 x = 120']
 	
+	paths = [path_root+'MCS_108/run/', path_root+'MCS_108/run/']
+	labels = ['wind16 botStress', 'wind0 botStress', 'wind0 x = 0', 'wind0 x = 120']
+
 	grid = Grid(paths[0])
 	Y = grid.YC
 	xlabel = 'Y (km)'
@@ -897,7 +927,7 @@ if animateDragBot:
 	text_data = {'text':text, 'xloc':Y[1], 'yloc':vmin, 'fontdict':{'fontsize':14, 'color':'k'}}
 
 	drag = -tools.computeBotDragQuadr0(paths[0], grid)
-	drag = -readVariable('botTauX', paths[0], file_format='nc', meta=False)/rho0
+	#drag = -readVariable('botTauX', paths[0], file_format='nc', meta=False)/rho0
 
 	u16 = ptt.maskBathyXY(u16, grid, 0, timeDep=False)
 	drag = ptt.maskBathyXY(drag, grid, 0, timeDep=True)
