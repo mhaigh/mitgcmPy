@@ -696,7 +696,7 @@ def plot1by3(data, X=[None]*3, Y=[None]*3, contour=[None]*3, contourlevels=[None
 		
 #==
 
-def plotMbyN(data, X=None, Y=None, figsize=(8,4), titles=None, fontsize=14, mesh=False, cmap='jet', vmin=None, vmax=None, cbar=True, text_data=None, xlabels=None, ylabels=None, grid=True, contourfNlevels=9, save=False, outpath='', outname='plotMbyN.png', show=True, dpi=200, width_ratios=None):
+def plotMbyN(data, X=None, Y=None, figsize=(8,4), titles=None, fontsize=14, mesh=False, cmap='jet', vmin=None, vmax=None, cbar=True, cbarShared=False, cbarSharedData=None, text_data=None, xlabels=None, ylabels=None, grid=True, contourfNlevels=9, save=False, outpath='', outname='plotMbyN.png', show=True, dpi=200, width_ratios=None, xticks=None, yticks=None, xticksvis=True, yticksvis=True):
 
 	if not isinstance(data, list):
 		plot1by1(data, X=X, Y=Y, mesh=mesh, vmin=vmin, vmax=vmax)
@@ -714,6 +714,15 @@ def plotMbyN(data, X=None, Y=None, figsize=(8,4), titles=None, fontsize=14, mesh
 	cbar = makeList(cbar, M, N)
 	cmap = makeList(cmap, M, N)
 	
+	titles = makeList(titles, M, N)
+	xlabels = makeList(xlabels, M, N)
+	ylabels = makeList(ylabels, M, N)
+	
+	xticks = makeList(xticks, M, N)
+	yticks = makeList(yticks, M, N)
+	xticksvis = makeList(xticksvis, M, N)
+	yticksvis = makeList(yticksvis, M, N)
+			
 	if width_ratios is None:
 		width_ratios = [1]*M
 	
@@ -729,16 +738,29 @@ def plotMbyN(data, X=None, Y=None, figsize=(8,4), titles=None, fontsize=14, mesh
 			ax.patch.set_color('.5')
 
 			if mesh:
-				plt.pcolormesh(X[row][col], Y[row][col], data[row][col], vmin=vmin[row][col], vmax=vmax[row][col], cmap=cmap[row][col])		
+				im = plt.pcolormesh(X[row][col], Y[row][col], data[row][col], vmin=vmin[row][col], vmax=vmax[row][col], cmap=cmap[row][col])		
 			else:
 				levels = getContourfLevels(vmin[row][col], vmax[row][col], contourfNlevels)
-				plt.contourf(X[row][col], Y[row][col], contourf[row][col], cmap=cmap[row][col], levels=levels)
+				im = plt.contourf(X[row][col], Y[row][col], contourf[row][col], cmap=cmap[row][col], levels=levels)
 			if cbar[row][col]:
 				plt.colorbar()
 				
+			doTitle(titles[row][col], fontsize=fontsize)
+			doTicks(xticks[row][col], xticksvis[row][col], yticks[row][col], yticksvis[row][col])
+			doLabels(xlabels[row][col], ylabels[row][col], fontsize=fontsize)
+
+	#==
+
+	if cbarShared:
+		fig.subplots_adjust(right=0.8)
+		cbar_ax = fig.add_axes(cbarSharedData[0])
+		cbar = fig.colorbar(im, cax=cbar_ax)
+		if cbarSharedData[1] is not None:
+			cbar.set_label(cbarSharedData[1], rotation=270, labelpad=10)
+			
 	#==
 	
-	plt.tight_layout()
+	#plt.tight_layout()
 	if save:
 		plt.savefig(outpath + outname)
 		

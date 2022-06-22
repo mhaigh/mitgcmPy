@@ -462,7 +462,7 @@ if FIGURE5:
 #==
 
 # New walled simulation. Show SSH with bathy, Uvel at two longitudes.
-FIGURE6 = 1
+FIGURE6 = 0
 if FIGURE6:
 
 	path = '/home/michael/Documents/data/MCS_108/run/'
@@ -613,6 +613,7 @@ if FIGURE8:
 	path = '/home/michael/Documents/data/'	
 	path_THERMZ = path + 'THERMZnpy/'
 	runs = [['MCS_108', 'MCS_120', 'MCS_116'], ['MCS_117', 'MCS_118', 'MCS_114']]
+	titles = [['(a) None', '(b) W', '(c) E'], ['(d) S', '(e) E+S', '(f) W+C+E+S']]
 
 	THERM = -0.5; THERMt = 'm05'
 
@@ -634,13 +635,26 @@ if FIGURE8:
 
 			data[row].append(ThermZ)
 
-
 	#==
 	
 	X = grid.XC[1,:] / 1.e3
 	Y = grid.YC[:,1] / 1.e3
-
-	pt.plotMbyN(data, X=X, Y=Y, mesh=True, vmin=-500, vmax=-200, cbar=False)
+	
+	xlabel = 'Lon (km)'
+	xlabels = [[None]*3, [xlabel]*3]
+	ylabel = 'Lat (km)'
+	ylabels = [[ylabel, None, None]]*2
+	
+	lonticks = [100,200,300,400,500,500]
+	latticks = [0, 100, 200, 300, 400, 500]
+	xticks = [[lonticks, lonticks, lonticks]]*2
+	yticks = [[latticks, latticks, latticks]]*2
+	xticksvis = [[False]*3, [True]*3]
+	yticksvis = [[True, False, False]]*2
+	
+	cbdata = [[0.825, 0.15, 0.02, 0.7], 'Isotherm']
+	
+	pt.plotMbyN(data, X=X, Y=Y, mesh=True, vmin=-500, vmax=-200, titles=titles, cbar=False, cbarShared=True, cbarSharedData=cbdata, xlabels=xlabels, ylabels=ylabels, xticks=xticks, yticks=yticks, xticksvis=xticksvis, yticksvis=yticksvis, width_ratios=[1,1,1.1], figsize=(10,4), save=True)
 
 
 
