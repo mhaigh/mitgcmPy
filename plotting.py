@@ -189,47 +189,30 @@ def quiver1by1(u, v, Xd, Yd, C=None, ccmap='bwr', contour=None, X=None, Y=None, 
 
 def quiver1byN(u, v, Xd, Yd, C=None, ccmap='bwr', contourf=None, contourfNlevels=9, X=None, Y=None, mesh=False, contour=None, contourLevels=None, figsize=None, title=None, fontsize=14, cmap='jet', vmin=None, vmax=None, xlabel=None, ylabel=None, save=False, outpath='', outname='quiver1byN.png', show=True, dpi=200, text_data=None, width_ratios=None, labelData=None, cbar=True, grid=True, xticks=None, xticksvis=True, yticks=None, yticksvis=True, scale=2):
 
-
 	N = len(u)
-	if not isinstance(Xd, list):
-		Xd = [Xd]*N
-	if not isinstance(Yd, list):
-		Yd = [Yd]*N
+
+	Xd = makeList(Xd, N)
+	Yd = makeList(Yd, N)
 
 	if contourf is not None:
-		if not isinstance(X, list):
-			X = [X]*N
-		if not isinstance(Y, list):
-			Y = [Y]*N
+		X = makeList(X, N)
+		Y = makeList(Y, N)
 
-	if not isinstance(vmin, list):
-		vmin = [vmin]*N
-	if not isinstance(vmax, list):
-		vmax = [vmax]*N
+	vmin = makeList(vmin, N)
+	vmax = makeList(vmax, N)
 
-	if not isinstance(cbar, list):
-		cbar = [cbar]*N
-	if not isinstance(grid, list):
-		grid = [grid]*N
+	cbar = makeList(cbar, N)
+	grid = makeList(grid, N)
+	title = makeList(title, N)
 
-	if not isinstance(title, list):
-		title = [title]*N
+	xticks = makeList(xticks, N)
+	xticksvis = makeList(xticksvis, N)
 
-	if not isinstance(xticks, list):
-		xticks = [xticks]*N
-	if not isinstance(xticksvis, list):
-		xticksvis = [xticksvis]*N
+	yticks = makeList(yticks, N)
+	yticksvis = makeList(yticksvis, N)
 
-	if not isinstance(yticks, list):
-		yticks = [yticks]*N
-	if not isinstance(yticksvis, list):
-		yticksvis = [yticksvis]*N
-
-
-	if not isinstance(xlabel, list):
-		xlabel = [xlabel]*N
-	if not isinstance(ylabel, list):
-		ylabel = [ylabel]*N
+	xlabel = makeList(xlabel, N)
+	ylabel = makeList(ylabel, N)
 
 	if figsize is None:
 		if N == 2:
@@ -277,17 +260,12 @@ def quiver1byN(u, v, Xd, Yd, C=None, ccmap='bwr', contourf=None, contourfNlevels
 			cax = plt.quiver(Xd[pi], Yd[pi], u[pi], v[pi], scale=scale)
 		ax.quiverkey(cax, 0.12, 0.03, .1, '0.1 m/s', labelpos='N', coordinates='axes')
 				
-		if xlabel is not None:
-			plt.xlabel(xlabel[pi], fontsize=fontsize)
-		if ylabel is not None:
-			plt.ylabel(ylabel[pi], fontsize=fontsize)
+		doLabels(xlabel[pi], ylabel[pi], fontsize=fontsize)
+		doTitle(title[pi], fontsize=fontsize)
 
 		if text_data is not None:
 			setText(ax, text_data[pi], set_invisible=False)
 		
-		if title is not None:
-			plt.title(title[pi], fontsize=fontsize)
-
 		if labelData is not None:
 			for li in labelData[pi]:
 				plt.scatter(li['x'][0], li['x'][1], s=1, color='r')
@@ -318,6 +296,106 @@ def quiver1byN(u, v, Xd, Yd, C=None, ccmap='bwr', contourf=None, contourfNlevels
 
 	plt.close()
 
+#==
+
+def quiver2by2(u, v, Xd, Yd, C=None, ccmap='bwr', contourf=None, contourfNlevels=9, X=None, Y=None, mesh=False, contour=None, contourLevels=None, cbarShared=False, cbarSharedData=None, figsize=None, title=None, fontsize=14, cmap='jet', vmin=None, vmax=None, xlabels=None, ylabels=None, save=False, outpath='', outname='quiver2by2.png', show=True, dpi=200, text_data=None, width_ratios=[1,1], labelData=None, cbar=True, grid=True, xticks=None, xticksvis=True, yticks=None, yticksvis=True, scale=2):
+
+	if len(u) != 2 or len(u[0]) != 2 or len(u[1]) != 2:
+		print('Input data u and v must both be 2 by 2 lists.')
+		return	
+		
+	M = 2
+	N = 2
+
+	Xd = makeList(Xd, M, N)
+	Yd = makeList(Yd, M, N)
+
+	if contourf is not None:
+		X = makeList(X, M, N)
+		Y = makeList(Y, M, N)
+
+	vmin = makeList(vmin, M, N)
+	vmax = makeList(vmax, M, N)
+	C = makeList(C, M, N)
+	
+	cbar = makeList(cbar, M, N)
+	grid = makeList(grid, M, N)
+	title = makeList(title, M, N)
+
+	xticks = makeList(xticks, M, N)
+	xticksvis = makeList(xticksvis, M, N)
+	yticks = makeList(yticks, M, N)
+	yticksvis = makeList(yticksvis, M, N)
+
+	xlabels = makeList(xlabels, M, N)
+	ylabels = makeList(ylabels, M, N)
+
+
+	fig = plt.figure(figsize=figsize, dpi=dpi)#, constrained_layout=True)
+
+	gs = gridspec.GridSpec(ncols=M, nrows=N, figure=fig, width_ratios=width_ratios)
+
+	for col in range(M):
+		for row in range(N):
+
+			ax = fig.add_subplot(gs[row,col])
+			ax.patch.set_color('.5')
+
+			if contourf[row][col] is not None:
+				if mesh:
+					im = plt.pcolormesh(X[row][col], Y[row][col], contourf[row][col], vmin=vmin[row][col], vmax=vmax[row][col], cmap=cmap)		
+				else:
+					levels = getContourfLevels(vmin[row][col], vmax[row][col], contourfNlevels)
+					im = plt.contourf(X[row][col], Y[row][col], contourf[row][col], cmap=cmap, levels=levels)
+
+			if cbar[row][col]:
+				plt.colorbar()
+
+			if C[row][col] is not None:
+				cax = ax.quiver(Xd[row][col], Yd[row][col], u[row][col], v[row][col], C[row][col], cmap=ccmap, scale=scale)	
+				plt.colorbar(cax, ax=ax)
+			else:
+				cax = plt.quiver(Xd[row][col], Yd[row][col], u[row][col], v[row][col], scale=scale)
+			ax.quiverkey(cax, 0.12, 0.03, .1, '0.1 m/s', labelpos='N', coordinates='axes')
+					
+			doLabels(xlabels[row][col], ylabels[row][col], fontsize=fontsize)
+			doTitle(title[row][col], fontsize=fontsize)
+			doTicks(xticks[row][col], xticksvis[row][col], yticks[row][col], yticksvis[row][col])
+			
+			if text_data is not None:
+				setText(ax, text_data[row][col], set_invisible=False)
+			
+			if labelData is not None:
+				for li in labelData[row][col]:
+					plt.scatter(li['x'][0], li['x'][1], s=1, color='r')
+					plt.annotate(li['t'], li['x'])
+
+			#ax.set_aspect('equal')
+
+			if grid[row][col]:
+				plt.grid()
+			
+	if contourf:	
+		if cbarShared:
+			fig.subplots_adjust(right=0.8)
+			cbar_ax = fig.add_axes(cbarSharedData[0])
+			cbar = fig.colorbar(im, cax=cbar_ax)
+			if cbarSharedData[1] is not None:
+				cbar.set_label(cbarSharedData[1], rotation=270, labelpad=10)
+
+	#==
+	
+	#fig.subplots_adjust(wspace=-1, hspace=0)
+
+	#plt.tight_layout()
+
+	if save:
+		plt.savefig(outpath + outname)
+
+	if show:
+		plt.show()
+
+	plt.close()
 
 #==
 
@@ -713,7 +791,8 @@ def plotMbyN(data, X=None, Y=None, figsize=(8,4), titles=None, fontsize=14, mesh
 	
 	cbar = makeList(cbar, M, N)
 	cmap = makeList(cmap, M, N)
-	
+	grid = makeList(grid, M, N)
+		
 	titles = makeList(titles, M, N)
 	xlabels = makeList(xlabels, M, N)
 	ylabels = makeList(ylabels, M, N)
@@ -749,6 +828,9 @@ def plotMbyN(data, X=None, Y=None, figsize=(8,4), titles=None, fontsize=14, mesh
 			doTicks(xticks[row][col], xticksvis[row][col], yticks[row][col], yticksvis[row][col])
 			doLabels(xlabels[row][col], ylabels[row][col], fontsize=fontsize)
 
+			if grid[row][col]:
+				plt.grid()
+				
 	#==
 
 	if cbarShared:
@@ -756,7 +838,7 @@ def plotMbyN(data, X=None, Y=None, figsize=(8,4), titles=None, fontsize=14, mesh
 		cbar_ax = fig.add_axes(cbarSharedData[0])
 		cbar = fig.colorbar(im, cax=cbar_ax)
 		if cbarSharedData[1] is not None:
-			cbar.set_label(cbarSharedData[1], rotation=270, labelpad=10)
+			cbar.set_label(cbarSharedData[1], rotation=270, labelpad=20, fontsize=fontsize)
 			
 	#==
 	

@@ -293,7 +293,7 @@ def makeList(arg, m, n=None):
 	If not list, make it a list of repeated argument.'''
 
 	if not isinstance(arg, list):
-		if m is None:
+		if n is None:
 			arg = [arg]*m
 		else:
 			arg = [[arg]*m]*n

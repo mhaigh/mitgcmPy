@@ -538,39 +538,35 @@ FIGURE7 = 0
 if FIGURE7:
 
 	root_ = '/home/michael/Documents/data/'
-	runs = ['MCS_116', 'MCS_117', 'MCS_118']
+	runs = [['MCS_108', 'MCS_116'], ['MCS_117', 'MCS_118']]
 	#runs = [runs[0]]
 
-	bathy = []	
-	uvec = []
-	vvec = []
+	bathy = [[],[]]	
+	uvec = [[],[]]
+	vvec = [[],[]]
 	
 	d = 8
 	level = 22
 
-	for run in runs:
-		path = root_ + run + '/run/'
-		grid = Grid(path)
+	M = 2; N = 2
+	for col in range(M):
+		for row in range(N):
+			run = runs[row][col]
+			path = root_ + run + '/run/'
+			grid = Grid(path)
 
+			ts = 108; te = 120
+			u = np.mean(readVariable('UVEL', path, meta=False)[ts:te, level], axis=0)
+			v = np.mean(readVariable('VVEL', path, meta=False)[ts:te, level], axis=0)
+			
+			u = ptt.maskBathyXY(u, grid, zi=level, timeDep=False)
+			v = ptt.maskBathyXY(v, grid, zi=level, timeDep=False)
 
-		ts = 108; te = 120
-		u = np.mean(readVariable('UVEL', path, meta=False)[ts:te, level], axis=0)
-		v = np.mean(readVariable('VVEL', path, meta=False)[ts:te, level], axis=0)
-		
-		u = ptt.maskBathyXY(u, grid, zi=level, timeDep=False)
-		v = ptt.maskBathyXY(v, grid, zi=level, timeDep=False)
+			print(np.max(u**2+v**2)**0.5)
 
-		print(np.max(u**2+v**2)**0.5)
-
-		bathy.append(ptt.maskBathyXY(grid.bathy, grid, zi=0, timeDep=False))
-		uvec.append(u[::d, ::d])
-		vvec.append(v[::d, ::d])
-		#bathy.append(ptt.maskBathyXY(grid.bathy, grid, zi=0, timeDep=False))
-		#uvec.append(u[::d, ::d])
-		#vvec.append(v[::d, ::d])
-		#bathy.append(ptt.maskBathyXY(grid.bathy, grid, zi=0, timeDep=False))
-		#uvec.append(u[::d, ::d])
-		#vvec.append(v[::d, ::d])
+			bathy[row].append(ptt.maskBathyXY(grid.bathy, grid, zi=0, timeDep=False))
+			uvec[row].append(u[::d, ::d])
+			vvec[row].append(v[::d, ::d])
 
 	#==
 
@@ -580,27 +576,40 @@ if FIGURE7:
 	print(Z[level])
 	
 	Xd = X[::d]; Yd = Y[::d]
-	titlea = '(a) Eastern trough'
-	titleb = '(b) Eastern sill'
-	titlec = '(c) Eastern trough and sill'
-	title = [titlea, titleb, titlec]
 	
-	cbar = [False, False, True]
-	yticksvis = [True, False, False]
+	title0 = '(a) Zonally uniform slope'
+	titlea = '(b) Eastern trough'
+	titleb = '(c) Eastern sill'
+	titlec = '(d) Eastern trough and sill'
+	title = [[title0, titlea], [titleb, titlec]]
+	
+	cbar = False
+	
 	xlabel = 'Lon (km)'
-	ylabel = ['Lat (km)', None, None]
-
-	yticks = 3*[[0, 100, 200, 300, 400, 500]]
+	xlabels = [[None]*2, [xlabel]*2]
+	ylabel = 'Lat (km)'
+	ylabels = [[ylabel, None]]*2
 	
-	figsize = (11.5, 3)
+	lonticks = [100,200,300,400,500,500]#[0, 200, 400, 600]
+	latticks = [0, 100, 200, 300, 400, 500]
+	xticks = [[lonticks, lonticks]]*2
+	yticks = [[latticks, latticks]]*2
+	xticksvis = [[False]*2, [True]*2]
+	yticksvis = [[True, False]]*2
+	
+	figsize = (7, 6)
 	fontsize = 12
-	width_ratios = [1,1,1.2]
+	width_ratios = [1,1]
 
 	fontdict = {'fontsize':12, 'color':'k'}
 	text = {'text':'Z = '+str(Z[level])+' m', 'xloc':X[1], 'yloc':Y[-22], 'fontdict':fontdict}
-	text_data = [text, text, text]
+	text_data = [[text, text], [text, text]]
 
-	pt.quiver1byN(uvec, vvec, Xd, Yd, contourf=bathy, X=X, Y=Y, mesh=True, cmap='YlGn', vmin=-1000, vmax=-400, cbar=cbar, figsize=figsize, yticks=yticks, yticksvis=yticksvis, save=True, ylabel=ylabel, xlabel=xlabel, title=title, fontsize=fontsize, text_data=text_data, width_ratios=width_ratios, scale=1)
+	cbdata = [[0.825, 0.15, 0.015, 0.7], None]
+
+	pt.quiver2by2(uvec, vvec, Xd, Yd, contourf=bathy, X=X, Y=Y, mesh=True, cmap='YlGn', vmin=-1000, vmax=-400, cbar=cbar, cbarShared=True, cbarSharedData=cbdata, figsize=figsize, xticks=xticks, xticksvis=xticksvis, yticks=yticks, yticksvis=yticksvis, save=True, ylabels=ylabels, xlabels=xlabels, title=title, fontsize=fontsize, text_data=text_data, width_ratios=width_ratios, scale=1)
+
+	#pt.quiver1byN(uvec, vvec, Xd, Yd, contourf=bathy, X=X, Y=Y, mesh=True, cmap='YlGn', vmin=-1000, vmax=-400, cbar=cbar, figsize=figsize, xticks=xticks, xticksvis=xticksvis, yticks=yticks, yticksvis=yticksvis, save=True, ylabel=ylabel, xlabel=xlabel, title=title, fontsize=fontsize, text_data=text_data, width_ratios=width_ratios, scale=1)
 	
 	quit()
 
@@ -645,16 +654,20 @@ if FIGURE8:
 	ylabel = 'Lat (km)'
 	ylabels = [[ylabel, None, None]]*2
 	
-	lonticks = [100,200,300,400,500,500]
+	lonticks = [0, 200, 400, 600]#[100,200,300,400,500,500]
 	latticks = [0, 100, 200, 300, 400, 500]
 	xticks = [[lonticks, lonticks, lonticks]]*2
 	yticks = [[latticks, latticks, latticks]]*2
 	xticksvis = [[False]*3, [True]*3]
 	yticksvis = [[True, False, False]]*2
 	
-	cbdata = [[0.825, 0.15, 0.02, 0.7], 'Isotherm']
+	cbdata = [[0.825, 0.15, 0.015, 0.7], '-0.5 deg. C isotherm depth']
 	
-	pt.plotMbyN(data, X=X, Y=Y, mesh=True, vmin=-500, vmax=-200, titles=titles, cbar=False, cbarShared=True, cbarSharedData=cbdata, xlabels=xlabels, ylabels=ylabels, xticks=xticks, yticks=yticks, xticksvis=xticksvis, yticksvis=yticksvis, width_ratios=[1,1,1.1], figsize=(10,4), save=True)
+	pt.plotMbyN(data, X=X, Y=Y, mesh=True, vmin=-500, vmax=-200, titles=titles, cbar=False, cbarShared=True, cbarSharedData=cbdata, xlabels=xlabels, ylabels=ylabels, xticks=xticks, yticks=yticks, xticksvis=xticksvis, yticksvis=yticksvis, width_ratios=[1,1,1], grid=True, figsize=(10,4), save=True)
+	
+	quit()
+	
+	
 
 
 
