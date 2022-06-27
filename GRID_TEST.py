@@ -44,7 +44,7 @@ import time
 baroclinicEddies = False
 if baroclinicEddies:
 	
-	path = '/home/michai/Documents/data/MCS_002/run/'
+	path = '/home/michael/Documents/data/MCS_002/run/'
 	grid = Grid(path)
 	X = grid.XC[1,:]/1000.		
 	Y = grid.YC[:,1]/1000.
@@ -85,7 +85,7 @@ if TEST_thetaHeight:
 	THERM = -0.4
 
 	if PAS:
-		path = '/home/michai/Documents/data/PAS_851/run/'
+		path = '/home/michael/Documents/data/PAS_851/run/'
 		grid = Grid_PAS(path)
 		T = np.load(path+'Tmean_PAS851.npy')
 
@@ -103,7 +103,7 @@ if TEST_thetaHeight:
 		title = 'PAS851 mean - 0.4 deg. isotherm height'
  
 	else:
-		path = '/home/michai/Documents/data/MCS_038/run/'
+		path = '/home/michael/Documents/data/MCS_038/run/'
 		grid = Grid(path)
 		T = readVariable('THETA', path, file_format='nc', meta=False)[-2:]
 
@@ -138,7 +138,7 @@ if TEST_thetaHeight:
 TEST_rho = False
 if TEST_rho:
 
-	path = '/home/michai/Documents/data/MCS_038/run/'
+	path = '/home/michael/Documents/data/MCS_038/run/'
 	
 	grid = Grid(path)
 	
@@ -172,7 +172,7 @@ if TEST_rho:
 TEST_rel = False
 if TEST_rel:
 
-	path = '/home/michai/Documents/data/MCS_116/run/'
+	path = '/home/michael/Documents/data/MCS_116/run/'
 	
 	grid = Grid(path)
 	
@@ -199,8 +199,8 @@ if TEST_rel:
 TEST_brclnc = False
 if TEST_brclnc:
 	
-	#path = '/home/michai/Documents/data/PAS_666/run/'
-	path = '/home/michai/Documents/data/MCS_038/run/'
+	#path = '/home/michael/Documents/data/PAS_666/run/'
+	path = '/home/michael/Documents/data/MCS_038/run/'
 	
 	level = 24
 
@@ -247,8 +247,8 @@ if TEST_brclnc:
 TEST_baroStr = False
 if TEST_baroStr:
 
-	#path = '/home/michai/Documents/data/PAS_666/run/'
-	path = '/home/michai/Documents/data/MCS_038/run/'
+	#path = '/home/michael/Documents/data/PAS_666/run/'
+	path = '/home/michael/Documents/data/MCS_038/run/'
 	
 	level = 24
 
@@ -303,7 +303,7 @@ if TEST_baroStr:
 TEST_depthAverage = False
 if TEST_depthAverage:
 
-	path = '/home/michai/Documents/data/MCS_001/run/'
+	path = '/home/michael/Documents/data/MCS_001/run/'
 
 	var = 'Vvel'; VAR = 'VVEL'
 	vmin, vmax, cmap, title = getPlottingourcVars(var)
@@ -340,11 +340,11 @@ if TEST_depthAverage:
 TEST_animate = False
 if TEST_animate:
 
-	#path = '/home/michai/Documents/data/MCS_002/run/'
+	#path = '/home/michael/Documents/data/MCS_002/run/'
 
-	#path = '/home/michai/Documents/data/MCS_104/run/'
-	path = '/home/michai/Documents/data/PISOMIP_003/run/'
-	#pathG = '/home/michai/Documents/data/MCS_018/run/'
+	path = '/home/michael/Documents/data/MCS_116/run/'
+	#path = '/home/michael/Documents/data/PISOMIP_003/run/'
+	#pathG = '/home/michael/Documents/data/MCS_018/run/'
 
 	grid = Grid(path)
 	#grid = Grid_PAS(path)
@@ -353,28 +353,24 @@ if TEST_animate:
 
 	#VAR = 'ETAN'
 	#VAR = 'RHOAnoma'
-	#VAR = 'THETA'
+	VAR = 'THETA'
 	#VAR = 'PHIHYD'
 	#VAR = 'DFrE_TH';
 	#VAR = 'WVELTH'#','UVELTH','VVELTH','WVELTH', 'TOTTTEND'
-	VAR = 'SALT'	
+	#VAR = 'SALT'	
 	#VAR = 'UVEL'	
 	#VAR = 'VVEL'
 	#VAR = 'WVEL'
-
-	plt.contourf(grid.bathy); plt.colorbar(); plt.show(); quit()
 
 	vmin, vmax, cmap, title = getPlottingVars(VAR)
 	#vmin = 33.32; vmax = 34.5
 	data = readVariable(VAR, path, file_format='nc', meta=True)
 	print(data)
-
-
+	
+	#pt.plot1by1(grid.bathy); quit()
+		
 	text_data = ptt.getTextData(data.variables['TIME'][:], 'month', X[1], Y[-2], color='w')
 	data = data[VAR][:]
-
-	d = np.mean(data[-1,:,-2,:], axis=-1)
-	plt.plot(d, Y); plt.grid(); plt.show(); quit()
 
 	MEAN = False
 	ASYM = False
@@ -382,7 +378,7 @@ if TEST_animate:
 		for ti in range(data.shape[0]):
 			data[ti,] = ptt.maskBathyAll(data[ti,], grid)
 		#data = np.ma.mean(data, axis=3)
-		data = data[...,0]
+		data = data[...,165]
 		#data = np.mean(data[...,1:40], axis=-1)
 	
 	else:
@@ -417,7 +413,7 @@ if TEST_animate:
 TEST_animateX = False
 if TEST_animateX:
 
-	path = '/home/michai/Documents/data/MCS_103/run/'
+	path = '/home/michael/Documents/data/MCS_103/run/'
 
 	grid = Grid(path)
 	X = grid.YC[:,1]/1000.
@@ -452,9 +448,9 @@ if TEST_animateX:
 animateSurface = True
 if animateSurface:
 
-	#path = '/home/michai/Documents/data/PAS_666/run/'
-	#path = '/home/michai/Documents/data/PISOMIP_003/run/'
-	path = '/home/michai/Documents/data/MCS_114/run/'
+	#path = '/home/michael/Documents/data/PAS_666/run/'
+	#path = '/home/michael/Documents/data/PISOMIP_003/run/'
+	path = '/home/michael/Documents/data/MCS_114/run/'
 
 	grid = Grid(path)
 	#grid = Grid_PAS(path)
@@ -528,8 +524,8 @@ if animateSurface:
 animateRV = False
 if animateRV:
 
-	#path = '/home/michai/Documents/data/PAS_666/run/'
-	path = '/home/michai/Documents/data/MCS_062/run/'
+	#path = '/home/michael/Documents/data/PAS_666/run/'
+	path = '/home/michael/Documents/data/MCS_062/run/'
 	#path = '/data/oceans_output/shelf/pahol/mitgcm/PAS_851/run/'
 
 	grid = Grid(path)
@@ -578,8 +574,8 @@ if animateRV:
 animateQuivers = False
 if animateQuivers:
 
-	#path = '/home/michai/Documents/data/PAS_666/run/'
-	path = '/home/michai/Documents/data/MCS_038/run/'
+	#path = '/home/michael/Documents/data/PAS_666/run/'
+	path = '/home/michael/Documents/data/MCS_038/run/'
 	#path = '/data/oceans_output/shelf/pahol/mitgcm/PAS_851/run/'
 
 	# Sample rate
@@ -661,7 +657,7 @@ if animateSSHs:
 	# Animate zonal mean SSHs for multiple MITgcm runs.
 	# Assumes that all use the same grid and have the same time dependencies.
 
-	path_root = '/home/michai/Documents/data/'
+	path_root = '/home/michael/Documents/data/'
 
 	# These are cases without CS walls.
 	#paths = [path_root+'MCS_013/run/', path_root+'MCS_018/run/', path_root+'MCS_012/run/', path_root+'MCS_016/run/']
@@ -709,7 +705,7 @@ animateSSHs1sim = False
 if animateSSHs1sim:
 	# Animate SSH at different longitudes for a single MITgcm run. 
 
-	path_root = '/home/michai/Documents/data/'
+	path_root = '/home/michael/Documents/data/'
 	path = path_root + 'MCS_034/run/'
 	#xis = [1, 190, 80, 120]
 	xis = [1, 5, 230, 239]
@@ -756,7 +752,7 @@ if animateIsotherms:
 	# Animate zonal mean Isotherm Height for multiple MITgcm runs.
 	# Assumes that all use the same grid and have the same time dependencies.
 
-	path_root = '/home/michai/Documents/data/'
+	path_root = '/home/michael/Documents/data/'
 
 	# These are cases with CS walls.	
 	#paths = [path_root+'MCS_105/run/', path_root+'MCS_106/run/']; minus_dirs = 1
@@ -828,7 +824,7 @@ if animateUbots:
 	# Animate zonal mean Ubots for multiple MITgcm runs.
 	# Assumes that all use the same grid and have the same time dependencies.
 
-	path_root = '/home/michai/Documents/data/'
+	path_root = '/home/michael/Documents/data/'
 
 	# These are cases with CS walls.	
 	paths = [path_root+'MCS_103/run/', path_root+'MCS_104/run/', path_root+'MCS_105/run/', path_root+'MCS_106/run/']
@@ -888,7 +884,7 @@ if animateDragBot:
 	# Animate zonal mean Ubots for multiple MITgcm runs.
 	# Assumes that all use the same grid and have the same time dependencies.
 
-	path_root = '/home/michai/Documents/data/'
+	path_root = '/home/michael/Documents/data/'
 
 	# These are cases with CS walls.	
 	#paths = [path_root+'MCS_113/run/', path_root+'MCS_104/run/']
@@ -972,7 +968,7 @@ if animateUvelSurfs:
 	# Animate zonal mean SSHs for multiple MITgcm runs.
 	# Assumes that all use the same grid and have the same time dependencies.
 
-	path_root = '/home/michai/Documents/data/'
+	path_root = '/home/michael/Documents/data/'
 
 	# These are cases without CS walls.
 	#paths = [path_root+'MCS_013/run/', path_root+'MCS_018/run/', path_root+'MCS_012/run/', path_root+'MCS_016/run/']
@@ -1025,11 +1021,11 @@ if animateUvelSurfs:
 yzSlice = False
 if yzSlice:
 
-	#path = '/home/michai/Documents/data/MCS_002/run/'
+	#path = '/home/michael/Documents/data/MCS_002/run/'
 
-	path = '/home/michai/Documents/data/MCS_036/run/'
-	#path = '/home/michai/Documents/data/PISOMIP_003/run/'
-	#pathG = '/home/michai/Documents/data/MCS_018/run/'
+	path = '/home/michael/Documents/data/MCS_036/run/'
+	#path = '/home/michael/Documents/data/PISOMIP_003/run/'
+	#pathG = '/home/michael/Documents/data/MCS_018/run/'
 
 	grid = Grid(path)
 	#grid = Grid_PAS(path)
@@ -1086,8 +1082,8 @@ if yzSlice:
 plotBathy = False
 if plotBathy:
 
-	#path = '/home/michai/Documents/data/PAS_666/run/'
-	path = '/home/michai/Documents/data/MCS_038/run/'
+	#path = '/home/michael/Documents/data/PAS_666/run/'
+	path = '/home/michael/Documents/data/MCS_038/run/'
 	
 	grid = Grid(path)
 	bathy = grid.bathy
@@ -1323,11 +1319,11 @@ if TEST_btpcStrKN:
 	import utils 
 	from grid_KN import Grid as Grid_KN
 	
-	path = '/home/michai/Documents/data/PAS_851/run/'
+	path = '/home/michael/Documents/data/PAS_851/run/'
 	grid = Grid_PAS(path)
 	u = np.load(path+'umean_PAS851.npy')
 	
-	#path = '/home/michai/Documents/data/MCS_038/run/'
+	#path = '/home/michael/Documents/data/MCS_038/run/'
 	#grid = Grid(path)
 
 	gridK = Grid_KN(path)
@@ -1357,7 +1353,7 @@ if TEST_bathy:
 
 	from grid_KN import Grid as Grid_KN
  
-	path = '/home/michai/Documents/data/MCS_038/run/'
+	path = '/home/michael/Documents/data/MCS_038/run/'
 	gridP = Grid_PAS(path)
 	grid = Grid(path)
 	gridK = Grid_KN(path)

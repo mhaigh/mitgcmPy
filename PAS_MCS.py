@@ -420,7 +420,7 @@ if thetaHeight:
 	else:
 
 
-		exp = 'MCS_118'
+		exp = 'MCS_116'
 		path = '/home/michael/Documents/data/'+exp+'/run/'
 		grid = Grid(path)
 		X = grid.XC[1,:]/1000.
@@ -471,7 +471,47 @@ if thetaHeight:
 		pt.plot1by1(ThermZ, X=X, Y=Y, mesh=True, title=title, vmin=vmin, vmax=vmax, cmap='jet', xlabel=xlabel, ylabel=ylabel); quit()#
 
 	quit()
+
 #==
+
+
+thetaHeight_timeSeries = 1
+if thetaHeight_timeSeries:
+
+	THERM = -1.5
+
+	exps = [['MCS_116', (200,100)], ['MCS_117', (200,100)]]
+	data = []
+	labels = []
+	
+	for exp in exps:
+		path = '/home/michael/Documents/data/'+exp[0]+'/run/'
+		grid = Grid(path)
+		X = grid.XC[1,:]/1000.
+		Y = grid.YC[:,1]/1000.
+		Z = grid.RC.squeeze()
+		bathy = grid.bathy
+
+		T = readVariable('THETA', path, meta=False)
+		# Get z-indices of level with Theta closest to THERM.
+		ThermZ = tools.getIsothermHeight(T, THERM, grid, interp=True, timeDep=True)
+		ThermZ = ptt.maskBathyXY(ThermZ, grid, 0, timeDep=True)
+		#ThermZ = np.where(ThermZ<grid.bathy+10, np.nan, ThermZ)
+		
+		data.append(ThermZ[:, exp[1][1], exp[1][0]])
+		labels.append(exp[0])
+		
+	#==
+
+	for di in range(len(data)):
+		plt.plot(data[di], label=labels[di])
+	plt.legend()
+	plt.show()
+
+	quit()
+	
+#==
+
 
 quiver = 0
 if quiver:
@@ -833,7 +873,7 @@ if animateUVTdepth:
 #==
 
 # Animate velocity vectors and temperature at fixed level.
-animateUVT = True
+animateUVT = False
 if animateUVT:
 
 	PAS = False
@@ -898,10 +938,12 @@ if animateUVT:
 
 		ts = 0; te = -1
 
-		path = '/home/michael/Documents/data/MCS_117/run/'
+		path = '/home/michael/Documents/data/PISOMIP_002/run/'
 		grid = Grid(path)
 		contour = grid.bathy
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
+
+		pt.plotMbyN(grid.bathy, mesh=True); quit()
 
 		depth = -490; level = grid.getIndexFromDepth(depth)
 
