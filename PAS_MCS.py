@@ -24,7 +24,7 @@ import time
 
 #==========================================================
 
-HEAT_CONTENT = False
+HEAT_CONTENT = True
 if HEAT_CONTENT:
 
 	path = '/home/michael/Documents/data/MCS_114/run/'
@@ -35,8 +35,8 @@ if HEAT_CONTENT:
 	ts = 108
 	T = np.mean(readVariable('THETA', path, meta=False)[ts:], axis=0)
 			
-	TCH = tools.heatContentShelf(T, grid)
-	print(TCH)
+	TCH, iTCH = tools.heatContentShelf(T, grid)
+	print(TCH, iTCH)
 	
 	quit()
 			

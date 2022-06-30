@@ -84,22 +84,31 @@ def heatContentShelf(theta, grid, shelf=500, rho=1030, Cp=3974.0, T0=-2, y0=96, 
 	# Heat content times volume elements
 	HC = Cp * rho * (theta - T0) * grid.DXG * grid.DYG * grid.hFacC * grid.DRF
 	
-	HC2 = np.where(z<bathy, 0, HC)
-				
-	# First get all heat south of certain latitude and above the troughs.
-	HC2 = HC2[:z0,:y0,:]
-	TCH = np.ma.sum(HC2)
-	#print(grid.RC.squeeze()[:z0])
+	# Same for initial heat content
+	theta0 = -1.8 * np.ones(HC.shape)
+	HC0 = Cp * rho * (theta0 - T0) * grid.DXG * grid.DYG * grid.hFacC * grid.DRF
 	
+	HC = np.where(z<bathy, 0, HC)
+	HC0 = np.where(z<bathy, 0, HC0)
+	
+	# First get all heat south of certain latitude and above the troughs.
+	HCtmp = HC[:z0,:y0,:]
+	HCtmp0 = HC0[:z0,:y0,:]
+	
+	TCH = np.sum(HCtmp)
+	TCH0 = np.sum(HCtmp0)
+	#print(grid.RC.squeeze()[:z0])
 		
 	# Add in heat content in central trough.
 	if troughC:
 		xw = 84; xe = 155
 		ys = 1; yn = 85
-		HC2 = HC[z0:, ys:yn, xw:xe]
-		TCH += np.ma.sum(HC2)
-		
-	return TCH
+		HCtmp = HC[z0:, ys:yn, xw:xe]
+		HCtmp0 = HC0[z0:, ys:yn, xw:xe]
+		TCH += np.sum(HCtmp)
+		TCH0 += np.sum(HCtmp0)	
+
+	return TCH, TCH0
 	
 #==
 
