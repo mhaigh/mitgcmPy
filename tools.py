@@ -71,6 +71,38 @@ def getSubregionYZ(data, lats, depths, Xdim=False):
 		
 #==
 
+def heatContentShelf(theta, grid, shelf=500, rho=1030, Cp=3974.0, T0=-2, y0=96, z0=25, troughC=True):
+	'''Return scalar heat content on shelf.
+	Assumes theta is snapshot or time-mean value.'''
+	
+	# Make bathy and z 3D fields.
+	bathy = grid.bathy
+	z = grid.RC
+	bathy = np.tile(bathy, (z.shape[0], 1, 1))
+	z = np.tile(z, (1, bathy.shape[1], bathy.shape[2]))
+
+	# Heat content times volume elements
+	HC = Cp * rho * (theta - T0) * grid.DXG * grid.DYG * grid.hFacC * grid.DRF
+	
+	HC2 = np.where(z<bathy, 0, HC)
+				
+	# First get all heat south of certain latitude and above the troughs.
+	HC2 = HC2[:z0,:y0,:]
+	TCH = np.ma.sum(HC2)
+	#print(grid.RC.squeeze()[:z0])
+	
+		
+	# Add in heat content in central trough.
+	if troughC:
+		xw = 84; xe = 155
+		ys = 1; yn = 85
+		HC2 = HC[z0:, ys:yn, xw:xe]
+		TCH += np.ma.sum(HC2)
+		
+	return TCH
+	
+#==
+
 def zonalTransport(u, grid):
 	'''Return zonal transport in given region, taking care with grid stencil.'''
 	

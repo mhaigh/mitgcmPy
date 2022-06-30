@@ -25,7 +25,7 @@ def maskBathyAll(data, grid, color='grey', timeDep=False):
 		bathy = np.tile(bathy, (Nt,1,1,1))
 		z = np.tile(bathy, (Nt,1,1,1))
 
-	return np.ma.array(data, mask=grid.RC<bathy)
+	return np.ma.array(data, mask=z<bathy)
 
 #==
 
