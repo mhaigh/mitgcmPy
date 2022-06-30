@@ -24,6 +24,22 @@ import time
 
 #==========================================================
 
+HEAT_CONTENT = False
+if HEAT_CONTENT:
+
+	path = '/home/michael/Documents/data/MCS_114/run/'
+	grid = Grid(path)
+	
+	#pt.plot1by1(grid.bathy, mesh=True, vmin=-700, vmax=-500); quit()
+	
+	ts = 108
+	T = np.mean(readVariable('THETA', path, meta=False)[ts:], axis=0)
+			
+	TCH = tools.heatContentShelf(T, grid)
+	print(TCH)
+	
+	quit()
+			
 HEAT_TRANSPORT = False
 if HEAT_TRANSPORT:
 	
@@ -35,7 +51,7 @@ if HEAT_TRANSPORT:
 	# --> kg / S3
 	# Area integral --> kg / (m2 s3)
 
-	path = '/home/michael/Documents/data/MCS_118/run/'
+	path = '/home/michael/Documents/data/MCS_114/run/'
 	grid = Grid(path)
 
 	X = grid.XC[1,:] / 1000.
