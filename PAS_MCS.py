@@ -350,7 +350,7 @@ if ASF:
 
 #==
 
-thetaHeight = 0
+thetaHeight = False
 if thetaHeight:
 
 	PAS = False
@@ -420,7 +420,7 @@ if thetaHeight:
 	else:
 
 
-		exp = 'MCS_116'
+		exp = 'MCS_123'
 		path = '/home/michael/Documents/data/'+exp+'/run/'
 		grid = Grid(path)
 		X = grid.XC[1,:]/1000.
@@ -475,7 +475,7 @@ if thetaHeight:
 #==
 
 
-thetaHeight_timeSeries = 1
+thetaHeight_timeSeries = False
 if thetaHeight_timeSeries:
 
 	THERM = -1.5
@@ -749,10 +749,10 @@ if brclnc:
 #==
 
 # Animate velocity vectors and temperature. Each frame is different level.
-animateUVTdepth = False
+animateUVTdepth = True
 if animateUVTdepth:
 
-	PAS = False
+	PAS = True
 	SUBR = True
 	BOT = False
 
@@ -938,12 +938,12 @@ if animateUVT:
 
 		ts = 0; te = -1
 
-		path = '/home/michael/Documents/data/PISOMIP_002/run/'
+		path = '/home/michael/Documents/data/MCS_123/run/'
 		grid = Grid(path)
 		contour = grid.bathy
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
 
-		pt.plotMbyN(grid.bathy, mesh=True); quit()
+		#pt.plotMbyN(grid.bathy, mesh=True); quit()
 
 		depth = -490; level = grid.getIndexFromDepth(depth)
 

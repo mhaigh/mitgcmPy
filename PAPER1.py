@@ -26,7 +26,11 @@ import time
 
 #==========================================================
 
+
 print(' I could change all Lats to Lat.s, or to Latitudes')
+
+print('Could change Z to lower case z, in plots and text, for consistency with x being used for lon.')
+
 
 # Plot ERA5 winds, ocean surface stress and bathymetry in PAS.
 FIGURE1a = 0
@@ -130,7 +134,6 @@ if FIGURE1b:
 
 #==
 
-#
 FIGURE2 = 0
 if FIGURE2:
 
@@ -615,9 +618,102 @@ if FIGURE7:
 
 #==
 
-# A sequence of isotherm heights from different experiments.
 FIGURE8 = 1
 if FIGURE8:
+
+	levels = [0,22]	
+	ts = 108
+	
+	path = '/home/michael/Documents/data/MCS_114/run/'
+	grid = Grid_PAS(path)
+	bathy = grid.bathy
+	vmin = -1000; vmax = -300
+	bathy = tools.boundData(bathy, vmin, vmax)
+	bathy = [bathy, bathy]
+	
+	X = grid.XC/1.e3; Y = grid.YC/1.e3
+	Z = grid.RC.squeeze()
+	
+	# Load data
+	u = np.mean(readVariable('UVEL', path, meta=False)[ts:,], axis=0)
+	v = np.mean(readVariable('VVEL', path, meta=False)[ts:,], axis=0)
+	T = np.mean(readVariable('THETA', path, meta=False)[ts:,], axis=0)
+	
+	# Get two levels
+	u = u[levels]
+	v = v[levels]
+	T = T[levels]
+
+	cvmin = -2; cvmax = 2
+	T = tools.boundData(T, cvmin, cvmax, 0.9999)
+
+	u = tools.interp(u, 'u'); v = tools.interp(v, 'v')
+	u = tools.boundData(u, -0.4, 0.4, 0.9999); v = tools.boundData(v, -0.4, 0.4, 0.9999)
+
+
+	# Mask data
+	for li in range(len(levels)):
+		u[li] = ptt.maskBathyXY(u[li], grid, levels[li], timeDep=False)
+		v[li] = ptt.maskBathyXY(v[li], grid, levels[li], timeDep=False)
+		T[li] = ptt.maskBathyXY(T[li], grid, levels[li], timeDep=False)
+		u[li] = ptt.maskDraftXY(u[li], grid, levels[li], timeDep=False)
+		v[li] = ptt.maskDraftXY(v[li], grid, levels[li], timeDep=False)
+		T[li] = ptt.maskDraftXY(T[li], grid, levels[li], timeDep=False)
+		bathy[li] = ptt.maskBathyXY(bathy[li], grid, levels[li], timeDep=False)
+		bathy[li] = ptt.maskDraftXY(bathy[0], grid, levels[0], timeDep=False)
+
+	#==
+	
+	# Text data	
+	fontdict = {'fontsize':12, 'color':'k'}
+	text0 = {'text':'z = '+str(Z[levels[0]])+' m', 'xloc':X[-17,0], 'yloc':Y[-17,0], 'fontdict':fontdict}
+	text1 = {'text':'z = '+str(Z[levels[1]])+' m', 'xloc':X[-17,0], 'yloc':Y[-17,0], 'fontdict':fontdict} 
+	text_data = [text0, text1]
+	
+	# Sample rate
+	d = 8
+	u = u[..., ::d, ::d]; v = v[..., ::d, ::d]; T = T[..., ::d, ::d]
+	Xd = X[::d, ::d]; Yd = Y[::d, ::d]
+
+	Xd = [Xd, Xd]; Yd = [Yd, Yd]
+	X = [X, X]; Y = [Y, Y]
+
+	T[0,-1,-1] = cvmin; T[0,-1,-2] = cvmax;
+	T[1,-1,-1] = cvmin; T[1,-1,-2] = cvmax;
+
+	vmin = [vmin, vmin]; vmax = [vmax, vmax]
+
+	title1 = '(a) Surface flow, Pot. Temp. (deg. C), Bathy. (m)'
+	title2 = '(b) Deep flow, Pot. Temp. (deg. C), Bathy. (m)'
+	title = [title1, title2]
+
+
+	lonticks = [0, 200, 400, 600]#[100,200,300,400,500,500]
+	latticks = [0, 100, 200, 300, 400, 500]
+	xticks = [lonticks, lonticks]
+	yticks = [latticks, latticks]
+	xticksvis = [True, True]
+	yticksvis = [True, False]
+	
+	xlabel = 'Lon (km)'
+	xlabels = [xlabel, xlabel]
+	ylabel = 'Lat (km)'
+	ylabels = [ylabel, None]
+
+	scale = [2,1]
+	width_ratios = [0.8,1.25]
+	
+	# PLOT
+
+	pt.quiver1by2(u, v, Xd, Yd, C=T, ccmap='seismic', contourf=bathy, X=X, Y=Y, mesh=True, vmin=vmin, vmax=vmax, cmap='YlGn', width_ratios=width_ratios, title=title, fontsize=12, figsize=(8., 3), xticks=xticks, yticks=yticks, xticksvis=xticksvis, yticksvis=yticksvis, xlabels=xlabels, ylabels=ylabels, scale=scale, save=True, text_data=text_data)
+
+	quit()
+
+#==
+
+# A sequence of isotherm heights from different experiments.
+FIGURE9 = 1
+if FIGURE9:
 
 	path = '/home/michael/Documents/data/'	
 	path_THERMZ = path + 'THERMZnpy/'
@@ -627,6 +723,7 @@ if FIGURE8:
 	THERM = -0.5; THERMt = 'm05'
 
 	data = [[], []]
+	hc = [[], []]
 	M = len(runs)
 	N = len(runs[0])
 

@@ -399,6 +399,118 @@ def quiver2by2(u, v, Xd, Yd, C=None, ccmap='bwr', contourf=None, contourfNlevels
 
 #==
 
+def quiver1by2(u, v, Xd, Yd, C=None, ccmap='bwr', contourf=None, contourfNlevels=9, X=None, Y=None, mesh=False, contour=None, contourLevels=None, figsize=(8,3), title=None, fontsize=14, cmap='jet', vmin=None, vmax=None, xlabels=None, ylabels=None, save=False, outpath='', outname='quiver1by2.png', show=True, dpi=200, text_data=None,  width_ratios=None, labelData=None, scale=2, xticks=None, yticks=None, xticksvis=True, yticksvis=True):
+	
+	xticks = makeList(xticks, 2)
+	yticks = makeList(yticks, 2)
+	xticksvis = makeList(xticksvis, 2)
+	yticksvis = makeList(yticksvis, 2)
+	
+	scale = makeList(scale, 2)
+	
+	fig = plt.figure(figsize=figsize, dpi=dpi)
+
+	if width_ratios is not None:
+		gs = gridspec.GridSpec(ncols=2, nrows=1, figure=fig, width_ratios=width_ratios)
+		ax = fig.add_subplot(gs[0,0])
+	else:
+		plt.subplot(121)
+		ax = plt.gca()
+
+	ax.patch.set_color('.5')
+
+	if contourf is not None:
+		if mesh:
+			plt.pcolormesh(X[0], Y[0], contourf[0], vmin=vmin[0], vmax=vmax[0], cmap=cmap)		
+		else:
+			levels = getContourfLevels(vmin[0], vmax[0], contourfNlevels)
+			plt.contourf(X[0], Y[0], contourf[0], cmap=cmap, levels=levels)
+
+		if width_ratios is None:
+			plt.colorbar()
+
+	if contour is not None:
+		if contourLevels is not None:
+			plt.contour(X[0], Y[0], contour[0], levels=contourLevels[0], colors='k', linestyles='solid', linewidths=0.4)
+		else:
+			plt.contour(X[0], Y[0], contour[0], levels=contourLevels[0], colors='k', linestyles='solid', linewidths=0.4)
+
+	if C is not None:
+		cax = ax.quiver(Xd[0], Yd[0], u[0], v[0], C[0], cmap=ccmap, scale=scale[0])
+		if width_ratios is None:
+			print('1')
+			plt.colorbar(cax, ax=ax)
+	else:
+		cax = plt.quiver(Xd[0], Yd[0], u[0], v[0], scale=scale)
+	ax.quiverkey(cax, 0.12, 0.03, .2, '0.2 m/s', labelpos='E', coordinates='axes')
+			
+		
+	doLabels(xlabels[0], ylabels[0], fontsize=fontsize)
+	doTicks(xticks[0], xticksvis[0], yticks[0], yticksvis[0])
+
+	if text_data is not None:
+		setText(ax, text_data[0], set_invisible=False)
+	
+	if title is not None:
+		plt.title(title[0], fontsize=8)
+
+	#ax.set_aspect('equal')
+
+	if labelData is not None:
+		for li in labelData[0]:
+			plt.scatter(li['x'][0], li['x'][1], s=1, color='r')
+			plt.annotate(li['t'], li['x'])
+
+	#==
+
+	plt.subplot(122)
+	ax = plt.gca()
+	ax.patch.set_color('.5')
+
+	if contourf is not None:
+		if mesh:
+			plt.pcolormesh(X[1], Y[1], contourf[1], vmin=vmin[1], vmax=vmax[1], cmap=cmap)		
+		else:
+			levels = getContourfLevels(vmin[1], vmax[1], contourfNlevels)
+			plt.contourf(X[1], Y[1], contourf[1], cmap=cmap, levels=levels)
+		plt.colorbar()
+
+	if C is not None:
+		cax = plt.quiver(Xd[1], Yd[1], u[1], v[1], C[1], cmap=ccmap, scale=scale[1], linewidths=2)
+		plt.colorbar(cax, ax=ax)
+	else:
+		cax = ax.quiver(Xd[1], Yd[1], u[1], v[1], scale=scale)
+	ax.quiverkey(cax, 0.12, 0.03, .1, '0.1 m/s', labelpos='E', coordinates='axes')
+			
+	doLabels(xlabels[1], ylabels[1], fontsize=fontsize)
+	doTicks(xticks[1], xticksvis[1], yticks[1], yticksvis[1])
+	
+	if text_data is not None:
+		setText(ax, text_data[1], set_invisible=False)
+	
+	if title is not None:
+		plt.title(title[1], fontsize=8)
+
+	#ax.set_aspect('equal')
+
+	if labelData is not None:
+		for li in labelData[1]:
+			plt.scatter(li['x'][0], li['x'][1], s=1, color='k')
+			plt.annotate(li['t'], li['x'])
+
+	#==
+	
+	plt.tight_layout()
+		
+	if show:
+		plt.show()
+
+	if save:
+		plt.savefig(outpath + outname)
+		plt.close()
+		
+#==
+
 def quiver1by2Basemap(u, v, Xd, Yd, lat_0, lon_0, C=None, ccmap='bwr', contourf=None, contourfNlevels=9, X=None, Y=None, mesh=False, contour=None, contourLevels=None, figsize=(8,3), title=None, fontsize=14, cmap='jet', vmin=None, vmax=None, xlabel=None, ylabel=None, save=False, outpath='', outname='quiver1by2.mp4', show=True, dpi=200, text_data=None, parallels=None, meridians=None, width_ratios=None, labelData=None):
 	
 	from mpl_toolkits.basemap import Basemap
