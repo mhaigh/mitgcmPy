@@ -8,20 +8,9 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib.gridspec as gridspec
 
-from plotting_tools import setText, getContourfLevels, maskBathyXY, maskDraftXY
+from plotting_tools import setText, getContourfLevels, maskBathyXY, maskDraftXY, makeList, doTicks, doTitle, doLabels
 
 #==========================================================
-
-def makeList(arg, n):
-	'''Check if argument is list.
-	If not list, make it a list of repeated argument.'''
-
-	if not isinstance(arg, list):
-		arg = [arg]*n
-
-	return arg
-
-#==
 
 def contourf(data):
 	'''Quick contourf plot of data.'''
@@ -200,47 +189,30 @@ def quiver1by1(u, v, Xd, Yd, C=None, ccmap='bwr', contour=None, X=None, Y=None, 
 
 def quiver1byN(u, v, Xd, Yd, C=None, ccmap='bwr', contourf=None, contourfNlevels=9, X=None, Y=None, mesh=False, contour=None, contourLevels=None, figsize=None, title=None, fontsize=14, cmap='jet', vmin=None, vmax=None, xlabel=None, ylabel=None, save=False, outpath='', outname='quiver1byN.png', show=True, dpi=200, text_data=None, width_ratios=None, labelData=None, cbar=True, grid=True, xticks=None, xticksvis=True, yticks=None, yticksvis=True, scale=2):
 
-
 	N = len(u)
-	if not isinstance(Xd, list):
-		Xd = [Xd]*N
-	if not isinstance(Yd, list):
-		Yd = [Yd]*N
+
+	Xd = makeList(Xd, N)
+	Yd = makeList(Yd, N)
 
 	if contourf is not None:
-		if not isinstance(X, list):
-			X = [X]*N
-		if not isinstance(Y, list):
-			Y = [Y]*N
+		X = makeList(X, N)
+		Y = makeList(Y, N)
 
-	if not isinstance(vmin, list):
-		vmin = [vmin]*N
-	if not isinstance(vmax, list):
-		vmax = [vmax]*N
+	vmin = makeList(vmin, N)
+	vmax = makeList(vmax, N)
 
-	if not isinstance(cbar, list):
-		cbar = [cbar]*N
-	if not isinstance(grid, list):
-		grid = [grid]*N
+	cbar = makeList(cbar, N)
+	grid = makeList(grid, N)
+	title = makeList(title, N)
 
-	if not isinstance(title, list):
-		title = [title]*N
+	xticks = makeList(xticks, N)
+	xticksvis = makeList(xticksvis, N)
 
-	if not isinstance(xticks, list):
-		xticks = [xticks]*N
-	if not isinstance(xticksvis, list):
-		xticksvis = [xticksvis]*N
+	yticks = makeList(yticks, N)
+	yticksvis = makeList(yticksvis, N)
 
-	if not isinstance(yticks, list):
-		yticks = [yticks]*N
-	if not isinstance(yticksvis, list):
-		yticksvis = [yticksvis]*N
-
-
-	if not isinstance(xlabel, list):
-		xlabel = [xlabel]*N
-	if not isinstance(ylabel, list):
-		ylabel = [ylabel]*N
+	xlabel = makeList(xlabel, N)
+	ylabel = makeList(ylabel, N)
 
 	if figsize is None:
 		if N == 2:
@@ -286,19 +258,14 @@ def quiver1byN(u, v, Xd, Yd, C=None, ccmap='bwr', contourf=None, contourfNlevels
 				plt.colorbar(cax, ax=ax)
 		else:
 			cax = plt.quiver(Xd[pi], Yd[pi], u[pi], v[pi], scale=scale)
-		ax.quiverkey(cax, 0.12, 0.03, .2, '0.2 m/s', labelpos='E', coordinates='axes')
+		ax.quiverkey(cax, 0.12, 0.03, .1, '0.1 m/s', labelpos='N', coordinates='axes')
 				
-		if xlabel is not None:
-			plt.xlabel(xlabel[pi], fontsize=fontsize)
-		if ylabel is not None:
-			plt.ylabel(ylabel[pi], fontsize=fontsize)
+		doLabels(xlabel[pi], ylabel[pi], fontsize=fontsize)
+		doTitle(title[pi], fontsize=fontsize)
 
 		if text_data is not None:
 			setText(ax, text_data[pi], set_invisible=False)
 		
-		if title is not None:
-			plt.title(title[pi], fontsize=fontsize)
-
 		if labelData is not None:
 			for li in labelData[pi]:
 				plt.scatter(li['x'][0], li['x'][1], s=1, color='r')
@@ -329,7 +296,219 @@ def quiver1byN(u, v, Xd, Yd, C=None, ccmap='bwr', contourf=None, contourfNlevels
 
 	plt.close()
 
+#==
 
+def quiver2by2(u, v, Xd, Yd, C=None, ccmap='bwr', contourf=None, contourfNlevels=9, X=None, Y=None, mesh=False, contour=None, contourLevels=None, cbarShared=False, cbarSharedData=None, figsize=None, title=None, fontsize=14, cmap='jet', vmin=None, vmax=None, xlabels=None, ylabels=None, save=False, outpath='', outname='quiver2by2.png', show=True, dpi=200, text_data=None, width_ratios=[1,1], labelData=None, cbar=True, grid=True, xticks=None, xticksvis=True, yticks=None, yticksvis=True, scale=2):
+
+	if len(u) != 2 or len(u[0]) != 2 or len(u[1]) != 2:
+		print('Input data u and v must both be 2 by 2 lists.')
+		return	
+		
+	M = 2
+	N = 2
+
+	Xd = makeList(Xd, M, N)
+	Yd = makeList(Yd, M, N)
+
+	if contourf is not None:
+		X = makeList(X, M, N)
+		Y = makeList(Y, M, N)
+
+	vmin = makeList(vmin, M, N)
+	vmax = makeList(vmax, M, N)
+	C = makeList(C, M, N)
+	
+	cbar = makeList(cbar, M, N)
+	grid = makeList(grid, M, N)
+	title = makeList(title, M, N)
+
+	xticks = makeList(xticks, M, N)
+	xticksvis = makeList(xticksvis, M, N)
+	yticks = makeList(yticks, M, N)
+	yticksvis = makeList(yticksvis, M, N)
+
+	xlabels = makeList(xlabels, M, N)
+	ylabels = makeList(ylabels, M, N)
+
+
+	fig = plt.figure(figsize=figsize, dpi=dpi)#, constrained_layout=True)
+
+	gs = gridspec.GridSpec(ncols=M, nrows=N, figure=fig, width_ratios=width_ratios)
+
+	for col in range(M):
+		for row in range(N):
+
+			ax = fig.add_subplot(gs[row,col])
+			ax.patch.set_color('.5')
+
+			if contourf[row][col] is not None:
+				if mesh:
+					im = plt.pcolormesh(X[row][col], Y[row][col], contourf[row][col], vmin=vmin[row][col], vmax=vmax[row][col], cmap=cmap)		
+				else:
+					levels = getContourfLevels(vmin[row][col], vmax[row][col], contourfNlevels)
+					im = plt.contourf(X[row][col], Y[row][col], contourf[row][col], cmap=cmap, levels=levels)
+
+			if cbar[row][col]:
+				plt.colorbar()
+
+			if C[row][col] is not None:
+				cax = ax.quiver(Xd[row][col], Yd[row][col], u[row][col], v[row][col], C[row][col], cmap=ccmap, scale=scale)	
+				plt.colorbar(cax, ax=ax)
+			else:
+				cax = plt.quiver(Xd[row][col], Yd[row][col], u[row][col], v[row][col], scale=scale)
+			ax.quiverkey(cax, 0.12, 0.03, .1, '0.1 m/s', labelpos='N', coordinates='axes')
+					
+			doLabels(xlabels[row][col], ylabels[row][col], fontsize=fontsize)
+			doTitle(title[row][col], fontsize=fontsize)
+			doTicks(xticks[row][col], xticksvis[row][col], yticks[row][col], yticksvis[row][col])
+			
+			if text_data is not None:
+				setText(ax, text_data[row][col], set_invisible=False)
+			
+			if labelData is not None:
+				for li in labelData[row][col]:
+					plt.scatter(li['x'][0], li['x'][1], s=1, color='r')
+					plt.annotate(li['t'], li['x'])
+
+			#ax.set_aspect('equal')
+
+			if grid[row][col]:
+				plt.grid()
+			
+	if contourf:	
+		if cbarShared:
+			fig.subplots_adjust(right=0.8)
+			cbar_ax = fig.add_axes(cbarSharedData[0])
+			cbar = fig.colorbar(im, cax=cbar_ax)
+			if cbarSharedData[1] is not None:
+				cbar.set_label(cbarSharedData[1], rotation=270, labelpad=10)
+
+	#==
+	
+	#fig.subplots_adjust(wspace=-1, hspace=0)
+
+	#plt.tight_layout()
+
+	if save:
+		plt.savefig(outpath + outname)
+
+	if show:
+		plt.show()
+
+	plt.close()
+
+#==
+
+def quiver1by2(u, v, Xd, Yd, C=None, ccmap='bwr', contourf=None, contourfNlevels=9, X=None, Y=None, mesh=False, contour=None, contourLevels=None, figsize=(8,3), title=None, fontsize=14, cmap='jet', vmin=None, vmax=None, xlabels=None, ylabels=None, save=False, outpath='', outname='quiver1by2.png', show=True, dpi=200, text_data=None,  width_ratios=None, labelData=None, scale=2, xticks=None, yticks=None, xticksvis=True, yticksvis=True):
+	
+	xticks = makeList(xticks, 2)
+	yticks = makeList(yticks, 2)
+	xticksvis = makeList(xticksvis, 2)
+	yticksvis = makeList(yticksvis, 2)
+	
+	scale = makeList(scale, 2)
+	
+	fig = plt.figure(figsize=figsize, dpi=dpi)
+
+	if width_ratios is not None:
+		gs = gridspec.GridSpec(ncols=2, nrows=1, figure=fig, width_ratios=width_ratios)
+		ax = fig.add_subplot(gs[0,0])
+	else:
+		plt.subplot(121)
+		ax = plt.gca()
+
+	ax.patch.set_color('.5')
+
+	if contourf is not None:
+		if mesh:
+			plt.pcolormesh(X[0], Y[0], contourf[0], vmin=vmin[0], vmax=vmax[0], cmap=cmap)		
+		else:
+			levels = getContourfLevels(vmin[0], vmax[0], contourfNlevels)
+			plt.contourf(X[0], Y[0], contourf[0], cmap=cmap, levels=levels)
+
+		if width_ratios is None:
+			plt.colorbar()
+
+	if contour is not None:
+		if contourLevels is not None:
+			plt.contour(X[0], Y[0], contour[0], levels=contourLevels[0], colors='k', linestyles='solid', linewidths=0.4)
+		else:
+			plt.contour(X[0], Y[0], contour[0], levels=contourLevels[0], colors='k', linestyles='solid', linewidths=0.4)
+
+	if C is not None:
+		cax = ax.quiver(Xd[0], Yd[0], u[0], v[0], C[0], cmap=ccmap, scale=scale[0])
+		if width_ratios is None:
+			print('1')
+			plt.colorbar(cax, ax=ax)
+	else:
+		cax = plt.quiver(Xd[0], Yd[0], u[0], v[0], scale=scale)
+	ax.quiverkey(cax, 0.12, 0.03, .2, '0.2 m/s', labelpos='E', coordinates='axes')
+			
+		
+	doLabels(xlabels[0], ylabels[0], fontsize=fontsize)
+	doTicks(xticks[0], xticksvis[0], yticks[0], yticksvis[0])
+
+	if text_data is not None:
+		setText(ax, text_data[0], set_invisible=False)
+	
+	if title is not None:
+		plt.title(title[0], fontsize=8)
+
+	#ax.set_aspect('equal')
+
+	if labelData is not None:
+		for li in labelData[0]:
+			plt.scatter(li['x'][0], li['x'][1], s=1, color='r')
+			plt.annotate(li['t'], li['x'])
+
+	#==
+
+	plt.subplot(122)
+	ax = plt.gca()
+	ax.patch.set_color('.5')
+
+	if contourf is not None:
+		if mesh:
+			plt.pcolormesh(X[1], Y[1], contourf[1], vmin=vmin[1], vmax=vmax[1], cmap=cmap)		
+		else:
+			levels = getContourfLevels(vmin[1], vmax[1], contourfNlevels)
+			plt.contourf(X[1], Y[1], contourf[1], cmap=cmap, levels=levels)
+		plt.colorbar()
+
+	if C is not None:
+		cax = plt.quiver(Xd[1], Yd[1], u[1], v[1], C[1], cmap=ccmap, scale=scale[1], linewidths=2)
+		plt.colorbar(cax, ax=ax)
+	else:
+		cax = ax.quiver(Xd[1], Yd[1], u[1], v[1], scale=scale)
+	ax.quiverkey(cax, 0.12, 0.03, .1, '0.1 m/s', labelpos='E', coordinates='axes')
+			
+	doLabels(xlabels[1], ylabels[1], fontsize=fontsize)
+	doTicks(xticks[1], xticksvis[1], yticks[1], yticksvis[1])
+	
+	if text_data is not None:
+		setText(ax, text_data[1], set_invisible=False)
+	
+	if title is not None:
+		plt.title(title[1], fontsize=8)
+
+	#ax.set_aspect('equal')
+
+	if labelData is not None:
+		for li in labelData[1]:
+			plt.scatter(li['x'][0], li['x'][1], s=1, color='k')
+			plt.annotate(li['t'], li['x'])
+
+	#==
+	
+	plt.tight_layout()
+		
+	if show:
+		plt.show()
+
+	if save:
+		plt.savefig(outpath + outname)
+		plt.close()
+		
 #==
 
 def quiver1by2Basemap(u, v, Xd, Yd, lat_0, lon_0, C=None, ccmap='bwr', contourf=None, contourfNlevels=9, X=None, Y=None, mesh=False, contour=None, contourLevels=None, figsize=(8,3), title=None, fontsize=14, cmap='jet', vmin=None, vmax=None, xlabel=None, ylabel=None, save=False, outpath='', outname='quiver1by2.mp4', show=True, dpi=200, text_data=None, parallels=None, meridians=None, width_ratios=None, labelData=None):
@@ -636,8 +815,7 @@ def plot1by2(data, X=None, Y=None, figsize=(9,4), titles=None, fontsize=14, mesh
 		plt.show()
 
 #==
-	
-		
+
 def plot1by3(data, X=[None]*3, Y=[None]*3, contour=[None]*3, contourlevels=[None]*3, figsize=(11,3), titles=[None]*3, fontsize=14, mesh=False, cmaps=['jet']*3, vmin=[None]*3, vmax=[None]*3, text_data=[None]*3, xlabels=[None]*3, ylabels=[None]*3, grid=True, contourfNlevels=9, save=False, outpath='', outname='plot1by3.png', show=True, dpi=200, width_ratios=None, cbar=[True]*3, xticks=[None]*3, yticks=[None]*3, xticksvis=[True]*3, yticksvis=[True]*3):
 	
 	fig = plt.figure(figsize=figsize, dpi=dpi)
@@ -679,30 +857,18 @@ def plot1by3(data, X=[None]*3, Y=[None]*3, contour=[None]*3, contourlevels=[None
 			else:
 				plt.contour(X[pi], Y[pi], contour[pi], levels=contourlevels[pi], colors='k', linestyles='solid', linewidths=0.8)
 
-		if xlabels[pi] is not None:
-			plt.xlabel(xlabels[pi], fontsize=fontsize)
-		if ylabels[pi] is not None:
-			plt.ylabel(ylabels[pi], fontsize=fontsize)
 
-		if xticks[pi] is not None:
-			if xticksvis[pi]:				
-				plt.xticks(xticks[pi])
-			else:			
-				plt.xticks(xticks[pi], labels='')
-		if yticks[pi] is not None:
-			if yticksvis[pi]:				
-				plt.yticks(yticks[pi])
-			else:			
-				plt.yticks(yticks[pi], labels='')
-
+		doLabels(xlabels[pi], ylabels[pi], fontsize=fontsize)
+		doTicks(xticks[pi], xticksvis[pi], yticks[pi], yticksvis[pi])
+		doTitle(titles[pi], fontsize=fontsize)
+	
 		if grid:
 			plt.grid()
 
 		if text_data[pi] is not None:
 			setText(plt.gca(), text_data[pi], set_invisible=False)
 
-		if titles[pi] is not None:
-			plt.title(titles[pi], fontsize=fontsize)
+
 		
 	box = ax1.get_position()
 	box.x0 = box.x0 + 0.05
@@ -717,86 +883,86 @@ def plot1by3(data, X=[None]*3, Y=[None]*3, contour=[None]*3, contourlevels=[None
 		plt.savefig(outpath + outname, bbox_inches="tight")
 	if show:
 		plt.show()
-
-	
 		
-def plot1by3_(data, X=[None]*3, Y=[None]*3, contour=[None]*3, contourlevels=[None]*3, figsize=(11,3), titles=[None]*3, fontsize=14, mesh=False, cmaps=['jet']*3, vmin=[None]*3, vmax=[None]*3, text_data=[None]*3, xlabels=[None]*3, ylabels=[None]*3, grid=True, contourfNlevels=9, save=False, outpath='', outname='plot1by3.png', show=True, dpi=200, width_ratios=None, cbar=[True]*3, xticks=[None]*3, yticks=[None]*3, xticksvis=[True]*3, yticksvis=[True]*3):
+#==
+
+def plotMbyN(data, X=None, Y=None, figsize=(8,4), titles=None, fontsize=14, mesh=False, cmap='jet', vmin=None, vmax=None, cbar=True, cbarShared=False, cbarSharedData=None, text_data=None, xlabels=None, ylabels=None, grid=True, contourfNlevels=9, save=False, outpath='', outname='plotMbyN.png', show=True, dpi=200, width_ratios=None, xticks=None, yticks=None, xticksvis=True, yticksvis=True):
+
+	if not isinstance(data, list):
+		plot1by1(data, X=X, Y=Y, mesh=mesh, vmin=vmin, vmax=vmax)
+		return
+		
+	N = len(data)
+	M = len(data[0])
+	
+	X = makeList(X, M, N)
+	Y = makeList(Y, M, N)
+
+	vmin = makeList(vmin, M, N)
+	vmax = makeList(vmax, M, N)	
+	
+	cbar = makeList(cbar, M, N)
+	cmap = makeList(cmap, M, N)
+	grid = makeList(grid, M, N)
+		
+	titles = makeList(titles, M, N)
+	xlabels = makeList(xlabels, M, N)
+	ylabels = makeList(ylabels, M, N)
+	
+	xticks = makeList(xticks, M, N)
+	yticks = makeList(yticks, M, N)
+	xticksvis = makeList(xticksvis, M, N)
+	yticksvis = makeList(yticksvis, M, N)
+			
+	if width_ratios is None:
+		width_ratios = [1]*M
+	
+	#==
 	
 	fig = plt.figure(figsize=figsize, dpi=dpi)
-
-	if width_ratios is not None:
-		gs = gridspec.GridSpec(ncols=3, nrows=1, figure=fig, width_ratios=width_ratios)
-
-	for pi in range(3):
-
-		if width_ratios is not None:
-			ax = fig.add_subplot(gs[0,pi])
-		else:
-			plt.subplot(1,3,pi+1)
-			ax = plt.gca()
-
-		ax.patch.set_color('.5')
-
-		if mesh:
-			if X[pi] is not None and Y[pi] is not None:
-				plt.pcolormesh(X[pi], Y[pi], data[pi], cmap=cmaps[pi], vmin=vmin[pi], vmax=vmax[pi])
-			else: 
-				plt.pcolormesh(data[pi], cmap=cmaps[pi], vmin=vmin[pi], vmax=vmax[pi])
-		else:
-			levels = getContourfLevels(vmin[pi], vmax[pi], contourfNlevels)
-			if X[pi] is not None and Y[pi] is not None:
-				plt.contourf(X[pi], Y[pi], data[pi], cmap=cmaps[pi], levels=levels)
-			else: 
-				plt.contourf(data[pi], cmap=cmaps[pi], levels=levels)
-
-		if cbar[pi]:
-			plt.colorbar()
-
-		if contour[pi] is not None:
-			if X[pi] is not None and Y[pi] is not None:
-				plt.contour(X[pi], Y[pi], contour[pi], levels=contourlevels[pi], colors='k', linestyles='solid', linewidths=0.8)
-			else:
-				plt.contour(X[pi], Y[pi], contour[pi], levels=contourlevels[pi], colors='k', linestyles='solid', linewidths=0.8)
-
-		if xlabels[pi] is not None:
-			plt.xlabel(xlabels[pi], fontsize=fontsize)
-		if ylabels[pi] is not None:
-			plt.ylabel(ylabels[pi], fontsize=fontsize)
-
-		if xticks[pi] is not None:
-			if xticksvis[pi]:				
-				plt.xticks(xticks[pi])
-			else:			
-				plt.xticks(xticks[pi], labels='')
-		if yticks[pi] is not None:
-			if yticksvis[pi]:				
-				plt.yticks(yticks[pi])
-			else:			
-				plt.yticks(yticks[pi], labels='')
-
-		if grid:
-			plt.grid()
-
-		if text_data[pi] is not None:
-			setText(plt.gca(), text_data[pi], set_invisible=False)
-
-		if titles[pi] is not None:
-			plt.title(titles[pi], fontsize=fontsize)
+	gs = gridspec.GridSpec(ncols=M, nrows=N, figure=fig, width_ratios=width_ratios)
 	
-		pos = [[0,0,0.33,0.33], [0.33, 0.33, 0.33, 0.33], [0.66, 0.66, 0.33, 0.33]]	
+	for col in range(M):
+		for row in range(N):
 
-		ax.set_position(pos[pi])			
+			ax = fig.add_subplot(gs[row,col])
+			ax.patch.set_color('.5')
 
+			if mesh:
+				im = plt.pcolormesh(X[row][col], Y[row][col], data[row][col], vmin=vmin[row][col], vmax=vmax[row][col], cmap=cmap[row][col])		
+			else:
+				levels = getContourfLevels(vmin[row][col], vmax[row][col], contourfNlevels)
+				im = plt.contourf(X[row][col], Y[row][col], contourf[row][col], cmap=cmap[row][col], levels=levels)
+			if cbar[row][col]:
+				plt.colorbar()
+				
+			doTitle(titles[row][col], fontsize=fontsize)
+			doTicks(xticks[row][col], xticksvis[row][col], yticks[row][col], yticksvis[row][col])
+			doLabels(xlabels[row][col], ylabels[row][col], fontsize=fontsize)
+
+			if grid[row][col]:
+				plt.grid()
+				
 	#==
 
-	plt.tight_layout()
-
+	if cbarShared:
+		fig.subplots_adjust(right=0.8)
+		cbar_ax = fig.add_axes(cbarSharedData[0])
+		cbar = fig.colorbar(im, cax=cbar_ax)
+		if cbarSharedData[1] is not None:
+			cbar.set_label(cbarSharedData[1], rotation=270, labelpad=20, fontsize=fontsize)
+			
+	#==
+	
+	#plt.tight_layout()
 	if save:
 		plt.savefig(outpath + outname)
 		
 	if show:
 		plt.show()
-	
+			
+
+
 
 #==
 

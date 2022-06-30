@@ -285,4 +285,50 @@ def getContourfLevels(vmin, vmax, contourfNlevels):
 	
 	else:
 		return np.linspace(vmin, vmax, contourfNlevels)
+		
+#==
+
+def makeList(arg, m, n=None):
+	'''Check if argument is list.
+	If not list, make it a list of repeated argument.'''
+
+	if not isinstance(arg, list):
+		if n is None:
+			arg = [arg]*m
+		else:
+			arg = [[arg]*m]*n
+			
+	return arg
+
+#==
+
+def doTicks(xticks, xticksvis, yticks, yticksvis):
+
+	if xticks is not None:
+		if xticksvis:				
+			plt.xticks(xticks)
+		else:			
+			plt.xticks(xticks, labels='')
+	if yticks is not None:
+		if yticksvis:				
+			plt.yticks(yticks)
+		else:			
+			plt.yticks(yticks, labels='')
+			
+#==
+
+def doLabels(xlabel, ylabel, fontsize=12):
+
+	if xlabel is not None:
+		plt.xlabel(xlabel, fontsize=fontsize)
+	if ylabel is not None:
+		plt.ylabel(ylabel, fontsize=fontsize)
+		
+#==
+
+def doTitle(title, fontsize=12):
+
+	if title is not None:
+		plt.title(title, fontsize=fontsize)
+				
 	

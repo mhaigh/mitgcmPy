@@ -35,7 +35,7 @@ if HEAT_TRANSPORT:
 	# --> kg / S3
 	# Area integral --> kg / (m2 s3)
 
-	path = '/home/michai/Documents/data/MCS_118/run/'
+	path = '/home/michael/Documents/data/MCS_118/run/'
 	grid = Grid(path)
 
 	X = grid.XC[1,:] / 1000.
@@ -173,7 +173,7 @@ if FORMSTRESS:
 	
 	if PAS:
 
-		path = '/home/michai/Documents/data/PAS_8512/run/'
+		path = '/home/michael/Documents/data/PAS_8512/run/'
 		grid = Grid_PAS(path)
 		Pb = np.load(path+'Pb_ETAN_mean_PAS851.npy')
 
@@ -210,7 +210,7 @@ if FORMSTRESS:
 		rho0 = 1030.
 		g = 9.81
 
-		path = '/home/michai/Documents/data/MCS_118/run/'
+		path = '/home/michael/Documents/data/MCS_118/run/'
 		grid = Grid(path)
 
 		depth = - grid.bathy
@@ -250,8 +250,8 @@ if FORMSTRESS:
 Bathy = False
 if Bathy:
 
-	path = '/home/michai/Documents/data/PAS_851/run/'
-	#path = 	'/home/michai/Documents/data/PISOMIP_001/run/'
+	path = '/home/michael/Documents/data/PAS_851/run/'
+	#path = 	'/home/michael/Documents/data/PISOMIP_001/run/'
 	grid = Grid_PAS(path)
 	bathy = grid.bathy
 
@@ -306,7 +306,7 @@ if ASF:
 	
 	#==
 
-	path = '/home/michai/Documents/data/PAS_851/run/'
+	path = '/home/michael/Documents/data/PAS_851/run/'
 	grid = Grid_PAS(path)
 	T = np.load(path+'Tmean_PAS851.npy')
 
@@ -350,7 +350,7 @@ if ASF:
 
 #==
 
-thetaHeight = 0
+thetaHeight = False
 if thetaHeight:
 
 	PAS = False
@@ -360,7 +360,7 @@ if thetaHeight:
 	if PAS:
 
 		if ANIM:
-			path = '/home/michai/Documents/data/PAS_8512/run/'
+			path = '/home/michael/Documents/data/PAS_8512/run/'
 			grid = Grid_PAS(path)
 			bathy = grid.bathy
 
@@ -382,7 +382,7 @@ if thetaHeight:
 			text_data = None#ptt.getTextData(TIME, 'ctime', X[1,1], Y[1,1])
 			
 		else:
-			path = '/home/michai/Documents/data/PAS_851/run/'
+			path = '/home/michael/Documents/data/PAS_851/run/'
 			grid = Grid_PAS(path)
 			T = np.load(path+'Tmean_PAS851.npy')
 
@@ -420,8 +420,8 @@ if thetaHeight:
 	else:
 
 
-		exp = 'MCS_118'
-		path = '/home/michai/Documents/data/'+exp+'/run/'
+		exp = 'MCS_123'
+		path = '/home/michael/Documents/data/'+exp+'/run/'
 		grid = Grid(path)
 		X = grid.XC[1,:]/1000.
 		Y = grid.YC[:,1]/1000.
@@ -471,7 +471,47 @@ if thetaHeight:
 		pt.plot1by1(ThermZ, X=X, Y=Y, mesh=True, title=title, vmin=vmin, vmax=vmax, cmap='jet', xlabel=xlabel, ylabel=ylabel); quit()#
 
 	quit()
+
 #==
+
+
+thetaHeight_timeSeries = False
+if thetaHeight_timeSeries:
+
+	THERM = -1.5
+
+	exps = [['MCS_116', (200,100)], ['MCS_117', (200,100)]]
+	data = []
+	labels = []
+	
+	for exp in exps:
+		path = '/home/michael/Documents/data/'+exp[0]+'/run/'
+		grid = Grid(path)
+		X = grid.XC[1,:]/1000.
+		Y = grid.YC[:,1]/1000.
+		Z = grid.RC.squeeze()
+		bathy = grid.bathy
+
+		T = readVariable('THETA', path, meta=False)
+		# Get z-indices of level with Theta closest to THERM.
+		ThermZ = tools.getIsothermHeight(T, THERM, grid, interp=True, timeDep=True)
+		ThermZ = ptt.maskBathyXY(ThermZ, grid, 0, timeDep=True)
+		#ThermZ = np.where(ThermZ<grid.bathy+10, np.nan, ThermZ)
+		
+		data.append(ThermZ[:, exp[1][1], exp[1][0]])
+		labels.append(exp[0])
+		
+	#==
+
+	for di in range(len(data)):
+		plt.plot(data[di], label=labels[di])
+	plt.legend()
+	plt.show()
+
+	quit()
+	
+#==
+
 
 quiver = 0
 if quiver:
@@ -484,7 +524,7 @@ if quiver:
 
 
 	if PAS:
-		path = '/home/michai/Documents/data/PAS_851/run/'
+		path = '/home/michael/Documents/data/PAS_851/run/'
 		grid = Grid_PAS(path)
 		u = np.load(path+'umean_PAS851.npy')
 		v = np.load(path+'vmean_PAS851.npy')
@@ -509,8 +549,8 @@ if quiver:
 
 	else:
 
-		#path = '/home/michai/Documents/data/PAS_666/run/'
-		path = '/home/michai/Documents/data/PISOMIP_004/run/'
+		#path = '/home/michael/Documents/data/PAS_666/run/'
+		path = '/home/michael/Documents/data/PISOMIP_004/run/'
 		ts = -1
 		
 		grid = Grid(path)
@@ -560,7 +600,7 @@ if btpcStr:
 	PAS = True
 
 	if PAS:
-		path = '/home/michai/Documents/data/PAS_851/run/'
+		path = '/home/michael/Documents/data/PAS_851/run/'
 		grid = Grid_PAS(path)
 		u = np.load(path+'umean_PAS851.npy')
 
@@ -586,7 +626,7 @@ if btpcStr:
 
 	else:
 
-		path = '/home/michai/Documents/data/MCS_038/run/'
+		path = '/home/michael/Documents/data/MCS_038/run/'
 		grid = Grid(path)
 
 		X = grid.XC[1,:]/1000.
@@ -625,7 +665,7 @@ if brclnc:
 	PAS = True
 
 	if PAS:
-		path = '/home/michai/Documents/data/PAS_851/run/'
+		path = '/home/michael/Documents/data/PAS_851/run/'
 		grid = Grid_PAS(path)
 		u = np.load(path+'umean_PAS851.npy')
 		v = np.load(path+'vmean_PAS851.npy')
@@ -665,7 +705,7 @@ if brclnc:
 
 	else:
 
-		path = '/home/michai/Documents/data/MCS_038/run/'
+		path = '/home/michael/Documents/data/MCS_038/run/'
 		grid = Grid(path)
 		X = grid.XC[1,:]/1000.
 		Y = grid.YC[:,1]/1000.
@@ -709,15 +749,15 @@ if brclnc:
 #==
 
 # Animate velocity vectors and temperature. Each frame is different level.
-animateUVTdepth = False
+animateUVTdepth = True
 if animateUVTdepth:
 
-	PAS = False
+	PAS = True
 	SUBR = True
 	BOT = False
 
 	if PAS:
-		path = '/home/michai/Documents/data/PAS_851/run/'
+		path = '/home/michael/Documents/data/PAS_851/run/'
 		grid = Grid_PAS(path)
 		contour = grid.bathy; vmin = -800; vmax = -100; ctitle = 'bathy'
 		#contour = grid.draft; vmin = -600; vmax = -0; ctitle = 'Ice shelf draft'
@@ -761,7 +801,7 @@ if animateUVTdepth:
 		#ts = 20
 		ts = 60; te = 120
 
-		path = '/home/michai/Documents/data/MCS_110/run/'
+		path = '/home/michael/Documents/data/MCS_110/run/'
 		grid = Grid(path)
 		contour = grid.bathy; ctitle = 'bathy'
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
@@ -805,7 +845,7 @@ if animateUVTdepth:
 	title = '(u, v); S; ' + ctitle
 	#title = '(u, v); T; bathy'
 	text = ['Z = ' + str(z) + ' m' for z in Z]
-	outpath = '/home/michai/Documents/Python/mitgcmPy/images/testingMov/'
+	outpath = '/home/michael/Documents/Python/mitgcmPy/images/testingMov/'
 
 	u = u[..., ::d, ::d]; v = v[..., ::d, ::d]; Td = T[..., ::d, ::d]
 
@@ -833,14 +873,14 @@ if animateUVTdepth:
 #==
 
 # Animate velocity vectors and temperature at fixed level.
-animateUVT = True
+animateUVT = False
 if animateUVT:
 
 	PAS = False
 	
 	if PAS:
 
-		path = '/home/michai/Documents/data/PAS_8512/run/'
+		path = '/home/michael/Documents/data/PAS_8512/run/'
 		grid = Grid_PAS(path)
 		contour = grid.bathy; vmin = -800; vmax = -100; ctitle = 'bathy'
 		#contour = grid.draft; vmin = -600; vmax = -0; ctitle = 'Ice shelf draft'
@@ -898,12 +938,14 @@ if animateUVT:
 
 		ts = 0; te = -1
 
-		path = '/home/michai/Documents/data/MCS_118/run/'
+		path = '/home/michael/Documents/data/MCS_123/run/'
 		grid = Grid(path)
 		contour = grid.bathy
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
 
-		depth = -10; level = grid.getIndexFromDepth(depth)
+		#pt.plotMbyN(grid.bathy, mesh=True); quit()
+
+		depth = -490; level = grid.getIndexFromDepth(depth)
 
 		vmin = -1000; vmax = -300
 		X = grid.XC[1,:]/1000.
@@ -942,7 +984,6 @@ if animateUVT:
 	
 	cmap = 'YlGn' #'plasma'
 
-
 	#plt.pcolor(X, Y, T[0], vmin=33.7, vmax=34.3, cmap='plasma'); plt.colorbar();
 	#plt.quiver(Xd, Yd, u[0], v[0]) 
 	#plt.show(); quit()
@@ -961,13 +1002,13 @@ if animateUVshear:
 	
 	if PAS:
 
-		path = '/home/michai/Documents/data/PAS_8512/run/'
+		path = '/home/michael/Documents/data/PAS_8512/run/'
 	
 	else:
 
 		ts = 0; te = 112
 
-		path = '/home/michai/Documents/data/MCS_113/run/'
+		path = '/home/michael/Documents/data/MCS_113/run/'
 		grid = Grid(path)
 		contour = grid.bathy
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
@@ -1023,7 +1064,7 @@ PAS_uvst_season = False
 if PAS_uvst_season:
 
 
-	path = '/home/michai/Documents/data/PAS_8512/run/'
+	path = '/home/michael/Documents/data/PAS_8512/run/'
 	grid = Grid_PAS(path)
 	contour = grid.bathy; vmin = -800; vmax = -100; ctitle = 'bathy'
 	#contour = grid.draft; vmin = -600; vmax = -0; ctitle = 'Ice shelf draft'
@@ -1136,7 +1177,7 @@ if T_transportDepth:
 	PAS = False
 	
 	if PAS:
-		path = '/home/michai/Documents/data/PAS_851/run/'
+		path = '/home/michael/Documents/data/PAS_851/run/'
 		grid = Grid_PAS(path)
 		contour = grid.bathy
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
@@ -1175,7 +1216,7 @@ if T_transportDepth:
 
 	else:
 		
-		path = '/home/michai/Documents/data/MCS_038/run/'
+		path = '/home/michael/Documents/data/MCS_038/run/'
 		grid = Grid(path)
 		contour = grid.bathy
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
@@ -1242,7 +1283,7 @@ if T_transport:
 		a=1
 	else:
 		
-		path = '/home/michai/Documents/data/MCS_038/run/'
+		path = '/home/michael/Documents/data/MCS_038/run/'
 		grid = Grid(path)
 		contour = grid.bathy
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
@@ -1305,7 +1346,7 @@ if T_transport:
 PAS_WIND = True
 if PAS_WIND:
 
-	path = '/home/michai/Documents/data/PAS_8512/run/'
+	path = '/home/michael/Documents/data/PAS_8512/run/'
 	grid = Grid_PAS(path)
 	contour = grid.bathy
 	contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
@@ -1338,7 +1379,7 @@ if PAS_WIND:
 
 	title = '(uwind, vwind); bathy'
 	text = ['Z = ' + str(z) + ' m' for z in Z]
-	outpath = '/home/michai/Documents/Python/mitgcmPy/images/testingMov/'
+	outpath = '/home/michael/Documents/Python/mitgcmPy/images/testingMov/'
 
 	d = 6
 	uw = uw[..., ::d, ::d]; vw = vw[..., ::d, ::d]
