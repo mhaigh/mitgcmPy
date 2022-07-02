@@ -26,11 +26,7 @@ import time
 
 #==========================================================
 
-
 print(' I could change all Lats to Lat.s, or to Latitudes')
-
-print('Could change Z to lower case z, in plots and text, for consistency with x being used for lon.')
-
 
 # Plot ERA5 winds, ocean surface stress and bathymetry in PAS.
 FIGURE1a = 0
@@ -172,7 +168,8 @@ if FIGURE2:
 	v = v[levels]
 	T = T[levels]
 
-	cvmin = -2; cvmax = 2
+	cvmin = -1.6; cvmax = -cvmin
+	#cvmin = -2; cvmax = 2
 	T = tools.boundData(T, cvmin, cvmax, 0.9999)
 
 	u = tools.interp(u, 'u'); v = tools.interp(v, 'v')
@@ -215,8 +212,8 @@ if FIGURE2:
 	title = [title1, title2]
 
 	fontdict = {'fontsize':12, 'color':'k'}
-	text0 = {'text':'Z = '+str(Z[levels[0]])+' m', 'xloc':5.e4, 'yloc':1.78e6, 'fontdict':fontdict}
-	text1 = {'text':'Z = '+str(Z[levels[1]])+' m', 'xloc':5.e4, 'yloc':1.78e6, 'fontdict':fontdict} 
+	text0 = {'text':'z = '+str(Z[levels[0]])+' m', 'xloc':5.e4, 'yloc':1.78e6, 'fontdict':fontdict}
+	text1 = {'text':'z = '+str(Z[levels[1]])+' m', 'xloc':5.e4, 'yloc':1.78e6, 'fontdict':fontdict} 
 	text_data = [text0, text1]
 
 	# Labels for troughs
@@ -536,7 +533,7 @@ if FIGURE6:
 	
 #==
 
-# Show bottom flow for bathyE, bathyS and bathyES cases.
+# Show bottom flow for bathy, bathyE, bathyS and bathyES cases.
 FIGURE7 = 0
 if FIGURE7:
 
@@ -549,6 +546,7 @@ if FIGURE7:
 	vvec = [[],[]]
 	
 	d = 8
+	#level = 25
 	level = 22
 
 	M = 2; N = 2
@@ -605,7 +603,7 @@ if FIGURE7:
 	width_ratios = [1,1]
 
 	fontdict = {'fontsize':12, 'color':'k'}
-	text = {'text':'Z = '+str(Z[level])+' m', 'xloc':X[1], 'yloc':Y[-22], 'fontdict':fontdict}
+	text = {'text':'z = '+str(Z[level])+' m', 'xloc':X[1], 'yloc':Y[-22], 'fontdict':fontdict}
 	text_data = [[text, text], [text, text]]
 
 	cbdata = [[0.825, 0.15, 0.015, 0.7], None]
@@ -618,7 +616,7 @@ if FIGURE7:
 
 #==
 
-FIGURE8 = 1
+FIGURE8 = 0
 if FIGURE8:
 
 	levels = [0,22]	
@@ -644,7 +642,7 @@ if FIGURE8:
 	v = v[levels]
 	T = T[levels]
 
-	cvmin = -2; cvmax = 2
+	cvmin = -1.6; cvmax = 1.6
 	T = tools.boundData(T, cvmin, cvmax, 0.9999)
 
 	u = tools.interp(u, 'u'); v = tools.interp(v, 'v')
@@ -718,25 +716,26 @@ if FIGURE9:
 	path = '/home/michael/Documents/data/'	
 	path_THERMZ = path + 'THERMZnpy/'
 	runs = [['MCS_108', 'MCS_120', 'MCS_116'], ['MCS_117', 'MCS_118', 'MCS_114']]
-	titles = [['(a) None', '(b) W', '(c) E'], ['(d) S', '(e) E+S', '(f) W+C+E+S']]
-	HCs = [[1.18, 1.37, 1.41], [2.05, 2.01, 2.23]]
+	titles = [['(a) Uniform shelf', '(b) W', '(c) E'], ['(d) S', '(e) E+S', '(f) W+C+E+S']]
+	#HCs = [[1.18, 1.37, 1.41], [2.05, 2.01, 2.23]]
+	HCs = [[0.728, 0.920, 0.961], [1.61, 1.56, 1.73]]
 
 	# Heat contents
-	#MCS_108 1.1773118609991408e+20
-	#MCS_114 2.2326614773342165e+20
-	#MCS_115 2.233822160811336e+20
-	#MCS_116 1.410387010293125e+20
-	#MCS_117 2.0540254908284826e+20
-	#MCS_118 2.0096019693955062e+20
-	#MCS_119 1.9537381653424665e+20
-	#MCS_120 1.369755546766797e+20
-	
-	
+	# Experiment -- Total heat content -- HC minus initial condition.
+	#MCS_108 1.1773118609991408e+20 7.2751814824914076e+19
+	#MCS_114 2.2267912740532e+20 1.7331224870024774e+20
+	#MCS_115 2.2279558036632755e+20 1.734287016612553e+20
+	#MCS_116 1.410387010293125e+20 9.605932975431249e+19
+	#MCS_117 2.0540254908284826e+20 1.607943812359065e+20
+	#MCS_118 2.0096019693955062e+20 1.563433775096586e+20
+	#MCS_119 1.9537381653424665e+20 1.507569971043546e+20
+	#MCS_120 1.369755546766797e+20 9.19961834016797e+19
 
 	THERM = -0.5; THERMt = 'm05'
 
 	data = [[], []]
 	hc = [[], []]
+	text_data = [[], []]
 	M = len(runs)
 	N = len(runs[0])
 
@@ -746,7 +745,9 @@ if FIGURE9:
 			run = runs[row][col]
 	
 			grid = Grid(path+run+'/run/')
-			
+			X = grid.XC[1,:] / 1.e3
+			Y = grid.YC[:,1] / 1.e3
+	
 			ThermZ = np.load(path_THERMZ+'ThermZ_'+THERMt+'_'+run+'.npy')
 					
 			ThermZ = ptt.maskBathyXY(ThermZ, grid, 0, timeDep=False)
@@ -754,10 +755,16 @@ if FIGURE9:
 
 			data[row].append(ThermZ)
 
+			txt = r'$\Delta$(HC) = ' + str(HCs[row][col])
+			text = {'text':txt, 'xloc':X[1], 'yloc':Y[-20], 'fontdict':{'fontsize':12, 'color':'k'}}
+			text_data[row].append(text)
+
 	#==
 	
 	X = grid.XC[1,:] / 1.e3
 	Y = grid.YC[:,1] / 1.e3
+	
+	hlines = [[240, None, None], [None]*3]
 	
 	xlabel = 'Lon (km)'
 	xlabels = [[None]*3, [xlabel]*3]
@@ -771,9 +778,9 @@ if FIGURE9:
 	xticksvis = [[False]*3, [True]*3]
 	yticksvis = [[True, False, False]]*2
 	
-	cbdata = [[0.825, 0.15, 0.015, 0.7], '-0.5 deg. C isotherm depth']
+	cbdata = [[0.825, 0.15, 0.015, 0.7], '-0.5 deg. C isotherm depth (m)']
 	
-	pt.plotMbyN(data, X=X, Y=Y, mesh=True, vmin=-500, vmax=-200, titles=titles, cbar=False, cbarShared=True, cbarSharedData=cbdata, xlabels=xlabels, ylabels=ylabels, xticks=xticks, yticks=yticks, xticksvis=xticksvis, yticksvis=yticksvis, width_ratios=[1,1,1], grid=True, figsize=(10,4), save=True)
+	pt.plotMbyN(data, X=X, Y=Y, mesh=True, vmin=-500, vmax=-200, titles=titles, cbar=False, cbarShared=True, cbarSharedData=cbdata, xlabels=xlabels, ylabels=ylabels, xticks=xticks, yticks=yticks, xticksvis=xticksvis, yticksvis=yticksvis, width_ratios=[1,1,1], text_data=text_data, grid=True, figsize=(10,4), save=True, hlines=hlines)
 	
 	quit()
 	

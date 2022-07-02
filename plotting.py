@@ -453,6 +453,8 @@ def quiver1by2(u, v, Xd, Yd, C=None, ccmap='bwr', contourf=None, contourfNlevels
 	
 	if title is not None:
 		plt.title(title[0], fontsize=8)
+		
+	#plt.grid()
 
 	#ax.set_aspect('equal')
 
@@ -491,6 +493,7 @@ def quiver1by2(u, v, Xd, Yd, C=None, ccmap='bwr', contourf=None, contourfNlevels
 	if title is not None:
 		plt.title(title[1], fontsize=8)
 
+	#plt.grid()
 	#ax.set_aspect('equal')
 
 	if labelData is not None:
@@ -886,7 +889,7 @@ def plot1by3(data, X=[None]*3, Y=[None]*3, contour=[None]*3, contourlevels=[None
 		
 #==
 
-def plotMbyN(data, X=None, Y=None, figsize=(8,4), titles=None, fontsize=14, mesh=False, cmap='jet', vmin=None, vmax=None, cbar=True, cbarShared=False, cbarSharedData=None, text_data=None, xlabels=None, ylabels=None, grid=True, contourfNlevels=9, save=False, outpath='', outname='plotMbyN.png', show=True, dpi=200, width_ratios=None, xticks=None, yticks=None, xticksvis=True, yticksvis=True):
+def plotMbyN(data, X=None, Y=None, figsize=(8,4), titles=None, fontsize=14, mesh=False, cmap='jet', vmin=None, vmax=None, cbar=True, cbarShared=False, cbarSharedData=None, text_data=None, xlabels=None, ylabels=None, grid=True, contourfNlevels=9, save=False, outpath='', outname='plotMbyN.png', show=True, dpi=200, width_ratios=None, xticks=None, yticks=None, xticksvis=True, yticksvis=True, hlines=None):
 
 	if not isinstance(data, list):
 		plot1by1(data, X=X, Y=Y, mesh=mesh, vmin=vmin, vmax=vmax)
@@ -898,13 +901,16 @@ def plotMbyN(data, X=None, Y=None, figsize=(8,4), titles=None, fontsize=14, mesh
 	X = makeList(X, M, N)
 	Y = makeList(Y, M, N)
 
+	hlines = makeList(hlines, M, N)
+	
 	vmin = makeList(vmin, M, N)
 	vmax = makeList(vmax, M, N)	
 	
 	cbar = makeList(cbar, M, N)
 	cmap = makeList(cmap, M, N)
 	grid = makeList(grid, M, N)
-		
+	text_data = makeList(text_data, M, N)
+	
 	titles = makeList(titles, M, N)
 	xlabels = makeList(xlabels, M, N)
 	ylabels = makeList(ylabels, M, N)
@@ -940,6 +946,12 @@ def plotMbyN(data, X=None, Y=None, figsize=(8,4), titles=None, fontsize=14, mesh
 			doTicks(xticks[row][col], xticksvis[row][col], yticks[row][col], yticksvis[row][col])
 			doLabels(xlabels[row][col], ylabels[row][col], fontsize=fontsize)
 
+			if hlines[row][col] is not None:
+				plt.axhline(y=hlines[row][col], color='k', linewidth=0.7, linestyle='--')
+		
+			if text_data[row][col] is not None:
+				setText(ax, text_data[row][col])
+				
 			if grid[row][col]:
 				plt.grid()
 				

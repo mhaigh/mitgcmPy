@@ -24,7 +24,7 @@ import time
 
 #==========================================================
 
-HEAT_CONTENT = True
+HEAT_CONTENT = False
 if HEAT_CONTENT:
 
 	path = '/home/michael/Documents/data/MCS_114/run/'
@@ -40,7 +40,7 @@ if HEAT_CONTENT:
 	
 	quit()
 			
-HEAT_TRANSPORT = False
+HEAT_TRANSPORT = True
 if HEAT_TRANSPORT:
 	
 	ts = 0	
@@ -51,6 +51,7 @@ if HEAT_TRANSPORT:
 	# --> kg / S3
 	# Area integral --> kg / (m2 s3)
 
+	path = '/data/oceans_output/shelf/michai/mitgcm/MCS_125/run/'
 	path = '/home/michael/Documents/data/MCS_114/run/'
 	grid = Grid(path)
 
@@ -60,7 +61,8 @@ if HEAT_TRANSPORT:
 	
 	# Subregions for heat transport.
 
-	lat = 96
+	lat = 95
+	print(Y[lat])
 
 	# troughW
 	lons1 = [100e3, 200e3]; depth1 = [-10, -600]
@@ -91,8 +93,7 @@ if HEAT_TRANSPORT:
 
 	vlines = [lons1[0]/1.e3, lons1[1]/1.e3, lons2[0]/1.e3, lons2[1]/1.e3, lons3[1]/1.e3]
 	hlines = [Y[lat]]	
-	pt.plot1by1(grid.bathy, X=X, Y=Y, vmin=-1000, vmax=-300, mesh=True, hlines=hlines, vlines=vlines)
-
+	#pt.plot1by1(grid.bathy, X=X, Y=Y, vmin=-1000, vmax=-300, mesh=True, hlines=hlines, vlines=vlines)
 		
 	#==
 
@@ -117,7 +118,6 @@ if HEAT_TRANSPORT:
 	area = grid.DXG[lat] * grid.hFacS[:,lat] * grid.DRF[:,0]
 	area = ptt.maskBathyXZ(area, grid, yi=lat, timeDep=False)
 
-	HC = rho0 * Cp * T
 	T = rho0 * Cp * v * (T - Tf)
 	T = ptt.maskBathyXZ(T, grid, yi=lat, timeDep=True)
 
@@ -161,15 +161,18 @@ if HEAT_TRANSPORT:
 	normval = 1.e12
 
 	Ts = [T1, T2, T3, T4, T5]; labels = [label1, label2, label3, label4, label5]
+	#Ts = [T2, T3, T5]; labels = [label2, label3, label5]
 
-	Ts = [T2, T3, T5]; labels = [label2, label3, label5]
+	vmin = -4.e-8; vmax = 2.e-8
 
 	plt.figure(figsize=(9,4))
 	for i in range(len(Ts)):
 		plt.plot(Ts[i]/normval, label=labels[i])
-
+		
+	plt.ylim([vmin, vmax])
 	plt.title(title)
 	plt.xlabel('Time (months)')
+	plt.savefig('heatTransport.png')
 	plt.grid();	plt.legend(); plt.show(); quit()
 	
 	T = np.mean(T, axis=0)
@@ -765,7 +768,7 @@ if brclnc:
 #==
 
 # Animate velocity vectors and temperature. Each frame is different level.
-animateUVTdepth = True
+animateUVTdepth = False
 if animateUVTdepth:
 
 	PAS = True
