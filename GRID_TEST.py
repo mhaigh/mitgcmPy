@@ -450,12 +450,12 @@ if animateSurface:
 
 	#path = '/home/michael/Documents/data/PAS_666/run/'
 	#path = '/home/michael/Documents/data/PISOMIP_003/run/'
-	path = '/home/michael/Documents/data/MCS_114/run/'
+	path = '/home/michael/Documents/data/MCS_116/run/'
 
 	grid = Grid(path)
 	#grid = Grid_PAS(path)
 	bathy = grid.bathy
-	pt.plot1by1(bathy, vmin=-1000, vmax=-300, mesh=True); quit()
+	#pt.plot1by1(bathy, vmin=-1000, vmax=-300, mesh=True); quit()
 
 	X = grid.XC[1,:]/1000.
 	Y = grid.YC[:,1]/1000.
@@ -469,10 +469,10 @@ if animateSurface:
 	#VAR = 'WVELTH';
 	#VAR = 'WVELTH'#','UVELTH','VVELTH','WVELTH', 'TOTTTEND'
 	#VAR = 'SALT'	
-	VAR = 'UVEL'
+	#VAR = 'UVEL'
 	#VAR = 'VVEL'
 	#VAR = 'VVEL'
-	#VAR = 'WVEL'
+	VAR = 'WVEL'
 	#VAR = 'botTauX'
 
 	flatVars = ['ETAN', 'botTauX']
@@ -498,11 +498,12 @@ if animateSurface:
 	level = 0
 
 	if VAR not in flatVars:
-		level = 24
+		level = 25
 		data = data[:,level]
 		print('Z = ' + str(grid.RC.squeeze()[level]))
 
-
+	pt.plot1by1(np.mean(data[10:], axis=0), vmin=vmin, vmax=vmax, mesh=True); quit()
+	
 	print(data.shape)
 	#vmax = 1.; vmin = -0.4
 	#data = tools.boundData(data, vmin, vmax, scale=0.99999)
