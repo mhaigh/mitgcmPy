@@ -40,7 +40,7 @@ if HEAT_CONTENT:
 	
 	quit()
 			
-HEAT_TRANSPORT = True
+HEAT_TRANSPORT = False
 if HEAT_TRANSPORT:
 	
 	ts = 0	
@@ -52,7 +52,7 @@ if HEAT_TRANSPORT:
 	# Area integral --> kg / (m2 s3)
 
 	path = '/data/oceans_output/shelf/michai/mitgcm/MCS_125/run/'
-	path = '/home/michael/Documents/data/MCS_114/run/'
+	#path = '/home/michael/Documents/data/MCS_114/run/'
 	grid = Grid(path)
 
 	X = grid.XC[1,:] / 1000.
@@ -172,8 +172,9 @@ if HEAT_TRANSPORT:
 	plt.ylim([vmin, vmax])
 	plt.title(title)
 	plt.xlabel('Time (months)')
+	plt.grid(); plt.legend(); 
 	plt.savefig('heatTransport.png')
-	plt.grid();	plt.legend(); plt.show(); quit()
+	plt.show(); quit()
 	
 	T = np.mean(T, axis=0)
 	T = ptt.maskBathyXZ(T, grid, yi=lat, timeDep=False)
@@ -892,7 +893,7 @@ if animateUVTdepth:
 #==
 
 # Animate velocity vectors and temperature at fixed level.
-animateUVT = False
+animateUVT = True
 if animateUVT:
 
 	PAS = False
@@ -957,14 +958,15 @@ if animateUVT:
 
 		ts = 0; te = -1
 
-		path = '/home/michael/Documents/data/MCS_123/run/'
+		path = '/data/oceans_output/shelf/michai/mitgcm/MCS_125/run/'
+		#path = '/home/michael/Documents/data/MCS_123/run/'
 		grid = Grid(path)
 		contour = grid.bathy
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
 
 		#pt.plotMbyN(grid.bathy, mesh=True); quit()
 
-		depth = -490; level = grid.getIndexFromDepth(depth)
+		depth = -450; level = grid.getIndexFromDepth(depth)
 
 		vmin = -1000; vmax = -300
 		X = grid.XC[1,:]/1000.
