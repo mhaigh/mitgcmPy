@@ -10,7 +10,7 @@ from readData import readVariable
 EXP = sys.argv[1]
 VAR = sys.argv[2]
 
-#path = '/data/oceans_output/shelf/michai/mitgcm/MCS_125/run/'
+#path = '/data/oceans_output/shelf/michai/mitgcm/'+EXP+'/run/'
 path = '/home/michael/Documents/data/'+EXP+'/run/'
 
 depths = [-10,-450]

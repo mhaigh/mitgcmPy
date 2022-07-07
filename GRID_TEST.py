@@ -342,7 +342,7 @@ if TEST_animate:
 
 	#path = '/home/michael/Documents/data/MCS_002/run/'
 
-	path = '/home/michael/Documents/data/MCS_116/run/'
+	path = '/home/michael/Documents/data/MCS_123/run/'
 	#path = '/home/michael/Documents/data/PISOMIP_003/run/'
 	#pathG = '/home/michael/Documents/data/MCS_018/run/'
 
@@ -369,7 +369,7 @@ if TEST_animate:
 	
 	#pt.plot1by1(grid.bathy); quit()
 		
-	text_data = ptt.getTextData(data.variables['TIME'][:], 'month', X[1], Y[-2], color='w')
+	text_data = ptt.getTextData(data.variables['TIME'][:], 'month', X[1], Y[-2], color='k')
 	data = data[VAR][:]
 
 	MEAN = False
@@ -378,7 +378,7 @@ if TEST_animate:
 		for ti in range(data.shape[0]):
 			data[ti,] = ptt.maskBathyAll(data[ti,], grid)
 		#data = np.ma.mean(data, axis=3)
-		data = data[...,165]
+		data = data[...,220]
 		#data = np.mean(data[...,1:40], axis=-1)
 	
 	else:
@@ -394,7 +394,6 @@ if TEST_animate:
 	#plt.pcolor(np.mean(data[48:,], axis=0), vmin=vmin, vmax=vmax, cmap=cmap); plt.colorbar(); plt.show(); quit()
 
 	data = tools.boundData(data, vmin, vmax, scale=0.99999)
-	#data = tools.removeOscillations(data, 1.e-3)
 	
 	# PLOT.
 
@@ -445,12 +444,12 @@ if TEST_animateX:
 	
 #==
 
-animateSurface = True
+animateSurface = False
 if animateSurface:
 
 	#path = '/home/michael/Documents/data/PAS_666/run/'
 	#path = '/home/michael/Documents/data/PISOMIP_003/run/'
-	path = '/home/michael/Documents/data/MCS_116/run/'
+	path = '/home/michael/Documents/data/MCS_123/run/'
 
 	grid = Grid(path)
 	#grid = Grid_PAS(path)
@@ -463,6 +462,7 @@ if animateSurface:
 	ny, nx = bathy.shape
 	
 	#VAR = 'ETAN'
+	VAR = 'PHIBOT'
 	#VAR = 'RHOAnoma'
 	#VAR = 'THETA' 
 	#VAR = 'PHIHYD'
@@ -472,17 +472,17 @@ if animateSurface:
 	#VAR = 'UVEL'
 	#VAR = 'VVEL'
 	#VAR = 'VVEL'
-	VAR = 'WVEL'
+	#VAR = 'WVEL'
 	#VAR = 'botTauX'
 
-	flatVars = ['ETAN', 'botTauX']
+	flatVars = ['ETAN', 'botTauX', 'PHIBOT']
 
 	vmin, vmax, cmap, title = getPlottingVars(VAR)
 
 	data = readVariable(VAR, path, file_format='nc', meta=True)
 	print(data)
 
-	text_data = ptt.getTextData(data.variables['TIME'][:], 'month', X[1], Y[1])
+	text_data = ptt.getTextData(data.variables['TIME'][:], 'month', X[1], Y[1], color='k')
 	data = data[VAR][:]
 
 	PLOT_MEAN = False
@@ -502,38 +502,90 @@ if animateSurface:
 		data = data[:,level]
 		print('Z = ' + str(grid.RC.squeeze()[level]))
 
-	pt.plot1by1(np.mean(data[10:], axis=0), vmin=vmin, vmax=vmax, mesh=True); quit()
-	
 	print(data.shape)
 	#vmax = 1.; vmin = -0.4
 	#data = tools.boundData(data, vmin, vmax, scale=0.99999)
 	data = ptt.maskBathyXY(data, grid, level, timeDep=True)
 
+	SUBR = 1
+	if SUBR:
+		lats = [120.e3, 270.e3]; lons = [500.e3, 600.e3]#[230, 270]#
+		latsi = grid.getIndexFromLat(lats); lonsi = grid.getIndexFromLon(lons)
+		data = tools.getSubregionXY(data, latsi, lonsi)
+		X = grid.Xsubr1D(lons); Y = grid.Ysubr1D(lats)
+	
 	#data = np.mean(data, axis=3)
 
 	#vmin = None; vmax = None
-	#vmin = -1.e-5; vmax = -vmin
+	#vmin = -0.1; vmax = -vmin
 	#vmin = 33.375; vmax=33.575 # For SSS
 
-	pt.animate1by1(data, X, Y, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=False, text_data=text_data, outname='animate1by1Surf.mp4', vmin=vmin, vmax=vmax)
+	pt.animate1by1(data, X, Y, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=True, text_data=text_data, outname='animate1by1Surf.mp4', vmin=vmin, vmax=vmax)
 
 	quit()
 	
 	
 #==
 
+animateCONV = True
+if animateCONV:
+
+	path = '/home/michael/Documents/data/MCS_117/run/'
+
+	grid = Grid(path)
+	#grid = Grid_PAS(path)
+	bathy = grid.bathy
+	X = grid.XC[1,:]/1000.
+	Y = grid.YC[:,1]/1000.
+	
+	u = readVariable('UVEL', path, file_format='nc', meta=False)
+	v = readVariable('VVEL', path, file_format='nc', meta=False)
+
+	u = tools.interp(u, 'u')
+	v = tools.interp(v, 'v')
+
+	level = 24
+	if level == -1:
+		u = np.mean(u, axis=1)
+		v = np.mean(v, axis=1)
+		#u = np.mean(u*grid.DRF*grid.hFacC, axis=1)
+		#v = np.mean(v*grid.DRF*grid.hFacC, axis=1)
+	else:
+		u = u[:,level]
+		v = v[:,level]
+
+	uu = u*u
+	uv = u*v
+
+	conv = - tools.ddx(uu, grid.DXG) - tools.ddy(uv, grid.DYG)
+
+	#==
+	
+	text = ['month ' + str(ti) for ti in range(conv.shape[0])]
+	text_data = {'text':text, 'xloc':X[1], 'yloc':Y[1], 'fontdict':{'fontsize':14, 'color':'k'}}
+	
+	#pt.plot1by1(conv[-1])
+	
+	vmin = -1.e-6; vmax = -vmin
+	
+	pt.animate1by1(conv, X, Y, cmap='bwr', mesh=True, text_data=text_data, outname='animateConv.mp4', vmin=vmin, vmax=vmax)
+	
+	quit()
+	
+#==
+	
 animateRV = False
 if animateRV:
 
 	#path = '/home/michael/Documents/data/PAS_666/run/'
-	path = '/home/michael/Documents/data/MCS_062/run/'
+	path = '/home/michael/Documents/data/MCS_123/run/'
 	#path = '/data/oceans_output/shelf/pahol/mitgcm/PAS_851/run/'
 
 	grid = Grid(path)
 	#grid = Grid_PAS(path)	
 
 	#level = 17 # 17 -> 350m depth in MCS.
-	level = grid.getIndexFromDepth(-10)
+	level = grid.getIndexFromDepth(-490)
 
 	X = grid.XC[1,:]/1000.
 	Y = grid.YC[:,1]/1000.
@@ -542,7 +594,7 @@ if animateRV:
 	dy = (Y[1]-Y[0])*1000.
 	xlabel = 'LON (km)'; ylabel = 'LAT (km)'
 
-	ts = 115
+	ts = 0
 
 	VAR = 'UVEL'
 	vmin, vmax, cmap, title = getPlottingVars(VAR)
@@ -564,8 +616,11 @@ if animateRV:
 
 	contour = grid.bathy
 	contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
-
+	RV = ptt.maskBathyXY(RV, grid, 0, timeDep=True)
+	
 	vmin = -1.e-5; vmax = -vmin
+	RV = tools.boundData(RV, vmin, vmax)
+	
 	pt.animate1by1(RV, X, Y, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=False, text_data=text_data, outname='animate1by1Surf.mp4', vmin=vmin, vmax=vmax)
 
 	quit()
@@ -880,7 +935,8 @@ if animateUbots:
 
 #==
 
-animateDragBot = True
+
+animateDragBot = False
 if animateDragBot:
 	# Animate zonal mean Ubots for multiple MITgcm runs.
 	# Assumes that all use the same grid and have the same time dependencies.
