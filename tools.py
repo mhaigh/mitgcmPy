@@ -194,7 +194,7 @@ def depthIntegral(data, grid, timeDep=True, SSH=None, norm=True):
 		axis = 0
 
 	if norm:
-		normval = np.sum(grid.DRF * grid.hFacW, axis=0)
+		normval = np.sum(grid.DRF * grid.hFacW, axis=axis)
 	else:
 		normval = 1
 

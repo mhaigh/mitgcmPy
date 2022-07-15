@@ -82,7 +82,7 @@ def timeSeries(data, TIME=None, Y=None, time_units='days', figsize=(6,3), labels
 	
 #==
 
-def plot1by1(data, X=None, Y=None, contour=None, contourlevels=None, figsize=(5,4), title=None, fontsize=14, mesh=False, cmap='jet', vmin=None, vmax=None, text_data=None, xlabel=None, ylabel=None, grid=True, contourfNlevels=9, save=False, outpath='', outname='plot1by1.png', show=True, dpi=200, yline=None, hlines=[], vlines=[]):
+def plot1by1(data, X=None, Y=None, contour=None, contourlevels=None, figsize=(5,4), title=None, fontsize=14, mesh=False, cmap='jet', vmin=None, vmax=None, text_data=None, xlabel=None, ylabel=None, grid=True, contourfNlevels=9, save=False, outpath='', outname='plot1by1.png', show=True, dpi=200, yline=None, hlines=[], xmin=0, xmax=1, vlines=[]):
 	
 	fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
 
@@ -124,12 +124,12 @@ def plot1by1(data, X=None, Y=None, contour=None, contourlevels=None, figsize=(5,
 		plt.plot(yline, Y, color='k', linewidth=1.2)
 		plt.axvline(x=X[X.shape[0]//2-1], color='k', linewidth=1.0, linestyle='--')
 
-	for vlx in vlines:
-		plt.axvline(x=vlx, color='k', linewidth=1.0, linestyle='--')
+	if vlines is not None:
+		plt.axvline(x=vlines, color='k', linewidth=1.0, linestyle='--')
 	
-	for hlx in hlines:
-		plt.axhline(y=hlx, color='k', linewidth=1.0, linestyle='--')
-
+	if hlines is not None:
+		plt.axhline(y=hlines, xmin=xmin, xmax=xmax, color='k', linewidth=1.0, linestyle='--')
+			
 	#==
 	
 	plt.tight_layout()
@@ -821,6 +821,9 @@ def plot1by2(data, X=None, Y=None, figsize=(9,4), titles=None, fontsize=14, mesh
 
 def plot1by3(data, X=[None]*3, Y=[None]*3, contour=[None]*3, contourlevels=[None]*3, figsize=(11,3), titles=[None]*3, fontsize=14, mesh=False, cmaps=['jet']*3, vmin=[None]*3, vmax=[None]*3, text_data=[None]*3, xlabels=[None]*3, ylabels=[None]*3, grid=True, contourfNlevels=9, save=False, outpath='', outname='plot1by3.png', show=True, dpi=200, width_ratios=None, cbar=[True]*3, xticks=[None]*3, yticks=[None]*3, xticksvis=[True]*3, yticksvis=[True]*3):
 	
+	vmin = makeList(vmin, 3)
+	vmax = makeList(vmax, 3)	
+	
 	fig = plt.figure(figsize=figsize, dpi=dpi)
 
 	if width_ratios is not None:
@@ -873,9 +876,9 @@ def plot1by3(data, X=[None]*3, Y=[None]*3, contour=[None]*3, contourlevels=[None
 
 
 		
-	box = ax1.get_position()
-	box.x0 = box.x0 + 0.05
-	ax1.set_position(box)
+	#box = ax1.get_position()
+	#box.x0 = box.x0 + 0.05
+	#ax1.set_position(box)
 
 
 	#==

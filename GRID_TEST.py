@@ -1,4 +1,3 @@
-
 import numpy as np
 
 from grid import Grid
@@ -40,6 +39,38 @@ import time
 #fname = 'stateTheta.nc'; var = 'THETA'; vmin = - 2.5; vmax = 2.5; cmap='coolwarm'
 #fname = 'stateUvel.nc'; var = 'UVEL'; cmap = 'coolwarm'; vmax = 0.1; vmin = -vmax
 #fname = 'stateVvel.nc'; var = 'VVEL'; vmin = -0.2; vmax = 0.2
+
+
+fbeta = False
+if fbeta:
+
+
+
+	Omega = 2 * np.pi / 86400.
+	a = 6371.e3
+	
+	# Get f0, beta from lat
+	if 0:
+		lat = -74
+		f0 = 2 * Omega * np.sin(lat * np.pi / 180)
+		beta = 2 * Omega * np.cos(lat * np.pi / 180) / a
+		print(f0)
+		print(beta)
+	
+	# Get lat, beta from f0
+	else:
+		f0 = -1.4e-4
+		lat = 180 * np.arcsin(f0 / (2*Omega)) / np.pi
+		beta = 2 * Omega * np.cos(lat * np.pi / 180) / a
+		print(f0)
+		print(beta)
+		print(lat)
+	
+	
+	quit()
+
+#==
+
 # PHIHYD
 baroclinicEddies = False
 if baroclinicEddies:
@@ -353,8 +384,8 @@ if TEST_animate:
 
 	#VAR = 'ETAN'
 	#VAR = 'RHOAnoma'
-	VAR = 'THETA'
-	#VAR = 'PHIHYD'
+	#VAR = 'THETA'
+	VAR = 'PHIHYD'
 	#VAR = 'DFrE_TH';
 	#VAR = 'WVELTH'#','UVELTH','VVELTH','WVELTH', 'TOTTTEND'
 	#VAR = 'SALT'	
@@ -378,7 +409,7 @@ if TEST_animate:
 		for ti in range(data.shape[0]):
 			data[ti,] = ptt.maskBathyAll(data[ti,], grid)
 		#data = np.ma.mean(data, axis=3)
-		data = data[...,220]
+		data = data[...,120]
 		#data = np.mean(data[...,1:40], axis=-1)
 	
 	else:
@@ -527,10 +558,10 @@ if animateSurface:
 	
 #==
 
-animateCONV = True
+animateCONV = False
 if animateCONV:
 
-	path = '/home/michael/Documents/data/MCS_117/run/'
+	path = '/home/michael/Documents/data/MCS_123/run/'
 
 	grid = Grid(path)
 	#grid = Grid_PAS(path)
@@ -544,12 +575,15 @@ if animateCONV:
 	u = tools.interp(u, 'u')
 	v = tools.interp(v, 'v')
 
-	level = 24
+	level = -1
 	if level == -1:
-		u = np.mean(u, axis=1)
-		v = np.mean(v, axis=1)
-		#u = np.mean(u*grid.DRF*grid.hFacC, axis=1)
-		#v = np.mean(v*grid.DRF*grid.hFacC, axis=1)
+		#u = np.mean(u, axis=1)
+		#v = np.mean(v, axis=1)
+		
+		u = np.sum(u, axis=1)
+		v = np.sum(v, axis=1)
+		#u = tools.depthIntegral(u, grid, norm=False)
+		#v = tools.depthIntegral(v, grid, norm=False)
 	else:
 		u = u[:,level]
 		v = v[:,level]
@@ -567,6 +601,8 @@ if animateCONV:
 	#pt.plot1by1(conv[-1])
 	
 	vmin = -1.e-6; vmax = -vmin
+	
+	pt.plot1by1(20*conv[-1]); quit()
 	
 	pt.animate1by1(conv, X, Y, cmap='bwr', mesh=True, text_data=text_data, outname='animateConv.mp4', vmin=vmin, vmax=vmax)
 	
@@ -1155,7 +1191,7 @@ if plotBathy:
 
 #==
 
-TEST_troughTransport = False
+TEST_troughTransport = True
 if TEST_troughTransport:
 
 	# Look at volume transport through window west of trough and possibly east of trough.
@@ -1169,6 +1205,12 @@ if TEST_troughTransport:
 	# volume transport through these slices. (scale by hfac, dz; use u and v)
 	# Time series of these.
 	# Onto github, onto HPC.
+	
+	path = '/home/michael/Documents/data/MCS_123/run/'
+	grid = Grid(path)
+	
+	#path = '/home/michael/Documents/data/PAS_851/run/'
+	#grid = Grid_PAS(path)
 	
 	# Four windows:
 	lat1 = [-71.8, -71.2]; lon1 = 360-114.5; depth1 = [-250, -750]
@@ -1192,9 +1234,7 @@ if TEST_troughTransport:
 	#==
 	
 	# Get zonal transport
-	fname = 'stateUvel.nc'; var = 'UVEL'; cmap = 'coolwarm'; vmax = 0.1; vmin = -vmax
-	#data = io.readData('Uvel', path,)
-	ncfile = nc.Dataset(path+'', 'r'); data = ncfile.variables[var]
+	u = readVariable('UVEL', path, meta=False)[ts:]
 	ut = tools.zonalTransport(data, grid)
 	
 	# Zonal transport through windows 1 and 4.

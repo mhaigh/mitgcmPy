@@ -304,7 +304,7 @@ if FIGURE3:
 #==
 
 # First figure of idealised model. Panel 1: bathymetry, wind forcing. Panel 2: T/S relaxation profiles.
-FIGURE4 = 0
+FIGURE4 = 1
 if FIGURE4:
 
 	path = '/home/michael/Documents/data/MCS_104/run/'
@@ -312,6 +312,10 @@ if FIGURE4:
 	bathy = grid.bathy
 
 	Trel, Srel = tools.getTSrel(grid, salttoptop=33.2, salttop=33.5, saltbot=34.5, temptop=-1.8, tempbot=1.0, tclinewid=160., tclinetop=-200, hclinewid=160, hclinetop=-200, shift=0)
+	
+	#S0=[3.320e+01,3.328e+01,3.335e+01,3.342e+01,3.350e+01,3.350e+01,3.350e+01,3.350e+01,3.350e+01,3.350e+01,3.356e+01,3.369e+01,3.381e+01,3.394e+01,3.406e+01,3.419e+01,3.431e+01,3.444e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01,3.450e+01]
+#	plt.plot(Srel-S0); plt.show()
+#	quit()
 
 	X = grid.XC[1,:]/1000.
 	Y = grid.YC[:,1]/1000.

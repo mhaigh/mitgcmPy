@@ -27,7 +27,7 @@ import time
 HEAT_CONTENT = False
 if HEAT_CONTENT:
 
-	EXPS = ['MCS_127']
+	EXPS = ['MCS_132', 'MCS_133']
 	#path = '/data/oceans_output/shelf/michai/mitgcm/'
 	path = '/home/michael/Documents/data/'
 
@@ -53,8 +53,9 @@ if HEAT_CONTENT:
 
 		plt.plot(THC_tmp, label=exp) 
 	
+	#plt.ylim(0.5e20, 4e20)
 	plt.legend()
-	np.savefig('heatContent.png')
+	plt.savefig('heatContent.png')
 	plt.show()
 	
 	
@@ -72,7 +73,7 @@ if HEAT_TRANSPORT:
 	# Area integral --> kg / (m2 s3)
 
 	#path = '/data/oceans_output/shelf/michai/mitgcm/MCS_117/run/'
-	path = '/home/michael/Documents/data/MCS_121/run/'
+	path = '/home/michael/Documents/data/MCS_133/run/'
 	grid = Grid(path)
 
 	X = grid.XC[1,:] / 1000.
@@ -114,8 +115,8 @@ if HEAT_TRANSPORT:
 	
 	vlines = [lons1[0]/1.e3, lons1[1]/1.e3, lons2[0]/1.e3, lons2[1]/1.e3, lons3[1]/1.e3]
 	hlines = [Y[lat]]	
-	pt.plot1by1(grid.bathy, X=X, Y=Y, vmin=-1000, vmax=-300, mesh=True, hlines=hlines, vlines=vlines)
-	quit()
+	#pt.plot1by1(grid.bathy, X=X, Y=Y, vmin=-1000, vmax=-300, mesh=True, hlines=hlines, vlines=vlines)
+	#quit()
 	#==
 
 	T = readVariable('SALT', path, meta=False)[ts,:,:lat+1,:]#[ts:,...,lat:lat+2,:]
@@ -212,10 +213,123 @@ if HEAT_TRANSPORT:
 
 	quit()	
 
+#==
+
+HEAT_TRANSPORT_PAS = True
+if HEAT_TRANSPORT_PAS:
+	
+	ts = -20; te = -1
+	
+	Cp = 3974.0 # Units J / (kg C) = (kg m2 / s2) / (kg C) = m2 / (s2 C)
+	rho0 = 1030. # Units kg / m3
+	# --> rho * Cp * v * T --> (kg / m3) * (m2 / s2 C) * (m / s) * C
+	# --> kg / S3
+	# Area integral --> kg / (m2 s3)
+
+	path = '/home/michael/Documents/data/MCS_123/run/'
+	grid = Grid(path)
+	Y = grid.YC
+	X = grid.XC
+	Lx = X[0,-1]-X[0,0]
+	
+	# troughW
+	lat1 = 110.e3
+	lons1 = [100e3, 200e3]; depth1 = [-10, -600]
+	
+	lat1 = grid.getIndexFromLat(lat1)
+	lon1 = grid.getIndexFromLon(lons1)
+	depth1 = grid.getIndexFromDepth(depth1)
+	label1 = 'trough W'
+	
+	#vlines = [lons1[0]/1.e3, lons1[1]/1.e3, lons2[0]/1.e3, lons2[1]/1.e3, lons3[1]/1.e3]
+	vlines = None#[]
+	hlines = [Y[lat1,0]]	
+	xmin = [X[0,lon1[0]]/Lx]; xmax = [X[0,lon1[1]]/Lx]
+
+	pt.plot1by1(grid.bathy, X=X, Y=Y, vmin=-1000, vmax=-300, mesh=True, hlines=hlines, xmin=xmin, xmax=xmax, vlines=vlines)
+	quit()
+	
+	#==
+	
+	Tf = -2
+	T = tools.interp(readVariable('VVEL', path, meta=False)[ts:te,], 'v')
+	T = T * (readVariable('THETA', path, meta=False)[ts:te,] - Tf)
+	T = rho0 * Cp * T
+		
+	# Compute merid. transport.
+	
+	print(T.shape)
+	print(grid.DXG.shape)
+
+	T1 = tools.meridTransport(T[:,:,lat1,:], grid, yi=lat1)
+	T1 = ptt.maskBathyXZ(T1, grid, yi=lat1, timeDep=True)
+	
+	pt.plot1by2([T1[-1, depth1[0]:depth1[1], lon1[0]:lon1[1]], T1[-1]]); quit()
+	T1 = np.ma.sum(T1[:, depth1[0]:depth1[1], lon1[0]:lon1[1]], axis=(1,2))
+	
+	# Normalise slices
+	norm = True
+	if norm:
+		title = r'Meridional heat transport per unit area across shelf break (TW / m$^2$)'
+		area1 = np.ma.sum(area[depth1[0]:depth1[1], lon1[0]:lon1[1]])
+		T1 = T1 / area1
+	else:
+		title = 'Meridional heat transport across shelf break (TW)'
+
+	smooth = True
+	if smooth:
+		T1 = tools.smooth3(T1)
+	
+
+	# Normalise slices
+	norm = True
+	if norm:
+		title = r'Meridional heat transport per unit area across shelf break (TW / m$^2$)'
+		area1 = np.ma.sum(area[depth1[0]:depth1[1], lon1[0]:lon1[1]])
+		T1 = T1 / area1
+	else:
+		title = 'Meridional heat transport across shelf break (TW)'
+
+	smooth = True
+	if smooth:
+		T1 = tools.smooth3(T1)
+		
+	# NOW PLOT
+
+	normval = 1.e12
+
+	#Ts = [T1, T2, T3, T4, T5]; labels = [label1, label2, label3, label4, label5]
+	Ts = [T2, T3, T5, T6]; labels = [label2, label3, label5, label6]
+
+	vmin = -4.e-8; vmax = 2.e-8
+
+	plt.figure(figsize=(9,4))
+	for i in range(len(Ts)):
+		plt.plot(Ts[i]/normval, label=labels[i])
+		
+	plt.ylim([vmin, vmax])
+	plt.title(title)
+	plt.xlabel('Time (months)')
+	plt.grid(); plt.legend(); 
+	plt.savefig('heatTransport.png')
+	plt.show(); quit()
+	
+	T = np.mean(T, axis=0)
+	T = ptt.maskBathyXZ(T, grid, yi=lat, timeDep=False)
+
+	vmin = -2e5; vmax = -vmin
+	T = tools.boundData(T, vmin, vmax, scale=0.9999)
+
+	pt.plot1by2([T, T], X=[X,X], Y=[Z,Z], vmin=[vmin,vmin], vmax=[vmax,vmax])
+
+	quit()	
+
+#==
+
 FORMSTRESS = False
 if FORMSTRESS:
 
-	PAS = True
+	PAS = 0
 	
 	if PAS:
 
@@ -256,7 +370,7 @@ if FORMSTRESS:
 		rho0 = 1030.
 		g = 9.81
 
-		path = '/home/michael/Documents/data/MCS_118/run/'
+		path = '/home/michael/Documents/data/MCS_123/run/'
 		grid = Grid(path)
 
 		depth = - grid.bathy
@@ -286,7 +400,7 @@ if FORMSTRESS:
 		print(np.mean(TFS[-1]))
 		print(np.mean(botx[-1]))
 
-		pt.plot1by2([TFS[-1], botx[-1]], mesh=False, titles=['TFS', 'botTauX'])
+		pt.plot1by2([TFS[-1]/rho, botx[-1]], mesh=False, titles=['TFS', 'botTauX'])
 
 	quit()
 		
@@ -466,7 +580,7 @@ if thetaHeight:
 	else:
 
 
-		exp = 'MCS_125'
+		exp = 'MCS_131'
 		path = '/home/michael/Documents/data/'+exp+'/run/'
 		grid = Grid(path)
 		X = grid.XC[1,:]/1000.
@@ -477,8 +591,8 @@ if thetaHeight:
 		if ANIM:
 
 			# Use this if loading from pre-computed npy file.
-			if False:
-				ThermZ = np.load(path+'ThermZ_m05_MCS_125.npy')
+			if 0:
+				ThermZ = np.load(path+'ThermZ_m05_MCS_127.npy')
 				Nt = ThermZ.shape[0]
 				TIME = np.linspace(1,Nt,Nt)
 			else:
@@ -492,6 +606,7 @@ if thetaHeight:
 				
 			#==
 			
+			#plt.plot(ThermZ[-1,:,120]);plt.show(); quit()
 			ThermZ = ptt.maskBathyXY(ThermZ, grid, 0, timeDep=True)
 
 			text_data = ptt.getTextData(TIME, 'month', X[1], Y[1])
@@ -725,7 +840,7 @@ if btpcStr:
 #==
 
 # Time-mean difference between surface and bottom flow.
-brclnc = True
+brclnc = False
 if brclnc:
 
 	PAS = 0
@@ -825,14 +940,14 @@ if brclnc:
 animateUVTdepth = False
 if animateUVTdepth:
 
-	PAS = True
-	SUBR = True
-	BOT = False
+	PAS = 1
+	SUBR = 1
+	BOT = 0
 
 	if PAS:
 		path = '/home/michael/Documents/data/PAS_851/run/'
 		grid = Grid_PAS(path)
-		contour = grid.bathy; vmin = -800; vmax = -100; ctitle = 'bathy'
+		contour = grid.bathy; vmin = -600; vmax = -200; ctitle = 'bathy'
 		#contour = grid.draft; vmin = -600; vmax = -0; ctitle = 'Ice shelf draft'
 
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
@@ -865,7 +980,7 @@ if animateUVTdepth:
 
 		T = tools.boundData(T, cvmin, cvmax, 0.9999)
 		# Sample rate
-		d = 4
+		d = 8
 
 	#==
 
@@ -874,7 +989,7 @@ if animateUVTdepth:
 		#ts = 20
 		ts = 60; te = 120
 
-		path = '/home/michael/Documents/data/MCS_110/run/'
+		path = '/home/michael/Documents/data/MCS_117/run/'
 		grid = Grid(path)
 		contour = grid.bathy; ctitle = 'bathy'
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
@@ -905,7 +1020,7 @@ if animateUVTdepth:
 
 
 	if PAS and SUBR:
-		lats = [-76, -70.5]; lons = [245, 260]#[230, 270]#
+		lats = [-76, -70.5]; lons = [245, 280]#[230, 270]#
 		latsi = grid.getIndexFromLat(lats); lonsi = grid.getIndexFromLon(lons)
 		u = tools.getSubregionXY(u, latsi, lonsi); v = tools.getSubregionXY(v, latsi, lonsi)
 		T = tools.getSubregionXY(T, latsi, lonsi)
@@ -914,7 +1029,7 @@ if animateUVTdepth:
 		if BOT:
 			ubot = tools.getSubregionXY(ubot, latsi, lonsi)
 			vbot = tools.getSubregionXY(vbot, latsi, lonsi)
-
+			
 	title = '(u, v); S; ' + ctitle
 	#title = '(u, v); T; bathy'
 	text = ['Z = ' + str(z) + ' m' for z in Z]
@@ -962,7 +1077,7 @@ if animateUVT:
 
 		vmin = -800; vmax = -100
 
-		level = 16
+		level = 0
 		#print(grid.RC.squeeze()[level]); quit()
 		z = '455' # '257', '355'
 		
@@ -972,7 +1087,7 @@ if animateUVT:
 		u = np.load(path+'u'+z+'_PAS851.npy')[ts:te]
 		v = np.load(path+'v'+z+'_PAS851.npy')[ts:te]
 		u = tools.interp(u, 'u'); v = tools.interp(v, 'v')
-
+		
 		THETA = False
 		if THETA:
 			# Load temperature
@@ -1005,14 +1120,13 @@ if animateUVT:
 			v[ti] = ptt.maskBathyXY(v[ti], grid, level, timeDep=False, subregion=True, lats=latsi, lons=lonsi)
 			T[ti] = ptt.maskBathyXY(T[ti], grid, level, timeDep=False, subregion=True, lats=latsi, lons=lonsi)
 
-
 	# IF MCS
 	else:
 
 		ts = 0; te = -1
 
 		#path = '/data/oceans_output/shelf/michai/mitgcm/MCS_126/run/'
-		path = '/home/michael/Documents/data/MCS_123/run/'
+		path = '/home/michael/Documents/data/MCS_133/run/'
 		grid = Grid(path)
 		contour = grid.bathy
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
@@ -1041,7 +1155,7 @@ if animateUVT:
 		text_data = {'text':text, 'xloc':X[1], 'yloc':Y[1], 'fontdict':{'fontsize':14, 'color':'k'}}
 
 		# Sample rate
-		d = 3
+		d = 6
 
 		for ti in range(T.shape[0]):
 			u[ti] = ptt.maskBathyXY(u[ti], grid, level, timeDep=False)
@@ -1068,6 +1182,76 @@ if animateUVT:
 
 #==
 
+# Rough vorticity budget
+vortBudget = True
+if vortBudget:
+
+	path = '/home/michael/Documents/data/MCS_117/run/'
+	grid = Grid(path)
+
+	X = grid.XC[1,:]/1000.
+	Y = grid.YC[:,1]/1000.
+	Z = grid.RC.squeeze()
+	dx = (X[1]-X[0])*1000.
+	dy = (Y[1]-Y[0])*1000.
+	xlabel = 'LON (km)'; ylabel = 'LAT (km)'
+
+	g = 9.81; rho0 = 1028.5
+	ts = -24 
+
+	VAR = 'UVEL'
+	vmin, vmax, cmap, title = getPlottingVars(VAR)
+	u = readVariable(VAR, path, file_format='nc', meta=True)
+	TIME = u['TIME'][ts:]
+	u = u[VAR][ts:,]
+
+	VAR = 'VVEL'
+	vmin, vmax, cmap, title = getPlottingVars(VAR)
+	v = readVariable(VAR, path, file_format='nc', meta=False)[ts:]
+
+	# Advection term
+	
+	uu = np.mean(u*u, axis=0)
+	uv = np.mean(u*v, axis=0)
+	vv = np.mean(v*v, axis=0)
+	
+	uu = tools.depthIntegral(uu, grid, timeDep=False, norm=False)
+	uv = tools.depthIntegral(uv, grid, timeDep=False, norm=False)
+	vv = tools.depthIntegral(vv, grid, timeDep=False, norm=False)
+			
+	advu = - tools.ddx(uu, dx) - tools.ddy(uv, dy)
+	advv = - tools.ddx(uv, dx) - tools.ddy(vv, dy)
+
+	adv = rho0 * (tools.ddx(advv, dx) - tools.ddy(advu, dy))
+
+	# Beta term
+	beta = 6.42e-12
+	bV = rho0 * beta * tools.depthIntegral(np.mean(v, axis=(0)), grid, timeDep=False, norm=False)
+	
+	# Vortex stretching term.
+	depth = - grid.bathy
+	PHIBOT = readVariable('PHIBOT', path, file_format='nc', meta=False)[ts:]
+	Pb = depth * rho0 * g + PHIBOT * rho0
+	Pb = np.mean(Pb, axis=0)
+	
+	J = -tools.ddy(Pb, dy) * tools.ddx(depth, dx) + tools.ddx(Pb, dx) * tools.ddy(depth, dy)
+	
+	vmin = -1.e-4; vmax = -vmin
+	cbar = [False, False, True]
+	titles = ['Vort. advection', 'beta term', 'Vort. stretching']
+
+	#==
+
+	adv = ptt.maskBathyXY(adv, grid, 0)
+	bV = ptt.maskBathyXY(bV, grid, 0)
+	J = ptt.maskBathyXY(J, grid, 0)
+		
+	pt.plot1by3([adv, bV, J], vmin=vmin, vmax=vmax, mesh=True, cbar=cbar, titles=titles, width_ratios=[1,1,1.1])
+
+	quit()
+	
+#==
+	
 # Animate velocity vectors and temperature at fixed level.
 animateUVT_npy = False
 if animateUVT_npy:
@@ -1075,10 +1259,10 @@ if animateUVT_npy:
 
 	ts = 0; te = -1
 
-	path = '/home/michael/Documents/data/MCS_125/run/'
-	fname = '_MCS_125_lvls_0_22_24.npy'
-	levels = [0, 22, 24]
-	leveli = 2
+	path = '/home/michael/Documents/data/MCS_127/run/'
+	fname = '_MCS_127_lvls_0_24.npy'
+	levels = [0, 24]
+	leveli = 1
 	level = levels[leveli]
 	
 	grid = Grid(path)
@@ -1104,7 +1288,7 @@ if animateUVT_npy:
 	text_data = {'text':text, 'xloc':X[1], 'yloc':Y[1], 'fontdict':{'fontsize':14, 'color':'k'}}
 
 	# Sample rate
-	d = 3
+	d = 6
 	for ti in range(T.shape[0]):
 		u[ti] = ptt.maskBathyXY(u[ti], grid, level, timeDep=False)
 		v[ti] = ptt.maskBathyXY(v[ti], grid, level, timeDep=False)
@@ -1478,7 +1662,7 @@ if T_transport:
 #==
 
 
-PAS_WIND = True
+PAS_WIND = False
 if PAS_WIND:
 
 	path = '/home/michael/Documents/data/PAS_8512/run/'
