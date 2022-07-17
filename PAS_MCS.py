@@ -226,46 +226,77 @@ if HEAT_TRANSPORT_PAS:
 	# --> kg / S3
 	# Area integral --> kg / (m2 s3)
 
-	path = '/home/michael/Documents/data/MCS_123/run/'
-	grid = Grid(path)
+	path = '/home/michael/Documents/data/PAS_851/run/'
+	grid = Grid_PAS(path)
+	bathy = grid.bathy
 	Y = grid.YC
 	X = grid.XC
-	Lx = X[0,-1]-X[0,0]
 	
+	ylim = [-75.5, -70.5]; xlim = [245, 262]
+	X0 = xlim[0]; Lx = xlim[1]-xlim[0]
+	
+		
 	# troughW
-	lat1 = 110.e3
-	lons1 = [100e3, 200e3]; depth1 = [-10, -600]
-	
+	lat1 = -71.5
+	lons1 = [245.5, 247.5]; depth1 = [-10, -900]
+		
+	# troughE
+	lat2 = -71.3
+	lons2 = [255.5, 258.2]; depth2 = [-10, -900]
+
 	lat1 = grid.getIndexFromLat(lat1)
 	lon1 = grid.getIndexFromLon(lons1)
 	depth1 = grid.getIndexFromDepth(depth1)
 	label1 = 'trough W'
 	
+	lat2 = grid.getIndexFromLat(lat2)
+	lon2 = grid.getIndexFromLon(lons2)
+	depth2 = grid.getIndexFromDepth(depth2)
+	label2 = 'trough E'
+	
 	#vlines = [lons1[0]/1.e3, lons1[1]/1.e3, lons2[0]/1.e3, lons2[1]/1.e3, lons3[1]/1.e3]
 	vlines = None#[]
-	hlines = [Y[lat1,0]]	
-	xmin = [X[0,lon1[0]]/Lx]; xmax = [X[0,lon1[1]]/Lx]
-
-	pt.plot1by1(grid.bathy, X=X, Y=Y, vmin=-1000, vmax=-300, mesh=True, hlines=hlines, xmin=xmin, xmax=xmax, vlines=vlines)
-	quit()
+	hlines = [Y[lat1,0], Y[lat2,0]]
+	
+	# Compute xmins and xmaxs
+	xmin1 = (X[0,lon1[0]] - X0) / Lx
+	xmin2 = (X[0,lon2[0]] - X0) / Lx
+	xmax1 = (X[0,lon1[1]] - X0) / Lx
+	xmax2 = (X[0,lon2[1]] - X0) / Lx
+	
+	xmin = [xmin1, xmin2]; xmax = [xmax1, xmax2]
+	#plt.pcolormesh(X, Y, bathy, vmin=-800, vmax=-400); plt.show(); quit()
+	#pt.plot1by1(bathy, X=X, Y=Y); quit()
+	
+	#pt.plot1by1(bathy, X=X, Y=Y, vmin=-1000, vmax=-300, mesh=True, hlines=hlines, xmin=xmin, xmax=xmax, vlines=vlines, xlim=xlim, ylim=ylim)
+	
+	bathy = bathy[lat1, lon1[0]:lon1[1]]
+	#plt.plot(bathy); plt.show(); quit()
 	
 	#==
 	
+	# Get v * Theta
 	Tf = -2
 	T = tools.interp(readVariable('VVEL', path, meta=False)[ts:te,], 'v')
 	T = T * (readVariable('THETA', path, meta=False)[ts:te,] - Tf)
 	T = rho0 * Cp * T
 		
 	# Compute merid. transport.
-	
-	print(T.shape)
-	print(grid.DXG.shape)
-
 	T1 = tools.meridTransport(T[:,:,lat1,:], grid, yi=lat1)
 	T1 = ptt.maskBathyXZ(T1, grid, yi=lat1, timeDep=True)
-	
-	pt.plot1by2([T1[-1, depth1[0]:depth1[1], lon1[0]:lon1[1]], T1[-1]]); quit()
+
+	T2 = tools.meridTransport(T[:,:,lat2,:], grid, yi=lat2)
+	T2 = ptt.maskBathyXZ(T2, grid, yi=lat2, timeDep=True)
+
+	#pt.plot1by2([T1[-1, depth1[0]:depth1[1], lon1[0]:lon1[1]], T1[-1]]); quit()
 	T1 = np.ma.sum(T1[:, depth1[0]:depth1[1], lon1[0]:lon1[1]], axis=(1,2))
+	T2 = np.ma.sum(T2[:, depth2[0]:depth2[1], lon2[0]:lon2[1]], axis=(1,2))
+	
+	area1 = grid.DXG[lat1] * grid.hFacS[:,lat1] * grid.DRF[:,0]
+	area1 = ptt.maskBathyXZ(area1, grid, yi=lat1, timeDep=False)
+	
+	area2 = grid.DXG[lat2] * grid.hFacS[:,lat2] * grid.DRF[:,0]
+	area2 = ptt.maskBathyXZ(area2, grid, yi=lat2, timeDep=False)
 	
 	# Normalise slices
 	norm = True
@@ -273,33 +304,20 @@ if HEAT_TRANSPORT_PAS:
 		title = r'Meridional heat transport per unit area across shelf break (TW / m$^2$)'
 		area1 = np.ma.sum(area[depth1[0]:depth1[1], lon1[0]:lon1[1]])
 		T1 = T1 / area1
+		area2 = np.ma.sum(area[depth2[0]:depth2[1], lon2[0]:lon2[1]])
+		T2 = T2 / area2
 	else:
 		title = 'Meridional heat transport across shelf break (TW)'
 
 	smooth = True
 	if smooth:
 		T1 = tools.smooth3(T1)
-	
+		T2 = tools.smooth3(T2)
 
-	# Normalise slices
-	norm = True
-	if norm:
-		title = r'Meridional heat transport per unit area across shelf break (TW / m$^2$)'
-		area1 = np.ma.sum(area[depth1[0]:depth1[1], lon1[0]:lon1[1]])
-		T1 = T1 / area1
-	else:
-		title = 'Meridional heat transport across shelf break (TW)'
-
-	smooth = True
-	if smooth:
-		T1 = tools.smooth3(T1)
-		
 	# NOW PLOT
 
 	normval = 1.e12
-
-	#Ts = [T1, T2, T3, T4, T5]; labels = [label1, label2, label3, label4, label5]
-	Ts = [T2, T3, T5, T6]; labels = [label2, label3, label5, label6]
+	Ts = [T1, T2]; labels = [label1, label2]
 
 	vmin = -4.e-8; vmax = 2.e-8
 
@@ -312,18 +330,8 @@ if HEAT_TRANSPORT_PAS:
 	plt.xlabel('Time (months)')
 	plt.grid(); plt.legend(); 
 	plt.savefig('heatTransport.png')
-	plt.show(); quit()
 	
-	T = np.mean(T, axis=0)
-	T = ptt.maskBathyXZ(T, grid, yi=lat, timeDep=False)
-
-	vmin = -2e5; vmax = -vmin
-	T = tools.boundData(T, vmin, vmax, scale=0.9999)
-
-	pt.plot1by2([T, T], X=[X,X], Y=[Z,Z], vmin=[vmin,vmin], vmax=[vmax,vmax])
-
-	quit()	
-
+	quit()
 #==
 
 FORMSTRESS = False

@@ -82,7 +82,7 @@ def timeSeries(data, TIME=None, Y=None, time_units='days', figsize=(6,3), labels
 	
 #==
 
-def plot1by1(data, X=None, Y=None, contour=None, contourlevels=None, figsize=(5,4), title=None, fontsize=14, mesh=False, cmap='jet', vmin=None, vmax=None, text_data=None, xlabel=None, ylabel=None, grid=True, contourfNlevels=9, save=False, outpath='', outname='plot1by1.png', show=True, dpi=200, yline=None, hlines=[], xmin=0, xmax=1, vlines=[]):
+def plot1by1(data, X=None, Y=None, contour=None, contourlevels=None, figsize=(5,4), title=None, fontsize=14, mesh=False, cmap='jet', vmin=None, vmax=None, text_data=None, xlabel=None, ylabel=None, grid=True, contourfNlevels=9, save=False, outpath='', outname='plot1by1.png', show=True, dpi=200, yline=None, hlines=None, xmin=0, xmax=1, vlines=None, xlim=None, ylim=None):
 	
 	fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
 
@@ -128,8 +128,14 @@ def plot1by1(data, X=None, Y=None, contour=None, contourlevels=None, figsize=(5,
 		plt.axvline(x=vlines, color='k', linewidth=1.0, linestyle='--')
 	
 	if hlines is not None:
-		plt.axhline(y=hlines, xmin=xmin, xmax=xmax, color='k', linewidth=1.0, linestyle='--')
+		for i in range(len(hlines)):
+			plt.axhline(y=hlines[i], xmin=xmin[i], xmax=xmax[i], color='k', linewidth=1.0, linestyle='--')
 			
+	if xlim is not None:
+		plt.xlim(xlim)
+	if ylim is not None:
+		plt.ylim(ylim)
+		
 	#==
 	
 	plt.tight_layout()
