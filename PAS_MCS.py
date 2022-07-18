@@ -1,4 +1,4 @@
-# PAS_MCS.py
+uS_MCS.py
 
 # Sequence of scripts for comparison on PAS and MCS outputs.
 
