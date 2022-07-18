@@ -27,7 +27,7 @@ import time
 HEAT_CONTENT = False
 if HEAT_CONTENT:
 
-	EXPS = ['MCS_132', 'MCS_133']
+	EXPS = ['MCS_125', 'MCS_127']
 	#path = '/data/oceans_output/shelf/michai/mitgcm/'
 	path = '/home/michael/Documents/data/'
 
