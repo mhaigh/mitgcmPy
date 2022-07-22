@@ -590,7 +590,7 @@ if thetaHeight:
 	else:
 
 
-		exp = 'MCS_125'
+		exp = 'MCS_137'
 		path = '/home/michael/Documents/data/'+exp+'/run/'
 		grid = Grid(path)
 		X = grid.XC[1,:]/1000.
@@ -603,7 +603,7 @@ if thetaHeight:
 			# Use this if loading from pre-computed npy file.
 			if 1:
 				d = 2
-				ThermZ = np.load(path+'ThermZ_m05_MCS_125.npy')[::d]
+				ThermZ = np.load(path+'ThermZ_m05_MCS_137.npy')[::d]
 				Nt = ThermZ.shape[0] * d
 				TIME = np.linspace(1,Nt,Nt)[::d]*86400*30
 			else:
@@ -617,6 +617,7 @@ if thetaHeight:
 				
 			#==
 			
+			print(ThermZ.shape)
 			#plt.plot(ThermZ[-1,:,120]);plt.show(); quit()
 			ThermZ = ptt.maskBathyXY(ThermZ, grid, 0, timeDep=True)
 
@@ -774,7 +775,7 @@ if quiver:
 
 #==
 	
-btpcStr = True
+btpcStr = False
 if btpcStr:
 
 	PAS = 0
@@ -815,7 +816,10 @@ if btpcStr:
 		Z = grid.RC.squeeze()
 
 		u = readVariable('UVEL', path, meta=False)
-		btpStr = tools.barotropicStreamfunction(u, grid, timeDep=True)
+		Nt, Nz, Ny, Nx = u.shape
+		btpStr = np.zeros((Nt, Ny, Nx))
+		for ti in range(Nt):
+			btpStr[ti] = tools.barotropicStreamfunction(u[ti], grid, timeDep=False)
 		btpStr = ptt.maskBathyXY(btpStr, grid, zi=0, timeDep=True)
 		bathy = grid.bathy
 		levels = [-900, -800, -700, -600, -501]
@@ -1071,7 +1075,7 @@ if animateUVTdepth:
 #==
 
 # Animate velocity vectors and temperature at fixed level.
-animateUVT = True
+animateUVT = False
 if animateUVT:
 
 	PAS = False
@@ -1136,7 +1140,7 @@ if animateUVT:
 		ts = 0; te = -1
 
 		#path = '/data/oceans_output/shelf/michai/mitgcm/MCS_126/run/'
-		path = '/home/michael/Documents/data/MCS_133/run/'
+		path = '/home/michael/Documents/data/MCS_127/run/'
 		grid = Grid(path)
 		contour = grid.bathy
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
@@ -1193,7 +1197,7 @@ if animateUVT:
 #==
 
 # Rough vorticity budget
-vortBudget = True
+vortBudget = False
 if vortBudget:
 
 	path = '/home/michael/Documents/data/MCS_117/run/'
@@ -1263,7 +1267,7 @@ if vortBudget:
 #==
 	
 # Animate velocity vectors and temperature at fixed level.
-animateUVT_npy = False
+animateUVT_npy = True
 if animateUVT_npy:
 
 

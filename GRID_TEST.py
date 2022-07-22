@@ -368,13 +368,13 @@ if TEST_depthAverage:
 
 #==
 
-TEST_animate = False
+TEST_animate = True
 if TEST_animate:
 
 	#path = '/home/michael/Documents/data/MCS_002/run/'
 
-	path = '/home/michael/Documents/data/MCS_123/run/'
-	#path = '/home/michael/Documents/data/PISOMIP_003/run/'
+	path = '/home/michael/Documents/data/MCS_138/run/'
+	#path = '/home/michael/Documents/data/PISOMIP_001/run/'
 	#pathG = '/home/michael/Documents/data/MCS_018/run/'
 
 	grid = Grid(path)
@@ -384,8 +384,8 @@ if TEST_animate:
 
 	#VAR = 'ETAN'
 	#VAR = 'RHOAnoma'
-	#VAR = 'THETA'
-	VAR = 'PHIHYD'
+	VAR = 'THETA'
+	#VAR = 'PHIHYD'
 	#VAR = 'DFrE_TH';
 	#VAR = 'WVELTH'#','UVELTH','VVELTH','WVELTH', 'TOTTTEND'
 	#VAR = 'SALT'	
@@ -403,7 +403,7 @@ if TEST_animate:
 	text_data = ptt.getTextData(data.variables['TIME'][:], 'month', X[1], Y[-2], color='k')
 	data = data[VAR][:]
 
-	MEAN = False
+	MEAN = True
 	ASYM = False
 	if not MEAN:
 		for ti in range(data.shape[0]):
@@ -558,7 +558,7 @@ if animateSurface:
 	
 #==
 
-animateCONV = False
+animateCONV = True
 if animateCONV:
 
 	path = '/home/michael/Documents/data/MCS_123/run/'
@@ -592,6 +592,7 @@ if animateCONV:
 	uv = u*v
 
 	conv = - tools.ddx(uu, grid.DXG) - tools.ddy(uv, grid.DYG)
+	conv = ptt.maskBathy(conv, grid, zi=0, timeDep=True)
 
 	#==
 	

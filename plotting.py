@@ -947,7 +947,7 @@ def plotMbyN(data, X=None, Y=None, figsize=(8,4), titles=None, fontsize=14, mesh
 				im = plt.pcolormesh(X[row][col], Y[row][col], data[row][col], vmin=vmin[row][col], vmax=vmax[row][col], cmap=cmap[row][col])		
 			else:
 				levels = getContourfLevels(vmin[row][col], vmax[row][col], contourfNlevels)
-				im = plt.contourf(X[row][col], Y[row][col], contourf[row][col], cmap=cmap[row][col], levels=levels)
+				im = plt.contourf(X[row][col], Y[row][col], data[row][col], cmap=cmap[row][col], levels=levels, extend='both')
 			if cbar[row][col]:
 				plt.colorbar()
 				
@@ -1376,7 +1376,7 @@ def plot1by2Basemap1(data, X, Y, lat_0, lon_0, contour=[None,None], contourlevel
 		m.pcolormesh(X0, Y0, data[0], cmap=cmaps[0], vmin=vmin[0], vmax=vmax[0])
 	else:
 		levels = getContourfLevels(vmin[0], vmax[0], contourfNlevels)
-		a = m.contourf(X0, Y0, data[0], cmap=cmaps[0], levels=levels, extend='max')
+		a = m.contourf(X0, Y0, data[0], cmap=cmaps[0], levels=levels, extend='both')
 		#a.cmap.set_under('w')	
 		#a.set_clim(vmin[0], vmax[0])
 		#a.cmap.set_over('w')	
