@@ -252,7 +252,7 @@ if FIGURE3:
 
 	# FIRST PANEL: ISOTHERM HEIGHT
 
-	vmin1 = -600; vmax1 = -200	
+	vmin1 = -500; vmax1 = -200	
 
 	THERM = -0.5
 	ThermZ = tools.getIsothermHeight(T, THERM, grid, interp=True, timeDep=False)
@@ -297,14 +297,14 @@ if FIGURE3:
 	xlabels = [None, 'Lat (deg.)']; ylabels = [None, 'Depth (m)']
 	titles = ['(a) -0.5 deg. isotherm depth (m)', '(b) Pot. Temp. (deg. C)']
 
-	pt.plot1by2Basemap1([ThermZ, T], Xp, Yp, lat_0, lon_0, mesh=False, contour=bathy, contourlevels=contourlevels, contourfNlevels=17, vmin=vmin, vmax=vmax, parallels=paras, meridians=merids, yline=[slice_lon, None], xlabels=xlabels, ylabels=ylabels, fontsize=11, titles=titles, cmaps=['jet', 'seismic'])
+	pt.plot1by2Basemap1([ThermZ, T], Xp, Yp, lat_0, lon_0, mesh=False, contour=bathy, contourlevels=contourlevels, contourfNlevels=13, vmin=vmin, vmax=vmax, parallels=paras, meridians=merids, yline=[slice_lon, None], xlabels=xlabels, ylabels=ylabels, fontsize=11, titles=titles, cmaps=['YlOrRd', 'seismic'])
 
 	quit()
 	
 #==
 
 # First figure of idealised model. Panel 1: bathymetry, wind forcing. Panel 2: T/S relaxation profiles.
-FIGURE4 = 1
+FIGURE4 = 0
 if FIGURE4:
 
 	path = '/home/michael/Documents/data/MCS_104/run/'
@@ -719,7 +719,8 @@ if FIGURE9:
 
 	path = '/home/michael/Documents/data/'	
 	path_THERMZ = path + 'THERMZnpy/'
-	runs = [['MCS_108', 'MCS_120', 'MCS_116'], ['MCS_117', 'MCS_118', 'MCS_114']]
+	#runs = [['MCS_108', 'MCS_120', 'MCS_116'], ['MCS_117', 'MCS_118', 'MCS_114']]
+	runs =[['MCS_137', 'MCS_135', 'MCS_132'], ['MCS_133', 'MCS_136', 'MCS_137']]
 	titles = [['(a) Uniform shelf', '(b) W', '(c) E'], ['(d) S', '(e) E+S', '(f) W+C+E+S']]
 	#HCs = [[1.18, 1.37, 1.41], [2.05, 2.01, 2.23]]
 	HCs = [[0.728, 0.920, 0.961], [1.61, 1.56, 1.73]]
@@ -752,8 +753,9 @@ if FIGURE9:
 			X = grid.XC[1,:] / 1.e3
 			Y = grid.YC[:,1] / 1.e3
 	
-			ThermZ = np.load(path_THERMZ+'ThermZ_'+THERMt+'_'+run+'.npy')
-					
+			#ThermZ = np.load(path_THERMZ+'ThermZ_'+THERMt+'_'+run+'.npy')
+			ThermZ = np.load(path+run+'/run/ThermZ_'+THERMt+'_'+run+'.npy')
+								
 			ThermZ = ptt.maskBathyXY(ThermZ, grid, 0, timeDep=False)
 			ThermZ = np.where(ThermZ<grid.bathy, np.nan, ThermZ)
 
@@ -784,7 +786,11 @@ if FIGURE9:
 	
 	cbdata = [[0.825, 0.15, 0.015, 0.7], '-0.5 deg. C isotherm depth (m)']
 	
-	pt.plotMbyN(data, X=X, Y=Y, mesh=True, vmin=-500, vmax=-200, titles=titles, cbar=False, cbarShared=True, cbarSharedData=cbdata, xlabels=xlabels, ylabels=ylabels, xticks=xticks, yticks=yticks, xticksvis=xticksvis, yticksvis=yticksvis, width_ratios=[1,1,1], text_data=text_data, grid=True, figsize=(10,4), save=True, hlines=hlines)
+	vmin = -500; vmax=-300
+	#vmin = -450; vmax=-250
+	cmap = 'YlOrRd'#'jet'
+	
+	pt.plotMbyN(data, X=X, Y=Y, mesh=False, contourfNlevels=13, vmin=vmin, vmax=vmax, titles=titles, cmap=cmap, cbar=False, cbarShared=True, cbarSharedData=cbdata, xlabels=xlabels, ylabels=ylabels, xticks=xticks, yticks=yticks, xticksvis=xticksvis, yticksvis=yticksvis, width_ratios=[1,1,1], text_data=text_data, grid=True, figsize=(10,4), save=True, hlines=hlines)
 	
 	quit()
 	

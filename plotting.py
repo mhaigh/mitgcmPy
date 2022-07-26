@@ -82,7 +82,7 @@ def timeSeries(data, TIME=None, Y=None, time_units='days', figsize=(6,3), labels
 	
 #==
 
-def plot1by1(data, X=None, Y=None, contour=None, contourlevels=None, figsize=(5,4), title=None, fontsize=14, mesh=False, cmap='jet', vmin=None, vmax=None, text_data=None, xlabel=None, ylabel=None, grid=True, contourfNlevels=9, save=False, outpath='', outname='plot1by1.png', show=True, dpi=200, yline=None, hlines=None, xmin=0, xmax=1, vlines=None, xlim=None, ylim=None):
+def plot1by1(data, X=None, Y=None, contour=None, contourlevels=None, figsize=(5,4), title=None, fontsize=14, mesh=False, cmap='jet', vmin=None, vmax=None, text_data=None, xlabel=None, ylabel=None, grid=True, contourfNlevels=9, save=False, outpath='', outname='plot1by1.png', show=True, dpi=200, hlines=None, xmin=[0], xmax=[1], vlines=None, xlim=None, ylim=None):
 	
 	fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
 
@@ -120,12 +120,13 @@ def plot1by1(data, X=None, Y=None, contour=None, contourlevels=None, figsize=(5,
 	if title is not None:
 		plt.title(title, fontsize=fontsize)
 
-	if yline is not None:
-		plt.plot(yline, Y, color='k', linewidth=1.2)
-		plt.axvline(x=X[X.shape[0]//2-1], color='k', linewidth=1.0, linestyle='--')
+	#if yline is not None:
+	#	plt.plot(yline, Y, color='k', linewidth=1.2)
+	#	plt.axvline(x=X[X.shape[0]//2-1], color='k', linewidth=1.0, linestyle='--')
 
 	if vlines is not None:
-		plt.axvline(x=vlines, color='k', linewidth=1.0, linestyle='--')
+		for i in range(len(vlines)):
+			plt.axvline(x=vlines[i], color='k', linewidth=1.0, linestyle='--')
 	
 	if hlines is not None:
 		for i in range(len(hlines)):
@@ -947,7 +948,7 @@ def plotMbyN(data, X=None, Y=None, figsize=(8,4), titles=None, fontsize=14, mesh
 				im = plt.pcolormesh(X[row][col], Y[row][col], data[row][col], vmin=vmin[row][col], vmax=vmax[row][col], cmap=cmap[row][col])		
 			else:
 				levels = getContourfLevels(vmin[row][col], vmax[row][col], contourfNlevels)
-				im = plt.contourf(X[row][col], Y[row][col], contourf[row][col], cmap=cmap[row][col], levels=levels)
+				im = plt.contourf(X[row][col], Y[row][col], data[row][col], cmap=cmap[row][col], levels=levels, extend='both')
 			if cbar[row][col]:
 				plt.colorbar()
 				
@@ -1376,7 +1377,7 @@ def plot1by2Basemap1(data, X, Y, lat_0, lon_0, contour=[None,None], contourlevel
 		m.pcolormesh(X0, Y0, data[0], cmap=cmaps[0], vmin=vmin[0], vmax=vmax[0])
 	else:
 		levels = getContourfLevels(vmin[0], vmax[0], contourfNlevels)
-		a = m.contourf(X0, Y0, data[0], cmap=cmaps[0], levels=levels, extend='max')
+		a = m.contourf(X0, Y0, data[0], cmap=cmaps[0], levels=levels, extend='both')
 		#a.cmap.set_under('w')	
 		#a.set_clim(vmin[0], vmax[0])
 		#a.cmap.set_over('w')	

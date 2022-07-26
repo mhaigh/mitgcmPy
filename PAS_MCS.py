@@ -65,7 +65,7 @@ if HEAT_CONTENT:
 	
 	quit()
 			
-HEAT_TRANSPORT = False
+HEAT_TRANSPORT = True
 if HEAT_TRANSPORT:
 	
 	ts = 0	
@@ -76,8 +76,9 @@ if HEAT_TRANSPORT:
 	# --> kg / S3
 	# Area integral --> kg / (m2 s3)
 
-	#path = '/data/oceans_output/shelf/michai/mitgcm/MCS_117/run/'
-	path = '/home/michael/Documents/data/MCS_133/run/'
+	BATHY = 'ES'
+	#path = '/data/oceans_output/shelf/michai/mitgcm/MCS_129/run/'
+	path = '/home/michael/Documents/data/MCS_141/run/'
 	grid = Grid(path)
 
 	X = grid.XC[1,:] / 1000.
@@ -87,40 +88,35 @@ if HEAT_TRANSPORT:
 	# Subregions for heat transport.
 
 	lat = 95
-	print(Y[lat])
 
 	# troughW
-	lons1 = [100e3, 200e3]; depth1 = [-10, -600]
-	lon1 = grid.getIndexFromLon(lons1)
-	depth1 = grid.getIndexFromDepth(depth1)
-	label1 = 'trough W'
+	lonsW = [100e3, 200e3]; depthW = [-10, -800]
+	lonW = grid.getIndexFromLon(lonsW)
+	depthW = grid.getIndexFromDepth(depthW)
+	labelW = 'trough W'
 
 	# troughE
-	lons2 = [415e3, 520e3]; depth2 = [-10, -600]
-	lon2 = grid.getIndexFromLon(lons2)
-	depth2 = grid.getIndexFromDepth(depth2)
-	label2 = 'trough E'
-
-	#lons2 = [200e3, 415e3]; depth2 = [-10, -600]
-	#lon2 = grid.getIndexFromLon(lons2)
-	#depth2 = grid.getIndexFromDepth(depth2)
-	#label2 = 'between W and E'
+	lonsE = [418e3, 520e3]; depthE = [-10, -800]
+	lonE = grid.getIndexFromLon(lonsE)
+	depthE = grid.getIndexFromDepth(depthE)
+	labelE = 'trough E'
 
 	# troughE AND sill
-	lons3 = [415e3, 590e3]; depth3 = [-10, -600]
-	lon3 = grid.getIndexFromLon(lons3)
-	depth3 = grid.getIndexFromDepth(depth3)
-	label3 = 'trough E + sill'
+	lonsES = [415e3, 585e3]; depthES = [-10, -800]
+	lonES = grid.getIndexFromLon(lonsES)
+	depthES = grid.getIndexFromDepth(depthES)
+	labelES = 'trough E + sill'
 
 	# For the rest, just subtract.
-	label5 = 'All'
-	label4 = 'Uniform lons'
-	label6 = 'Uniform lons'
+	labelAll = 'All'
+	labelU = 'Uniform lons'
+
 	
-	vlines = [lons1[0]/1.e3, lons1[1]/1.e3, lons2[0]/1.e3, lons2[1]/1.e3, lons3[1]/1.e3]
+	vlines = [lonsW[0]/1.e3, lonsW[1]/1.e3, lonsE[0]/1.e3, lonsE[1]/1.e3, lonsES[1]/1.e3]
 	hlines = [Y[lat]]	
-	#pt.plot1by1(grid.bathy, X=X, Y=Y, vmin=-1000, vmax=-300, mesh=True, hlines=hlines, vlines=vlines)
-	#quit()
+	pt.plot1by1(grid.bathy, X=X, Y=Y, vmin=-1000, vmax=-300, mesh=True, hlines=hlines, vlines=vlines)
+	quit()
+	
 	#==
 
 	T = readVariable('SALT', path, meta=False)[ts,:,:lat+1,:]#[ts:,...,lat:lat+2,:]
@@ -150,49 +146,60 @@ if HEAT_TRANSPORT:
 
 	T *= area
 
-	# Get various T slices
-	T1 = np.ma.sum(T[:, depth1[0]:depth1[1], lon1[0]:lon1[1]], axis=(1,2))
-	T2 = np.ma.sum(T[:, depth2[0]:depth2[1], lon2[0]:lon2[1]], axis=(1,2))
-	T3 = np.ma.sum(T[:, depth3[0]:depth3[1], lon3[0]:lon3[1]], axis=(1,2))
-	T5 = np.ma.sum(T, axis=(1,2))
-	T4 = T5 - T1 - T3
-	T6 = T5 - T3
-	
+    # Get various T slices
+	TW = np.ma.sum(T[:, depthW[0]:depthW[1], lonW[0]:lonW[1]], axis=(1,2))
+	TE = np.ma.sum(T[:, depthE[0]:depthE[1], lonE[0]:lonE[1]], axis=(1,2))
+	TES = np.ma.sum(T[:, depthES[0]:depthES[1], lonES[0]:lonES[1]], axis=(1,2))
+	TAll = np.ma.sum(T, axis=(1,2))
+	TUE = TAll - TE
+	TUES = TAll - TES
+	TUWES = TAll - TES - TW
+
 
 	# Normalise slices
 	norm = True
 	if norm:
 		title = r'Meridional heat transport per unit area across shelf break (TW / m$^2$)'
-		area1 = np.ma.sum(area[depth1[0]:depth1[1], lon1[0]:lon1[1]])
-		T1 = T1 / area1
-		area2 = np.ma.sum(area[depth2[0]:depth2[1], lon2[0]:lon2[1]])
-		T2 = T2 / area2 
-		area3 = np.ma.sum(area[depth3[0]:depth3[1], lon3[0]:lon3[1]])
-		T3 = T3 / area3
-		area5 = np.ma.sum(area)
-		T5 = T5 / area5
-		area4 = area5 - area1 - area3
-		T4 = T4 / area4
-		area6 = area5 - area3
-		T6 = T6 / area6
+		areaE = np.ma.sum(area[depthE[0]:depthE[1], lonE[0]:lonE[1]])
+		TE = TE / areaE
+		areaW = np.ma.sum(area[depthW[0]:depthW[1], lonW[0]:lonW[1]])
+		TW = TW / areaW
+		areaES = np.ma.sum(area[depthES[0]:depthES[1], lonES[0]:lonES[1]])
+		TES = TES / areaES
+		areaAll = np.ma.sum(area)
+		TAll = TAll / areaAll
+		areaUE = areaAll - areaE
+		TUE = TUE / areaUE
+		areaUES = areaAll - areaES
+		TUES = TUES / areaUES
+		areaUWES = areaAll - areaES - areaW
+		TUWES = TUWES / areaUWE
 	else:
 		title = 'Meridional heat transport across shelf break (TW)'
 
 	smooth = True
 	if smooth:
-		T1 = tools.smooth3(T1)
-		T2 = tools.smooth3(T2)
-		T3 = tools.smooth3(T3)
-		T4 = tools.smooth3(T4)
-		T5 = tools.smooth3(T5)
-		T6 = tools.smooth3(T6)
-		
-	# NOW PLOT
+		TE = tools.smooth3(TE)
+		TW = tools.smooth3(TW)
+		TES = tools.smooth3(TES)
+		TAll = tools.smooth3(TAll)
+		TUE = tools.smooth3(TUE)
+		TUES = tools.smooth3(TUES)
+		TUWES = tools.smooth3(TUWES)
+
+    # NOW PLOT
 
 	normval = 1.e12
 
-	#Ts = [T1, T2, T3, T4, T5]; labels = [label1, label2, label3, label4, label5]
-	Ts = [T2, T3, T5, T6]; labels = [label2, label3, label5, label6]
+	if BATHY == 'E':
+		Ts = [TE, TUE, TAll]
+		labels = [labelE, labelU, labelAll]
+	elif BATHY == 'ES':
+		Ts = [TE, TES, TUES, TAll]
+		labels = [labelE, labelES, labelU, labelAll]
+	elif BATHY == 'WCES' or BATHY == 'WES':
+		Ts = [TW, TE, TES, TUWES, TAll]
+		labels = [labelW, labelE, labelES, labelU, labelAll]
 
 	vmin = -4.e-8; vmax = 2.e-8
 
@@ -520,11 +527,11 @@ if ASF:
 
 #==
 
-thetaHeight = True
+thetaHeight = False
 if thetaHeight:
 
-	PAS = False
-	ANIM = True
+	PAS = 0
+	ANIM = 0
 	THERM = -0.5
 
 	if PAS:
@@ -590,7 +597,7 @@ if thetaHeight:
 	else:
 
 
-		exp = 'MCS_125'
+		exp = 'MCS_141'
 		path = '/home/michael/Documents/data/'+exp+'/run/'
 		grid = Grid(path)
 		X = grid.XC[1,:]/1000.
@@ -601,13 +608,13 @@ if thetaHeight:
 		if ANIM:
 
 			# Use this if loading from pre-computed npy file.
-			if 1:
+			if 0:
 				d = 2
-				ThermZ = np.load(path+'ThermZ_m05_MCS_125.npy')[::d]
+				ThermZ = np.load(path+'ThermZ_m05_MCS_137.npy')[::d]
 				Nt = ThermZ.shape[0] * d
 				TIME = np.linspace(1,Nt,Nt)[::d]*86400*30
 			else:
-				ts = 0
+				ts = 120
 				T = readVariable('THETA', path, meta=True)
 				TIME = T['TIME'][ts:]
 				T = T['THETA'][ts:]
@@ -617,6 +624,7 @@ if thetaHeight:
 				
 			#==
 			
+			print(ThermZ.shape)
 			#plt.plot(ThermZ[-1,:,120]);plt.show(); quit()
 			ThermZ = ptt.maskBathyXY(ThermZ, grid, 0, timeDep=True)
 
@@ -632,7 +640,7 @@ if thetaHeight:
 		title = exp + ' ' + str(THERM) + ' deg. isotherm height'
 	
 		#vmin = -450; vmax = -250	
-		vmin = -500; vmax = -100		
+		vmin = -500; vmax = -200		
 		#vmin = -1000; vmax = -400
 		#vmin = None; vmax = None
 		xlabel = 'LON (km)'; ylabel = 'LAT (km)'
@@ -774,7 +782,7 @@ if quiver:
 
 #==
 	
-btpcStr = True
+btpcStr = False
 if btpcStr:
 
 	PAS = 0
@@ -815,7 +823,10 @@ if btpcStr:
 		Z = grid.RC.squeeze()
 
 		u = readVariable('UVEL', path, meta=False)
-		btpStr = tools.barotropicStreamfunction(u, grid, timeDep=True)
+		Nt, Nz, Ny, Nx = u.shape
+		btpStr = np.zeros((Nt, Ny, Nx))
+		for ti in range(Nt):
+			btpStr[ti] = tools.barotropicStreamfunction(u[ti], grid, timeDep=False)
 		btpStr = ptt.maskBathyXY(btpStr, grid, zi=0, timeDep=True)
 		bathy = grid.bathy
 		levels = [-900, -800, -700, -600, -501]
@@ -1136,14 +1147,14 @@ if animateUVT:
 		ts = 0; te = -1
 
 		#path = '/data/oceans_output/shelf/michai/mitgcm/MCS_126/run/'
-		path = '/home/michael/Documents/data/MCS_133/run/'
+		path = '/home/michael/Documents/data/MCS_132/run/'
 		grid = Grid(path)
 		contour = grid.bathy
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
 
 		#pt.plotMbyN(grid.bathy, mesh=True); quit()
 
-		depth = -490; level = grid.getIndexFromDepth(depth)
+		depth = -450; level = grid.getIndexFromDepth(depth)
 
 		vmin = -600; vmax = -500
 		X = grid.XC[1,:]/1000.
@@ -1193,7 +1204,7 @@ if animateUVT:
 #==
 
 # Rough vorticity budget
-vortBudget = True
+vortBudget = False
 if vortBudget:
 
 	path = '/home/michael/Documents/data/MCS_117/run/'
@@ -1263,7 +1274,7 @@ if vortBudget:
 #==
 	
 # Animate velocity vectors and temperature at fixed level.
-animateUVT_npy = False
+animateUVT_npy = True
 if animateUVT_npy:
 
 
