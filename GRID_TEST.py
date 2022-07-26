@@ -373,7 +373,7 @@ if TEST_animate:
 
 	#path = '/home/michael/Documents/data/MCS_002/run/'
 
-	path = '/home/michael/Documents/data/MCS_138/run/'
+	path = '/home/michael/Documents/data/MCS_141/run/'
 	#path = '/home/michael/Documents/data/PISOMIP_001/run/'
 	#pathG = '/home/michael/Documents/data/MCS_018/run/'
 
@@ -386,7 +386,7 @@ if TEST_animate:
 	#VAR = 'RHOAnoma'
 	VAR = 'THETA'
 	#VAR = 'PHIHYD'
-	#VAR = 'DFrE_TH';
+	#VAR = 'DFrE_TH'
 	#VAR = 'WVELTH'#','UVELTH','VVELTH','WVELTH', 'TOTTTEND'
 	#VAR = 'SALT'	
 	#VAR = 'UVEL'	
@@ -403,13 +403,13 @@ if TEST_animate:
 	text_data = ptt.getTextData(data.variables['TIME'][:], 'month', X[1], Y[-2], color='k')
 	data = data[VAR][:]
 
-	MEAN = True
+	MEAN = False
 	ASYM = False
 	if not MEAN:
 		for ti in range(data.shape[0]):
 			data[ti,] = ptt.maskBathyAll(data[ti,], grid)
 		#data = np.ma.mean(data, axis=3)
-		data = data[...,120]
+		data = data[...,0]
 		#data = np.mean(data[...,1:40], axis=-1)
 	
 	else:
