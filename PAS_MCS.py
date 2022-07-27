@@ -78,7 +78,7 @@ if HEAT_TRANSPORT:
 
 	BATHY = 'ES'
 	#path = '/data/oceans_output/shelf/michai/mitgcm/MCS_129/run/'
-	path = '/home/michael/Documents/data/MCS_141/run/'
+	path = '/home/michael/Documents/data/MCS_132/run/'
 	grid = Grid(path)
 
 	X = grid.XC[1,:] / 1000.
@@ -88,6 +88,8 @@ if HEAT_TRANSPORT:
 	# Subregions for heat transport.
 
 	lat = 95
+	print(Y[lat])
+	quit()
 
 	# troughW
 	lonsW = [100e3, 200e3]; depthW = [-10, -800]
@@ -111,7 +113,6 @@ if HEAT_TRANSPORT:
 	labelAll = 'All'
 	labelU = 'Uniform lons'
 
-	
 	vlines = [lonsW[0]/1.e3, lonsW[1]/1.e3, lonsE[0]/1.e3, lonsE[1]/1.e3, lonsES[1]/1.e3]
 	hlines = [Y[lat]]	
 	pt.plot1by1(grid.bathy, X=X, Y=Y, vmin=-1000, vmax=-300, mesh=True, hlines=hlines, vlines=vlines)
@@ -173,7 +174,7 @@ if HEAT_TRANSPORT:
 		areaUES = areaAll - areaES
 		TUES = TUES / areaUES
 		areaUWES = areaAll - areaES - areaW
-		TUWES = TUWES / areaUWE
+		TUWES = TUWES / areaUWES
 	else:
 		title = 'Meridional heat transport across shelf break (TW)'
 
@@ -1147,23 +1148,23 @@ if animateUVT:
 		ts = 0; te = -1
 
 		#path = '/data/oceans_output/shelf/michai/mitgcm/MCS_126/run/'
-		path = '/home/michael/Documents/data/MCS_132/run/'
+		path = '/home/michael/Documents/data/MCS_141/run/'
 		grid = Grid(path)
 		contour = grid.bathy
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
-
-		#pt.plotMbyN(grid.bathy, mesh=True); quit()
+		
+		plt.plot(contour[40, :]); plt.show()
+		pt.plotMbyN(grid.bathy, mesh=True); quit()
 
 		depth = -450; level = grid.getIndexFromDepth(depth)
 
-		vmin = -600; vmax = -500
+		vmin = -800; vmax = -500
 		X = grid.XC[1,:]/1000.
 		Y = grid.YC[:,1]/1000.
 		Z = grid.RC.squeeze()
 
 		# Load time-mean velocities
 		u = readVariable('UVEL', path, meta=False)[ts:, level]
-		print(u.shape)
 		v = readVariable('VVEL', path, meta=False)[ts:, level]
 		u = tools.interp(u, 'u'); v = tools.interp(v, 'v')
 

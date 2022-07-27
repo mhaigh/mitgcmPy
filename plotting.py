@@ -148,6 +148,35 @@ def plot1by1(data, X=None, Y=None, contour=None, contourlevels=None, figsize=(5,
 	
 #==
 
+def line1by3(data, labels, colours, xlims, ylims, titles, xlabels, ylabels, xticks, xticksvis, yticks, yticksvis, fontsize=14):
+
+	fig = plt.figure(figsize=(9,8))
+	
+	#fig.suptitle('Meridional heat transport across shelf break')
+	
+	for pi in range(3):
+		plt.subplot(3,1,pi+1)
+		
+		for i in range(len(data[pi])):
+			plt.plot(data[pi][i], label=labels[pi][i], color=colours[pi][i])
+			
+		plt.xlim(xlims)
+		plt.ylim(ylims)
+		doTicks(xticks[pi], xticksvis[pi], yticks[pi], yticksvis[pi])
+		
+		plt.title(titles[pi])
+		plt.xlabel(xlabels[pi], fontsize=fontsize)
+		plt.ylabel(ylabels[pi], fontsize=fontsize-2)
+		plt.grid()
+	
+	plt.legend(loc=2) 
+	
+	plt.tight_layout()
+		
+	plt.show(); 
+
+#==
+
 def quiver1by1(u, v, Xd, Yd, C=None, ccmap='bwr', contour=None, X=None, Y=None, contourf=True, figsize=(5,4), title='', fontsize=14, mesh=True, cmap='jet', vmin=None, vmax=None, xlabel='', ylabel='', save=False, outpath='', outname='quiver1by1.mp4', show=True, dpi=200, text_data=None):
 
 	fig, ax = plt.subplots(figsize=figsize, dpi=dpi)

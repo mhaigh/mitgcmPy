@@ -714,13 +714,13 @@ if FIGURE8:
 #==
 
 # A sequence of isotherm heights from different experiments.
-FIGURE9 = 1
+FIGURE9 = False
 if FIGURE9:
 
 	path = '/home/michael/Documents/data/'	
 	path_THERMZ = path + 'THERMZnpy/'
 	#runs = [['MCS_108', 'MCS_120', 'MCS_116'], ['MCS_117', 'MCS_118', 'MCS_114']]
-	runs =[['MCS_137', 'MCS_135', 'MCS_132'], ['MCS_133', 'MCS_136', 'MCS_137']]
+	runs =[['MCS_142', 'MCS_135', 'MCS_132'], ['MCS_133', 'MCS_136', 'MCS_137']]
 	titles = [['(a) Uniform shelf', '(b) W', '(c) E'], ['(d) S', '(e) E+S', '(f) W+C+E+S']]
 	#HCs = [[1.18, 1.37, 1.41], [2.05, 2.01, 2.23]]
 	HCs = [[0.728, 0.920, 0.961], [1.61, 1.56, 1.73]]
@@ -755,6 +755,7 @@ if FIGURE9:
 	
 			#ThermZ = np.load(path_THERMZ+'ThermZ_'+THERMt+'_'+run+'.npy')
 			ThermZ = np.load(path+run+'/run/ThermZ_'+THERMt+'_'+run+'.npy')
+			ThermZ = np.mean(ThermZ[-12:], axis=0)
 								
 			ThermZ = ptt.maskBathyXY(ThermZ, grid, 0, timeDep=False)
 			ThermZ = np.where(ThermZ<grid.bathy, np.nan, ThermZ)
@@ -786,7 +787,7 @@ if FIGURE9:
 	
 	cbdata = [[0.825, 0.15, 0.015, 0.7], '-0.5 deg. C isotherm depth (m)']
 	
-	vmin = -500; vmax=-300
+	vmin = -500; vmax=-200
 	#vmin = -450; vmax=-250
 	cmap = 'YlOrRd'#'jet'
 	
@@ -794,6 +795,189 @@ if FIGURE9:
 	
 	quit()
 	
+#==
+
+# Cross-shelf heat transport plots.
+FIGURE10 = True
+if FIGURE10:
+
+	Cp = 3974.0 # Units J / (kg C) = (kg m2 / s2) / (kg C) = m2 / (s2 C)
+	rho0 = 1030. # Units kg / m3
+	normval = 1.e12
+	
+	# First experiment defined here.
+	path_root = '/home/michael/Documents/data/'
+	path = path_root + 'MCS_132/run/'
+	grid = Grid(path)
+
+	# Subregions for heat transport.
+
+	lat = 95
+
+	# troughW
+	lonsW = [100e3, 200e3]; depthW = [-10, -800]
+	lonW = grid.getIndexFromLon(lonsW)
+	depthW = grid.getIndexFromDepth(depthW)
+	labelW = 'trough W'
+
+	# troughE
+	lonsE = [418e3, 520e3]; depthE = [-10, -800]
+	lonE = grid.getIndexFromLon(lonsE)
+	depthE = grid.getIndexFromDepth(depthE)
+	labelE = 'trough E'
+
+	# troughE AND sill
+	lonsES = [415e3, 585e3]; depthES = [-10, -800]
+	lonES = grid.getIndexFromLon(lonsES)
+	depthES = grid.getIndexFromDepth(depthES)
+	labelES = 'trough E + sill'
+
+	labelAll = 'All'
+	labelU = 'Uniform lons'
+
+	# Define colours for different lon ranges.
+	cAll = 'k'
+	cE = 'r'
+	cU = 'b'
+	cES = 'g'
+	cW = 'c' 
+
+	#==
+	
+	# 1. 
+	# Get heat transport for first (bathyE) experiment.
+
+	T = readVariable('THETA', path, meta=False)[...,lat,:]
+	Tf = -2. * np.ones(T.shape)
+	v = tools.interp(readVariable('VVEL', path, meta=False)[...,lat,:], 'v')
+
+	area = grid.DXG[lat] * grid.hFacS[:,lat] * grid.DRF[:,0]
+	area = ptt.maskBathyXZ(area, grid, yi=lat, timeDep=False)
+
+	T = rho0 * Cp * v * (T - Tf)
+	T = ptt.maskBathyXZ(T, grid, yi=lat, timeDep=True)
+	T *= area / normval
+	
+	# Heat transport for troughE, uniform lons and all lons.
+	TE = np.ma.sum(T[:, depthE[0]:depthE[1], lonE[0]:lonE[1]], axis=(1,2))
+	TAll = np.ma.sum(T, axis=(1,2))
+	TU = TAll - TE
+	
+	TE = tools.smooth3(TE)
+	TAll = tools.smooth3(TAll)
+	TU = tools.smooth3(TU)
+	
+	Ts1 = [TE, TU, TAll]
+	labels1 = [labelE, labelU, labelAll]
+	colours1 = [cE, cU, cAll]
+	title1 = '(a) E'
+
+	#==
+
+	# 2. 
+	# Repeat for bathyES experiment.
+	exp = 'MCS_141'#'MCS_136'
+	path = path_root + exp + '/run/'
+	grid = Grid(path)
+	
+	T = readVariable('THETA', path, meta=False)[...,lat,:]
+	v = tools.interp(readVariable('VVEL', path, meta=False)[...,lat,:], 'v')
+
+	area = grid.DXG[lat] * grid.hFacS[:,lat] * grid.DRF[:,0]
+	area = ptt.maskBathyXZ(area, grid, yi=lat, timeDep=False)
+
+	T = rho0 * Cp * v * (T - Tf)
+	T = ptt.maskBathyXZ(T, grid, yi=lat, timeDep=True)
+	T *= area / normval
+	
+	# Heat transport for troughE, uniform lons and all lons.
+	TE = np.ma.sum(T[:, depthE[0]:depthE[1], lonE[0]:lonE[1]], axis=(1,2))
+	TES = np.ma.sum(T[:, depthES[0]:depthES[1], lonES[0]:lonES[1]], axis=(1,2))
+	TAll = np.ma.sum(T, axis=(1,2))
+	TU = TAll - TES
+	
+	TE = tools.smooth3(TE)
+	TES = tools.smooth3(TES)
+	TAll = tools.smooth3(TAll)
+	TU = tools.smooth3(TU)
+	
+	Ts2 = [TE, TES, TU, TAll]
+	labels2 = [labelE, labelES, labelU, labelAll]
+	colours2 = [cE, cES, cU, cAll]
+	title2 = '(b) E+S'
+	
+	#==
+	
+	# 3. 
+	# Repeat for bathyES experiment.
+	exp = 'MCS_141'
+	path = path_root + exp + '/run/'
+	grid = Grid(path)
+	
+	T = readVariable('THETA', path, meta=False)[...,lat,:]
+	v = tools.interp(readVariable('VVEL', path, meta=False)[...,lat,:], 'v')
+
+	area = grid.DXG[lat] * grid.hFacS[:,lat] * grid.DRF[:,0]
+	area = ptt.maskBathyXZ(area, grid, yi=lat, timeDep=False)
+
+	T = rho0 * Cp * v * (T - Tf)
+	T = ptt.maskBathyXZ(T, grid, yi=lat, timeDep=True)
+	T *= area / normval
+	
+	# Heat transport for troughE, uniform lons and all lons.
+	TW = np.ma.sum(T[:, depthW[0]:depthW[1], lonW[0]:lonW[1]], axis=(1,2))
+	TE = np.ma.sum(T[:, depthE[0]:depthE[1], lonE[0]:lonE[1]], axis=(1,2))
+	TES = np.ma.sum(T[:, depthES[0]:depthES[1], lonES[0]:lonES[1]], axis=(1,2))
+	TAll = np.ma.sum(T, axis=(1,2))
+	TU = TAll - TES - TW
+	
+	TE = tools.smooth3(TE)
+	TW = tools.smooth3(TW)
+	TES = tools.smooth3(TES)
+	TAll = tools.smooth3(TAll)
+	TU = tools.smooth3(TU)
+	
+	Ts3 = [TW, TE, TES, TU, TAll]
+	labels3 = [labelW, labelE, labelES, labelU, labelAll]
+	colours3 = [cW, cE, cES, cU, cAll]
+	title3 = '(c) W+C+E+S'
+	
+	#==
+	
+	# Prepare plotting data.
+	
+	Ts = [Ts1, Ts2, Ts3]
+	labels = [labels1, labels2, labels3]
+	colours = [colours1, colours2, colours3]
+	titles = [title1, title2, title3]
+	
+	ylabel = 'Heat transport (TW)'
+	ylabels = [ylabel, ylabel, ylabel]
+	
+	xlabel = 'Time (months)'
+	xlabels = [None, None, xlabel]
+	
+	xlims = [0, 240]
+	ylims = [-3, 3]
+		
+	xticks = np.linspace(0, 240, 7)
+	xticks = [xticks]*3
+	xticksvis = [False, False, True]
+	
+	yticks = [-3, -2, -1, 0, 1, 2, 3]
+	yticks = [yticks]*3
+	yticksvis = [True, True, True]
+	
+	#==
+
+    # NOW PLOT
+	pt.line1by3(Ts, labels, colours, xlims, ylims, titles, xlabels, ylabels, xticks, xticksvis, yticks, yticksvis)
+
+	quit()	
+
+
+
+
 	
 
 

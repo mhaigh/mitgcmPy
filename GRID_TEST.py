@@ -40,6 +40,24 @@ import time
 #fname = 'stateUvel.nc'; var = 'UVEL'; cmap = 'coolwarm'; vmax = 0.1; vmin = -vmax
 #fname = 'stateVvel.nc'; var = 'VVEL'; vmin = -0.2; vmax = 0.2
 
+volTest = True
+if volTest:
+
+	path = '/home/michael/Documents/data/MCS_141/run/'
+	grid = Grid(path)
+	 
+	xlims = None#[98750,198750]
+	ylims = [0, 238750]
+	zlims = [0, -500]
+	
+	vol = grid.volume(xlims=xlims, ylims=ylims, zlims=zlims)
+		
+	print(vol)
+	
+	quit()
+		
+		
+#==
 
 fbeta = False
 if fbeta:
@@ -368,7 +386,7 @@ if TEST_depthAverage:
 
 #==
 
-TEST_animate = True
+TEST_animate = False
 if TEST_animate:
 
 	#path = '/home/michael/Documents/data/MCS_002/run/'

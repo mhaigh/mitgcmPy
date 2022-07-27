@@ -101,8 +101,8 @@ def heatContentShelf(theta, grid, shelf=500, rho=1030, Cp=3974.0, T0=-2, y0=96, 
 		
 	# Add in heat content in central trough.
 	if troughC:
-		xw = 84; xe = 155
-		ys = 1; yn = 85
+		xw = 82; xe = 156
+		ys = 1; yn = 87		
 		HCtmp = HC[z0:, ys:yn, xw:xe]
 		HCtmp0 = HC0[z0:, ys:yn, xw:xe]
 		TCH += np.sum(HCtmp)
