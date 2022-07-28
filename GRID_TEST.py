@@ -40,7 +40,7 @@ import time
 #fname = 'stateUvel.nc'; var = 'UVEL'; cmap = 'coolwarm'; vmax = 0.1; vmin = -vmax
 #fname = 'stateVvel.nc'; var = 'VVEL'; vmin = -0.2; vmax = 0.2
 
-volTest = True
+volTest = False
 if volTest:
 
 	path = '/home/michael/Documents/data/MCS_141/run/'
@@ -386,7 +386,7 @@ if TEST_depthAverage:
 
 #==
 
-TEST_animate = False
+TEST_animate = True
 if TEST_animate:
 
 	#path = '/home/michael/Documents/data/MCS_002/run/'
@@ -427,7 +427,7 @@ if TEST_animate:
 		for ti in range(data.shape[0]):
 			data[ti,] = ptt.maskBathyAll(data[ti,], grid)
 		#data = np.ma.mean(data, axis=3)
-		data = data[...,0]
+		data = data[...,120]
 		#data = np.mean(data[...,1:40], axis=-1)
 	
 	else:

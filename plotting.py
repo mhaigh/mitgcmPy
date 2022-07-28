@@ -177,7 +177,7 @@ def line1by3(data, labels, colours, xlims, ylims, titles, xlabels, ylabels, xtic
 
 #==
 
-def quiver1by1(u, v, Xd, Yd, C=None, ccmap='bwr', contour=None, X=None, Y=None, contourf=True, figsize=(5,4), title='', fontsize=14, mesh=True, cmap='jet', vmin=None, vmax=None, xlabel='', ylabel='', save=False, outpath='', outname='quiver1by1.mp4', show=True, dpi=200, text_data=None):
+def quiver1by1(u, v, Xd, Yd, scale=1, C=None, ccmap='bwr', contour=None, X=None, Y=None, contourf=True, figsize=(5,4), title='', fontsize=14, mesh=True, cmap='jet', vmin=None, vmax=None, xlabel='', ylabel='', save=False, outpath='', outname='quiver1by1.mp4', show=True, dpi=200, text_data=None):
 
 	fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
 
@@ -192,10 +192,10 @@ def quiver1by1(u, v, Xd, Yd, C=None, ccmap='bwr', contour=None, X=None, Y=None, 
 		plt.colorbar()
 
 	if C is not None:
-		cax = ax.quiver(Xd, Yd, u, v, C, cmap=ccmap)
+		cax = ax.quiver(Xd, Yd, u, v, C, cmap=ccmap, scale=scale)
 		plt.colorbar(cax, ax=ax)
 	else:
-		cax = ax.quiver(Xd, Yd, u, v)
+		cax = ax.quiver(Xd, Yd, u, v, scale=scale)
 
 	ax.quiverkey(cax, 0.1, 0.1, .2, '0.2 m/s', labelpos='E', coordinates='axes')
 			
@@ -912,9 +912,9 @@ def plot1by3(data, X=[None]*3, Y=[None]*3, contour=[None]*3, contourlevels=[None
 
 
 		
-	#box = ax1.get_position()
-	#box.x0 = box.x0 + 0.05
-	#ax1.set_position(box)
+	box = ax1.get_position()
+	box.x0 = box.x0 + 0.05
+	ax1.set_position(box)
 
 
 	#==

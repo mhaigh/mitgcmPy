@@ -65,7 +65,7 @@ if HEAT_CONTENT:
 	
 	quit()
 			
-HEAT_TRANSPORT = True
+HEAT_TRANSPORT = False
 if HEAT_TRANSPORT:
 	
 	ts = 0	
@@ -78,8 +78,10 @@ if HEAT_TRANSPORT:
 
 	BATHY = 'ES'
 	#path = '/data/oceans_output/shelf/michai/mitgcm/MCS_129/run/'
-	path = '/home/michael/Documents/data/MCS_132/run/'
+	path = '/home/michael/Documents/data/PISOMIP_002/run/'
 	grid = Grid(path)
+	
+	pt.plot1by1(grid.bathy)
 
 	X = grid.XC[1,:] / 1000.
 	Y = grid.YC[:,1] / 1000.
@@ -225,6 +227,69 @@ if HEAT_TRANSPORT:
 
 	quit()	
 
+#==
+
+baroHeatTransport = True
+if baroHeatTransport:
+
+	#path = '/data/oceans_output/shelf/michai/mitgcm/MCS_129/run/'
+	path = '/home/michael/Documents/data/MCS_141/run/'
+	grid = Grid(path)
+	bathy = grid.bathy#
+	bathy = ptt.maskBathyXY(bathy, grid, zi=0, timeDep=False)
+				
+	X = grid.XC[1,:]/1000.
+	Y = grid.YC[:,1]/1000.
+	
+	ts = 160
+	Tf = -2
+	d = 4
+		
+	Cp = 3974.0 # Units J / (kg C) = (kg m2 / s2) / (kg C) = m2 / (s2 C)
+	rho0 = 1030. # Units kg / m3
+
+	#==
+
+	T = readVariable('THETA', path, meta=False)[ts:] - Tf
+	u = tools.interp(readVariable('UVEL', path, meta=False)[ts:], 'u')
+	v = tools.interp(readVariable('VVEL', path, meta=False)[ts:], 'v')
+	
+	print(u.shape)
+	u = np.sum(rho0 * Cp * u * T, axis=0)
+	v = np.sum(rho0 * Cp * v * T, axis=0)
+	print(u.shape)
+	
+	u = np.mean(u, axis=0)
+	v = np.mean(v, axis=0)
+	
+	C = (u**2 + v**2)**0.5
+	u /= C
+	v /= C
+	
+	#==
+	
+	yn = 110
+	u = u[:yn]
+	v = v[:yn]
+	#X = X[:yn]
+	Y = Y[:yn]
+	C = C[:yn]
+	bathy = bathy[:yn]
+	
+	
+	u = u[::d, ::d]
+	v = v[::d, ::d]
+	C = C[::d, ::d]
+	Xd = X[::d]
+	Yd = Y[::d]
+	
+	cvmin = 0.2e7; cvmax = 1.e7
+	C = tools.boundData(C, cvmin, cvmax)
+	scale=30
+	
+	pt.quiver1by1(u, v, Xd, Yd, scale=scale, C=C, ccmap='jet', contour=bathy, X=X, Y=Y, cmap='YlGn', contourf=False, vmin=-800, vmax=-300, figsize=(8,5))
+	quit()
+	
 #==
 
 HEAT_TRANSPORT_PAS = False
@@ -1083,7 +1148,7 @@ if animateUVTdepth:
 #==
 
 # Animate velocity vectors and temperature at fixed level.
-animateUVT = True
+animateUVT = False
 if animateUVT:
 
 	PAS = False
@@ -1095,7 +1160,6 @@ if animateUVT:
 		contour = grid.bathy; vmin = -800; vmax = -100; ctitle = 'bathy'
 		#contour = grid.draft; vmin = -600; vmax = -0; ctitle = 'Ice shelf draft'
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
-
 
 		vmin = -800; vmax = -100
 
@@ -1148,14 +1212,13 @@ if animateUVT:
 		ts = 0; te = -1
 
 		#path = '/data/oceans_output/shelf/michai/mitgcm/MCS_126/run/'
-		path = '/home/michael/Documents/data/MCS_141/run/'
+		path = '/home/michael/Documents/data/PISOMIP_001/run/'
 		grid = Grid(path)
 		contour = grid.bathy
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
 		
-		plt.plot(contour[40, :]); plt.show()
-		pt.plotMbyN(grid.bathy, mesh=True); quit()
-
+		plt.plot(contour[:,0]); plt.show(); quit()
+		
 		depth = -450; level = grid.getIndexFromDepth(depth)
 
 		vmin = -800; vmax = -500
@@ -1183,6 +1246,8 @@ if animateUVT:
 			u[ti] = ptt.maskBathyXY(u[ti], grid, level, timeDep=False)
 			v[ti] = ptt.maskBathyXY(v[ti], grid, level, timeDep=False)
 			T[ti] = ptt.maskBathyXY(T[ti], grid, level, timeDep=False)
+			
+		pt.plot1by1(np.mean(u[-24:],axis=0)); quit()
 			
 	#==
 

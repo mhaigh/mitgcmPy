@@ -307,7 +307,8 @@ if FIGURE3:
 FIGURE4 = 0
 if FIGURE4:
 
-	path = '/home/michael/Documents/data/MCS_104/run/'
+	# MCS_104 for run with no rel. in south.
+	path = '/home/michael/Documents/data/MCS_142/run/'
 	grid = Grid(path)
 	bathy = grid.bathy
 
@@ -395,7 +396,8 @@ if FIGURE4:
 FIGURE5 = 0
 if FIGURE5:
 
-	path = '/home/michael/Documents/data/MCS_104/run/'
+	# MCS_104 for run with no rel. in south.
+	path = '/home/michael/Documents/data/MCS_142/run/'
 	grid = Grid(path)
 
 	X = grid.XC[1,:]/1000.
@@ -469,7 +471,7 @@ if FIGURE5:
 FIGURE6 = 0
 if FIGURE6:
 
-	path = '/home/michael/Documents/data/MCS_108/run/'
+	path = '/home/michael/Documents/data/MCS_144/run/'
 	grid = Grid(path)
 
 	X = grid.XC[1,:]/1000.
@@ -479,10 +481,10 @@ if FIGURE6:
 	xis = [0, 120]
 
 	# These for snapshot at end of simulation
-	ts = -1#116
-	u = readVariable('UVEL', path, meta=False)[ts][...,xis]
-	T = readVariable('THETA', path, meta=False)[ts][...,xis]
-	h = readVariable('ETAN', path, meta=False)[ts]
+	ts = -12;#116
+	h = readVariable('ETAN', path, meta=False)[ts:]
+	u = readVariable('UVEL', path, meta=False)[ts:][...,xis]
+	T = readVariable('THETA', path, meta=False)[ts:][...,xis]
 
 	# These for mean over last ts months
 	#ts = -12
@@ -512,7 +514,7 @@ if FIGURE6:
 	width_ratios = [1,1.02,1]	
 	
 	data = [h, u0, u1]	
-	cmaps = ['jet', 'coolwarm', 'coolwarm']
+	cmaps = ['viridis', 'coolwarm', 'coolwarm']
 	contour = [grid.bathy, T0, T1]
 	contourlevels = [[-950, -750, -550], [-0.5, 0., 0.5], [-0.5, 0., 0.5]]
 	vmin = [vminh, vmin, vmin]; vmax = [vmaxh, vmax, vmax]
@@ -542,7 +544,8 @@ FIGURE7 = 0
 if FIGURE7:
 
 	root_ = '/home/michael/Documents/data/'
-	runs = [['MCS_108', 'MCS_116'], ['MCS_117', 'MCS_118']]
+	#runs = [['MCS_108', 'MCS_116'], ['MCS_117', 'MCS_118']]
+	runs = [['MCS_144', 'MCS_132'], ['MCS_133', 'MCS_136']]
 	#runs = [runs[0]]
 
 	bathy = [[],[]]	
@@ -560,9 +563,9 @@ if FIGURE7:
 			path = root_ + run + '/run/'
 			grid = Grid(path)
 
-			ts = 108; te = 120
-			u = np.mean(readVariable('UVEL', path, meta=False)[ts:te, level], axis=0)
-			v = np.mean(readVariable('VVEL', path, meta=False)[ts:te, level], axis=0)
+			ts = 228
+			u = np.mean(readVariable('UVEL', path, meta=False)[ts:, level], axis=0)
+			v = np.mean(readVariable('VVEL', path, meta=False)[ts:, level], axis=0)
 			
 			u = ptt.maskBathyXY(u, grid, zi=level, timeDep=False)
 			v = ptt.maskBathyXY(v, grid, zi=level, timeDep=False)
@@ -620,13 +623,13 @@ if FIGURE7:
 
 #==
 
-FIGURE8 = 0
+FIGURE8 = 1
 if FIGURE8:
 
 	levels = [0,22]	
-	ts = 108
+	ts = -24; te = -12
 	
-	path = '/home/michael/Documents/data/MCS_114/run/'
+	path = '/home/michael/Documents/data/MCS_141/run/'
 	grid = Grid_PAS(path)
 	bathy = grid.bathy
 	vmin = -1000; vmax = -300
@@ -637,9 +640,9 @@ if FIGURE8:
 	Z = grid.RC.squeeze()
 	
 	# Load data
-	u = np.mean(readVariable('UVEL', path, meta=False)[ts:,], axis=0)
-	v = np.mean(readVariable('VVEL', path, meta=False)[ts:,], axis=0)
-	T = np.mean(readVariable('THETA', path, meta=False)[ts:,], axis=0)
+	u = np.mean(readVariable('UVEL', path, meta=False)[ts:te,], axis=0)
+	v = np.mean(readVariable('VVEL', path, meta=False)[ts:te,], axis=0)
+	T = np.mean(readVariable('THETA', path, meta=False)[ts:te,], axis=0)
 	
 	# Get two levels
 	u = u[levels]
@@ -651,7 +654,6 @@ if FIGURE8:
 
 	u = tools.interp(u, 'u'); v = tools.interp(v, 'v')
 	u = tools.boundData(u, -0.4, 0.4, 0.9999); v = tools.boundData(v, -0.4, 0.4, 0.9999)
-
 
 	# Mask data
 	for li in range(len(levels)):
