@@ -308,7 +308,7 @@ FIGURE4 = 0
 if FIGURE4:
 
 	# MCS_104 for run with no rel. in south.
-	path = '/home/michael/Documents/data/MCS_142/run/'
+	path = '/home/michael/Documents/data/MCS_145/run/'
 	grid = Grid(path)
 	bathy = grid.bathy
 
@@ -397,7 +397,7 @@ FIGURE5 = 0
 if FIGURE5:
 
 	# MCS_104 for run with no rel. in south.
-	path = '/home/michael/Documents/data/MCS_142/run/'
+	path = '/home/michael/Documents/data/MCS_145/run/'
 	grid = Grid(path)
 
 	X = grid.XC[1,:]/1000.
@@ -623,7 +623,7 @@ if FIGURE7:
 
 #==
 
-FIGURE8 = 1
+FIGURE8 = 0
 if FIGURE8:
 
 	levels = [0,22]	
@@ -716,16 +716,20 @@ if FIGURE8:
 #==
 
 # A sequence of isotherm heights from different experiments.
-FIGURE9 = False
+FIGURE9 = 1 
 if FIGURE9:
 
 	path = '/home/michael/Documents/data/'	
 	path_THERMZ = path + 'THERMZnpy/'
 	#runs = [['MCS_108', 'MCS_120', 'MCS_116'], ['MCS_117', 'MCS_118', 'MCS_114']]
-	runs =[['MCS_142', 'MCS_135', 'MCS_132'], ['MCS_133', 'MCS_136', 'MCS_137']]
-	titles = [['(a) Uniform shelf', '(b) W', '(c) E'], ['(d) S', '(e) E+S', '(f) W+C+E+S']]
 	#HCs = [[1.18, 1.37, 1.41], [2.05, 2.01, 2.23]]
-	HCs = [[0.728, 0.920, 0.961], [1.61, 1.56, 1.73]]
+		
+	runs =[['MCS_144', 'MCS_135', 'MCS_132'], ['MCS_133', 'MCS_136', 'MCS_137']]
+	HCs = [[0.926, 0.916, 0.823], [0.988, 0.948, 1.65]]
+	
+	titles = [['(a) Uniform shelf', '(b) W', '(c) E'], ['(d) S', '(e) E+S', '(f) W+C+E+S']]
+
+
 
 	# Heat contents
 	# Experiment -- Total heat content -- HC minus initial condition.
