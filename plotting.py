@@ -148,14 +148,20 @@ def plot1by1(data, X=None, Y=None, contour=None, contourlevels=None, figsize=(5,
 	
 #==
 
-def line1by3(data, labels, colours, xlims, ylims, titles, xlabels, ylabels, xticks, xticksvis, yticks, yticksvis, fontsize=14):
+def line1byN(data, labels, colours, xlims, ylims, titles, xlabels, ylabels, xticks, xticksvis, yticks, yticksvis, fontsize=14, figsize=(9,3)):
 
-	fig = plt.figure(figsize=(9,8))
+	N = len(data)
+	if N == 3:
+		figsize = (9,8)
+	elif N == 4:
+		figsize = (9,10.5)
+		
+	fig = plt.figure(figsize=figsize)
 	
 	#fig.suptitle('Meridional heat transport across shelf break')
 	
-	for pi in range(3):
-		plt.subplot(3,1,pi+1)
+	for pi in range(N):
+		plt.subplot(N,1,pi+1)
 		
 		for i in range(len(data[pi])):
 			plt.plot(data[pi][i], label=labels[pi][i], color=colours[pi][i])
