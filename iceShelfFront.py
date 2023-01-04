@@ -70,7 +70,7 @@ def neighbours (data, missing_val=-9999, use_1d=False):
 
 # Find all ice shelf front points and return them as a list.
 # For a specific ice shelf, pass a special ice_mask 
-def get_ice_shelf_front (grid, ice_mask, open_ocean, gtype='h', xmin=None, xmax=None, ymin=None, ymax=None):
+def get_ice_shelf_front (grid, ice_mask, open_ocean, gtype='h', xmin=None, xmax=None, ymin=None, ymax=None, neighbourPts=1):
 
 	iceMask = grid.iceC
 	oce = get_open_ocean_mask(grid)
@@ -87,10 +87,6 @@ def get_ice_shelf_front (grid, ice_mask, open_ocean, gtype='h', xmin=None, xmax=
 	if ymax is None:
 		ymax = np.amax(lat)
 
-	# Find number of open-ocean neighbours for each point
-	num_open_ocean_neighbours = neighbours(open_ocean, missing_val=0)[-1]
-	# Find all ice shelf points within bounds that have at least 1 open-ocean neighbour
-
 	fronta = np.nan * np.zeros((grid.Ny, grid.Nx))
 	frontl = []
 	for j in range(grid.Ny):
@@ -100,10 +96,14 @@ def get_ice_shelf_front (grid, ice_mask, open_ocean, gtype='h', xmin=None, xmax=
 				if T > 0:
 					frontl.append([lon[j,i],lat[j,i]])					
 					fronta[j,i] = 1
-					fronta[j,i+1] = 1; fronta[j,i-1] = 1
-					fronta[j+1,i] = 1; fronta[j-1,i] = 1
-					fronta[j-1,i+1] = 1; fronta[j-1,i-1] = 1
-					fronta[j+1,i+1] = 1; fronta[j+1,i-1] = 1
+					if neighbourPts == 1:
+						fronta[j,i+1] = 1; fronta[j,i-1] = 1
+						fronta[j+1,i] = 1; fronta[j-1,i] = 1
+						fronta[j-1,i+1] = 1; fronta[j-1,i-1] = 1
+						fronta[j+1,i+1] = 1; fronta[j+1,i-1] = 1
+					elif neighbourPts == 2:
+						fronta[j,i+1] = 1; fronta[j,i-1] = 1
+						fronta[j+1,i] = 1; fronta[j-1,i] = 1
 
 	# Prepare frontl so can it can be plotted using scatter.
 	x, y = zip(*frontl)
@@ -111,7 +111,46 @@ def get_ice_shelf_front (grid, ice_mask, open_ocean, gtype='h', xmin=None, xmax=
 
 	return frontl, fronta
 
-#	return ice_mask*(lon >= xmin)*(lon <= xmax)*(lat >= ymin)*(lat <= ymax)*(num_open_ocean_neighbours > 0)
+# Find all ice shelf front points and return them as a list.
+# For a specific ice shelf, pass a special ice_mask 
+def get_grounding_line(grid, ice_mask, open_ocean, gtype='h', xmin=None, xmax=None, ymin=None, ymax=None, neighbourPts=False):
+
+	iceMask = grid.iceC
+	draft = grid.draft
+	hFac = grid.hFacC
+
+	# Set any remaining bounds
+	lon = grid.XC
+	lat = grid.YC
+	if xmin is None:
+		xmin = np.amin(lon)
+	if xmax is None:
+		xmax = np.amax(lon)
+	if ymin is None:
+		ymin = np.amin(lat)
+	if ymax is None:
+		ymax = np.amax(lat)
+
+	gla = np.nan * np.zeros((grid.Ny, grid.Nx))
+	gll = []
+	for j in range(grid.Ny):
+		for i in range(grid.Nx):
+			if draft[j,i] < 0:
+				k = grid.getIndexFromDepth(draft[j,i])
+				if hFac[k+2,j,i] <= 0.1:
+					gll.append([lon[j,i],lat[j,i]])					
+					gla[j,i] = 1
+					if neighbourPts:
+						gla[j,i+1] = 1; gla[j,i-1] = 1
+						gla[j+1,i] = 1; gla[j-1,i] = 1
+						gla[j-1,i+1] = 1; gla[j-1,i-1] = 1
+						gla[j+1,i+1] = 1; gla[j+1,i-1] = 1
+
+	# Prepare frontl so can it can be plotted using scatter.
+	x, y = zip(*gll)
+	gll = [x,y]
+
+	return gll, gla
 
 
 #==

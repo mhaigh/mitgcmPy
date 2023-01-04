@@ -20,6 +20,7 @@ Uvel = {'fname':'stateUvel', 'VAR':'UVEL', 'vmin':-0.2, 'vmax':0.2, 'cmap':'cool
 Vvel = {'fname':'stateVvel', 'VAR':'VVEL', 'vmin':-0.01, 'vmax':0.01, 'cmap':'coolwarm', 'title':'V (m/s)'}
 Wvel = {'fname':'stateWvel', 'VAR':'WVEL', 'vmin':-1.e-5, 'vmax':1.e-5, 'cmap':'coolwarm', 'title':'W (m/s)'}
 
+
 varDict={'ETAN':Eta, 'RHOAnoma':Rho, 'THETA':Theta, 'SALT':Salt, 'UVEL':Uvel, 'VVEL':Vvel, 'WVEL':Wvel}
 
 varDict['DFrE_TH'] = {'fname':'stateTheta', 'vmin':-0.12, 'vmax':0.12, 'cmap':'coolwarm', 'title':'Pot. Temp. vertical flux'}
@@ -35,6 +36,7 @@ varDict['oceTAUX'] = {'fname':'state2D', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwa
 varDict['oceTAUY'] = {'fname':'state2D', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Merid. surface stress'}
 varDict['Um_dPhiX'] = {'fname':'stateUdpdx', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Zonal PGF'}
 varDict['Vm_dPhiX'] = {'fname':'stateVdpdx', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Merid. PGF'}
+varDict['ADTAUU'] = {'fname':'adxx_tauu', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Merid. PGF'}
 
 #==
 

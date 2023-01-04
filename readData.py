@@ -14,7 +14,51 @@ import sys
 # open_mdsdataset gets all variables in dir -- not sure if there's a way to specify one variable.
 # In PISOMIP_001/run on Archer2 I had to hard copy mit2nc before I could execute it.
 
+def readnp(inputfilename, dims, dtype='>f', rec=-1):
+	''''''
+	
+	if len(dims) == 2:
+		nx, ny = dims
+	elif len(dims) == 3:
+		nx, ny, nz = dims
+	else: 
+		print('Try again: dims should be length 2 or 3')
+		quit() 
+		
+	size = np.dtype(dtype).itemsize
+	f = open(inputfilename, 'rb')
+				
+	# Read all records
+	if rec == -1:
+		data = np.fromfile(f, dtype=dtype, count=-1)
+		data = data.reshape((int(data.size/(ny*nx)),ny,nx))
+		
+	# Read specific record
+	else:
+		count = nx*ny
+		f.seek(rec*size*count)
+		data = np.fromfile(f, dtype=dtype, count=count)
+		data = data.reshape((ny,nx))	
+	
+	return data
+	
+#==
 
+def readAllnp(fileHandle, path, dims, dtype='>f', reverse=False):
+	''''''
+
+	import os
+	fnames = [filename for filename in os.listdir(path) if filename.startswith(fileHandle) and filename.endswith('.data')]
+	fnames.sort(reverse=reverse)
+
+	data = np.zeros((len(fnames), dims[1], dims[0]))
+	for fi, fname in enumerate(fnames):
+		data[fi] = readnp(path+fname, dims, rec=0)
+	
+	return data
+	
+#==
+	
 def readVariable(VAR, path, file_format='nc', time_step=1, meta=False, interval=None):
 	'''Read mitgcm output for variable in given file format.
 	Options are rdmds or nc, with netCDF default.

@@ -9,6 +9,7 @@ import numpy as np
 
 #==========================================================
 
+
 def maskEdges(data, size, dims=None):
 	'''Given data mask its edges.
 	Size of mask in each dimension determined by size and dims.'''

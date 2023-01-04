@@ -40,6 +40,249 @@ import time
 #fname = 'stateUvel.nc'; var = 'UVEL'; cmap = 'coolwarm'; vmax = 0.1; vmin = -vmax
 #fname = 'stateVvel.nc'; var = 'VVEL'; vmin = -0.2; vmax = 0.2
 
+#==
+
+# SIZE 12x10 tiled grid 480318175/
+# SIZE 24x10 tiled grid 490234079
+
+
+		
+#==
+		
+animBin = 0
+if animBin:
+	
+	#==
+	
+	path = '/home/michael/Documents/data/MCS_161/run/'
+	
+	#VAR = 'ADJtaux'; mult_gencost = 1.e9; reverse = True; vmax = 1.e-3; vmin = -vmax
+	#title=VAR + ' (deg. C/(N m$^{-2}$)), OBJ=on-shelf heat, days 90-120'
+		
+	VAR = 'stateTheta'; mult_gencost = 1.; reverse = False; vmax = 2; vmin = -vmax
+	title = VAR
+	
+	#VAR = 'm_boxmean_theta.0000000000.data'; mult_gencost = 1; reverse=False
+	#vmax = 0; vmin = -1.e-4; title = VAR
+		
+	nx = 240; ny = 200
+	dims = (nx, ny)
+	
+	#data = readAllnp(VAR, path, dims, reverse=reverse) / mult_gencost
+	data = readnp(path+VAR, dims, rec=-1)
+	print(data.shape)
+	nt = data.shape[0]
+	#pt.plot1by1(data[0]); quit()
+	#plt.plot(np.mean(np.abs(data),axis=(1,2))); plt.show(); quit()
+
+	#==
+	
+	grid = Grid(path)
+	X = grid.XC / 1000.
+	Y = grid.YC / 1000.
+	data = ptt.maskBathyXY(data, grid, 0, timeDep=True)
+			
+	#pt.plot1by1(data[0], X=X, Y=Y)
+	if reverse:
+		time = 2*86400*np.linspace(nt,1,nt)
+	else:
+		time = 2*86400*np.linspace(0,nt,nt+1)
+	text_data = ptt.getTextData(time, 'day', X[1,1], Y[1,1], color='k')
+		
+	contour = grid.bathy
+	levels = [-600, -501, -401]
+	
+	#for i in range(data.shape[0]):
+	#	pt.plot1by1(data[i])
+			
+	plt.plot(np.sum(data, axis=(1,2))); plt.show(); quit()	
+	
+	pt.animate1by1(data, X, Y, vmin=vmin, vmax=vmax, cmap='bwr', title=title, text_data=text_data, fontsize=9, contour=contour, contourLevels=levels)
+	
+	quit()
+
+#==
+
+binReadTest = 0
+if binReadTest:
+
+	path = '/home/michael/Documents/data/MCS/run/'
+
+	# = 'adxx_bottomdrag.0000000000.data'
+	VAR = 'stateTheta.0000000001.data'
+	#VAR = 'm_boxmean_theta.0000000000.data'
+	#VAR = 'adxx_theta.0000000000.data'
+	#VAR = 'ADJtaux.0000002304.data'
+	#VAR = 'state2D.0000008640.data'
+
+	nx = 240; ny = 200
+	dims = (nx, ny)
+	
+	grid = Grid(path)
+	X = grid.XC / 1000.
+	Y = grid.YC / 1000.
+
+	#plt.plot(Y[:,100], grid.bathy[:,100]); plt.grid(); plt.show(); quit()
+	#pt.plot1by1(grid.bathy, mesh=True); quit()
+	
+	#nx = 600; ny = 384
+	data = readnp(path+VAR, dims, rec=-1)# / 1.e9
+	print(data.shape)
+
+	#data = data[0]
+	#data = np.mean(data, axis=0)
+	
+	#vmax = 1.e6; vmin = -vmax
+	#vmax = 1; vmin = -vmax
+	vmax = None; vmin = None
+	 		
+	#data[:, 1:][:, ::2] = data[:,::2]
+	
+	#data = np.mean(data,axis=0); data = np.where(data<0, data, 0)
+	#pt.plot1by1(data[24], mesh=True)#, vmax=1, vmin=-1)
+	#plt.plot(data[-1, :]); plt.show(); plt.title(VAR)
+ 	
+	#for i in range(data.shape[0]):
+	#	pt.plot1by1(data[i])#, X=X, Y=Y, vmin=vmin, vmax=vmax, mesh=True, title=VAR)
+
+	quit()
+	
+#==
+	
+objTest = 0
+if objTest:
+
+	path = '/home/michael/Documents/data/MCS/run/'
+
+	VAR1 = 'stateTheta.0000000000.data'; norm1 = 1.e9
+	VAR2 = 'm_boxmean_theta.0000000000.data'; norm2 = 1.e0
+
+	nx = 240; ny = 200
+	dims = (nx, ny)
+	
+	grid = Grid(path)
+	X = grid.XC / 1000.
+	Y = grid.YC / 1000.
+	
+	vol = grid.hFacC * grid.DRF * grid.RAC
+	
+	data1 = readnp(path+VAR1, dims, rec=-1)# / norm1
+	
+	# Integrate over volume and normalise.
+	data1 = np.sum(vol * data1, axis=0)	
+	totvol = np.sum(vol)
+	data1 = data1 / totvol	
+	
+	sum1 = np.sum(data1)#*norm1
+
+	data2 = readnp(path+VAR2, dims, rec=0)# / norm2
+	sum2 = np.sum(data2)#*norm2
+	
+	print(sum1)
+	print(sum2)
+	print(sum1/sum2)
+
+	pt.plot1by2([data1, data2-data1])
+	
+	quit()
+
+#==
+	
+# Read MITgcm binary output using rdmds.
+mitgcmutilsTest = 0
+if mitgcmutilsTest:
+
+	from MITgcmutils import rdmds
+	from MITgcmutils.mds import readmeta
+	
+	path = '/home/michael/Documents/data/MCStheta/run/'
+	#VAR = 'adxx_tauu.effective.0000000000'
+	#VAR = 'Eta.0000000576'
+	#VAR = 'stateExf.0000000001'
+	VAR = 'm_boxmean_theta.0000000000'
+	#VAR = 'ADJtaux.0000008928'
+	
+	data = rdmds(path+VAR)
+	
+	for i in range(1):
+		data = rdmds(path+VAR, returnmeta=False, rec=i)
+		print(data.shape)
+				
+		pt.plot1by1(data)
+	quit()
+	
+	
+# A selection of binary-reading functions for testing.		
+binReadTest = 0
+if binReadTest:
+
+	from scipy.io import FortranFile
+
+	path = '/home/michael/Documents/data/MCS/run/'
+	VAR = 'adxx_tauu.effective.0000000000.data'
+	#VAR = 'm_boxmean_eta.0000000000.data'
+	#VAR = 'state2D.0000000576.data'
+	
+	def readnp(inputfilename, nx, ny):
+
+		dtype = '>f'
+		count = 1*nx*ny
+		size = np.dtype(dtype).itemsize
+		f = open(inputfilename, 'rb')
+		#f.seek(count*size)
+		data = np.fromfile(f, dtype=dtype, count=-1)
+		data = data.reshape((int(data.size/(ny*nx)),ny,nx))
+
+		return data
+
+	def readF(inputfilename):
+			f = FortranFile(inputfilename, 'r')
+			f = f.read_reals(dtype='float64')
+			return f
+	
+	def readslice(inputfilename,nx,ny,timeslice):
+		f = open(inputfilename,'rb')
+		f.seek(8*timeslice*nx*ny)
+		field = np.fromfile(f,dtype='float64',count=nx*ny)
+		field = np.reshape(field,(ny,nx))
+		f.close()
+		return field
+
+	#for i in range(3):
+		#field = readslice(path+VAR, 240,200,i)
+	#	field = readnp(path+VAR, 240, 200, i)
+		#print(np.mean(field))
+		#print(field)	
+	#	pt.plot1by1(field, vmin=-1.e-7, vmax=1.e-7)
+
+	data = readnp(path+VAR, 240, 200)
+	
+	print(data.shape)
+	pt.plot1by1(data[0]); quit()
+	
+	for i in range(data.shape[0]):
+		pt.plot1by1(data[i])
+    	
+	quit()
+
+
+xmitgcmTest = 0
+if xmitgcmTest:
+
+	from xmitgcm import open_mdsdataset
+	path = '/home/michael/Documents/data/MCS/run/'
+	
+	VAR = 'adxx_tauu.0000000000.data'
+	VAR = 'm_boxmean_eta.0000000000'
+	
+	data = open_mdsdataset(path, prefix=['adxx_tauu'], read_grid=False, ignore_unknown_vars=True)
+	
+	print(data)
+	data = np.array(data.to_array(dtype=float))
+	print(data.shape)
+	
+	quit()
+
 volTest = False
 if volTest:
 
@@ -56,14 +299,10 @@ if volTest:
 	
 	quit()
 		
-		
 #==
 
 fbeta = False
 if fbeta:
-
-
-
 	Omega = 2 * np.pi / 86400.
 	a = 6371.e3
 	
@@ -391,9 +630,7 @@ if TEST_animate:
 
 	#path = '/home/michael/Documents/data/MCS_002/run/'
 
-	path = '/home/michael/Documents/data/MCS_141/run/'
-	#path = '/home/michael/Documents/data/PISOMIP_001/run/'
-	#pathG = '/home/michael/Documents/data/MCS_018/run/'
+	path = '/home/michael/Documents/data/MCS_154/run/'
 
 	grid = Grid(path)
 	#grid = Grid_PAS(path)
@@ -401,27 +638,30 @@ if TEST_animate:
 	Y = grid.RC.squeeze()
 
 	#VAR = 'ETAN'
-	#VAR = 'RHOAnoma'
 	VAR = 'THETA'
-	#VAR = 'PHIHYD'
-	#VAR = 'DFrE_TH'
-	#VAR = 'WVELTH'#','UVELTH','VVELTH','WVELTH', 'TOTTTEND'
 	#VAR = 'SALT'	
 	#VAR = 'UVEL'	
-	#VAR = 'VVEL'
-	#VAR = 'WVEL'
 
 	vmin, vmax, cmap, title = getPlottingVars(VAR)
 	#vmin = 33.32; vmax = 34.5
-	data = readVariable(VAR, path, file_format='nc', meta=True)
-	print(data)
-	
-	#pt.plot1by1(grid.bathy); quit()
+	data = readVariable(VAR, path, file_format='nc', meta=False)[-200:]
 		
-	text_data = ptt.getTextData(data.variables['TIME'][:], 'month', X[1], Y[-2], color='k')
-	data = data[VAR][:]
-
-	MEAN = False
+	#text_data = ptt.getTextData(data.variables['TIME'][:], 'month', X[1], Y[-2], color='k')
+	#data = data[VAR][:][::2]
+	
+	
+	grid = Grid(path)
+	X = grid.XC / 1000.
+	Y = grid.YC / 1000.
+	
+	vol = grid.hFacC * grid.DRF * grid.RAC
+	vol = vol[:,:92,:]; data = data[:,:,:92,:]
+	
+	data = np.sum(vol * data, axis=(1,2,3))	
+	totvol = np.sum(vol); data = data / totvol	
+	plt.plot(data); plt.show(); quit()	
+	
+	MEAN = True
 	ASYM = False
 	if not MEAN:
 		for ti in range(data.shape[0]):
@@ -493,12 +733,12 @@ if TEST_animateX:
 	
 #==
 
-animateSurface = False
+animateSurface = True
 if animateSurface:
 
 	#path = '/home/michael/Documents/data/PAS_666/run/'
 	#path = '/home/michael/Documents/data/PISOMIP_003/run/'
-	path = '/home/michael/Documents/data/MCS_123/run/'
+	path = '/home/michael/Documents/data/MCS/run/'
 
 	grid = Grid(path)
 	#grid = Grid_PAS(path)
@@ -511,7 +751,7 @@ if animateSurface:
 	ny, nx = bathy.shape
 	
 	#VAR = 'ETAN'
-	VAR = 'PHIBOT'
+	#VAR = 'PHIBOT'
 	#VAR = 'RHOAnoma'
 	#VAR = 'THETA' 
 	#VAR = 'PHIHYD'
@@ -523,16 +763,17 @@ if animateSurface:
 	#VAR = 'VVEL'
 	#VAR = 'WVEL'
 	#VAR = 'botTauX'
+	VAR = 'ADTAUU'
 
 	flatVars = ['ETAN', 'botTauX', 'PHIBOT']
 
 	vmin, vmax, cmap, title = getPlottingVars(VAR)
 
 	data = readVariable(VAR, path, file_format='nc', meta=True)
-	print(data)
+	print(data.variables)
 
 	text_data = ptt.getTextData(data.variables['TIME'][:], 'month', X[1], Y[1], color='k')
-	data = data[VAR][:]
+	data = data[VAR][-120:]
 
 	PLOT_MEAN = False
 	if PLOT_MEAN:
@@ -547,7 +788,7 @@ if animateSurface:
 	level = 0
 
 	if VAR not in flatVars:
-		level = 25
+		level = 18
 		data = data[:,level]
 		print('Z = ' + str(grid.RC.squeeze()[level]))
 
@@ -556,7 +797,7 @@ if animateSurface:
 	#data = tools.boundData(data, vmin, vmax, scale=0.99999)
 	data = ptt.maskBathyXY(data, grid, level, timeDep=True)
 
-	SUBR = 1
+	SUBR = 0
 	if SUBR:
 		lats = [120.e3, 270.e3]; lons = [500.e3, 600.e3]#[230, 270]#
 		latsi = grid.getIndexFromLat(lats); lonsi = grid.getIndexFromLon(lons)
@@ -566,17 +807,19 @@ if animateSurface:
 	#data = np.mean(data, axis=3)
 
 	#vmin = None; vmax = None
-	#vmin = -0.1; vmax = -vmin
+	vmin = -0.05; vmax = -vmin
 	#vmin = 33.375; vmax=33.575 # For SSS
+	
+	pt.plot1by1(data[-1], X=X, Y=Y)
 
-	pt.animate1by1(data, X, Y, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=True, text_data=text_data, outname='animate1by1Surf.mp4', vmin=vmin, vmax=vmax)
+	pt.animate1by1(data, X, Y, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=True, text_data=text_data, outname='animate1by1Surf.mp4', vmin=vmin, vmax=vmax, contour=grid.bathy)
 
 	quit()
 	
 	
 #==
 
-animateCONV = True
+animateCONV = False
 if animateCONV:
 
 	path = '/home/michael/Documents/data/MCS_123/run/'
@@ -991,7 +1234,7 @@ if animateUbots:
 #==
 
 
-animateDragBot = False
+animateDragBot = True
 if animateDragBot:
 	# Animate zonal mean Ubots for multiple MITgcm runs.
 	# Assumes that all use the same grid and have the same time dependencies.
@@ -1002,8 +1245,8 @@ if animateDragBot:
 	#paths = [path_root+'MCS_113/run/', path_root+'MCS_104/run/']
 	#labels = ['wind16 botStress', 'wind0 botStress', 'wind0 x = 0', 'wind0 x = 120']
 	
-	paths = [path_root+'MCS_108/run/', path_root+'MCS_108/run/']
-	labels = ['wind16 botStress', 'wind0 botStress', 'wind0 x = 0', 'wind0 x = 120']
+	paths = [path_root+'MCS_104/run/', path_root+'MCS_104/run/']
+	labels = ['wind0 botStress', 'wind0 botStress', 'wind0 x = 0', 'wind0 x = 120']
 
 	grid = Grid(paths[0])
 	Y = grid.YC

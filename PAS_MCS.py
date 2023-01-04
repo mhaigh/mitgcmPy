@@ -30,9 +30,6 @@ if HEAT_CONTENT:
 	EXPS = ['MCS_125', 'MCS_127']
 	#path = '/data/oceans_output/shelf/michai/mitgcm/'
 	path = '/home/michael/Documents/data/'
-
-	
-	#pt.plot1by1(grid.bathy, mesh=True, vmin=-700, vmax=-500); quit()
 	
 	ts = 0
 	
@@ -78,10 +75,10 @@ if HEAT_TRANSPORT:
 
 	BATHY = 'ES'
 	#path = '/data/oceans_output/shelf/michai/mitgcm/MCS_129/run/'
-	path = '/home/michael/Documents/data/PISOMIP_002/run/'
+	path = '/home/michael/Documents/data/MCS_144/run/'
 	grid = Grid(path)
 	
-	pt.plot1by1(grid.bathy)
+	pt.plot1by1(grid.bathy); quit()
 
 	X = grid.XC[1,:] / 1000.
 	Y = grid.YC[:,1] / 1000.
@@ -229,7 +226,7 @@ if HEAT_TRANSPORT:
 
 #==
 
-baroHeatTransport = True
+baroHeatTransport = False
 if baroHeatTransport:
 
 	#path = '/data/oceans_output/shelf/michai/mitgcm/MCS_129/run/'
@@ -1212,14 +1209,12 @@ if animateUVT:
 		ts = 0; te = -1
 
 		#path = '/data/oceans_output/shelf/michai/mitgcm/MCS_126/run/'
-		path = '/home/michael/Documents/data/PISOMIP_001/run/'
+		path = '/home/michael/Documents/data/PISOMIP_003/run/'
 		grid = Grid(path)
 		contour = grid.bathy
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
 		
-		plt.plot(contour[:,0]); plt.show(); quit()
-		
-		depth = -450; level = grid.getIndexFromDepth(depth)
+		depth = -10; level = grid.getIndexFromDepth(depth)
 
 		vmin = -800; vmax = -500
 		X = grid.XC[1,:]/1000.
@@ -1232,7 +1227,7 @@ if animateUVT:
 		u = tools.interp(u, 'u'); v = tools.interp(v, 'v')
 
 		# Load temperature
-		T = readVariable('THETA', path, meta=False)[ts:, level]
+		T = readVariable('UVEL', path, meta=False)[ts:, level]
 		cvmin, cvmax, ccmap, title = getPlottingVars('THETA')
 		title = '(u, v); T; bathy; Z = ' + str(grid.RC.squeeze()[level]) + ' m'
 
@@ -1247,7 +1242,7 @@ if animateUVT:
 			v[ti] = ptt.maskBathyXY(v[ti], grid, level, timeDep=False)
 			T[ti] = ptt.maskBathyXY(T[ti], grid, level, timeDep=False)
 			
-		pt.plot1by1(np.mean(u[-24:],axis=0)); quit()
+		#pt.plot1by1(np.mean(u[-24:],axis=0)); quit()
 			
 	#==
 
@@ -1340,7 +1335,7 @@ if vortBudget:
 #==
 	
 # Animate velocity vectors and temperature at fixed level.
-animateUVT_npy = True
+animateUVT_npy = False
 if animateUVT_npy:
 
 
