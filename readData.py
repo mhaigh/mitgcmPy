@@ -6,6 +6,8 @@
 #==========================================================
 
 import sys
+
+import numpy as np
 #import varDict
 
 #==========================================================
@@ -19,8 +21,10 @@ def readnp(inputfilename, dims, dtype='>f', rec=-1):
 	
 	if len(dims) == 2:
 		nx, ny = dims
+		count = nx * ny
 	elif len(dims) == 3:
 		nx, ny, nz = dims
+		count = nx * ny * nz
 	else: 
 		print('Try again: dims should be length 2 or 3')
 		quit() 
@@ -35,10 +39,9 @@ def readnp(inputfilename, dims, dtype='>f', rec=-1):
 		
 	# Read specific record
 	else:
-		count = nx*ny
 		f.seek(rec*size*count)
 		data = np.fromfile(f, dtype=dtype, count=count)
-		data = data.reshape((ny,nx))	
+		data = data.reshape(dims)	
 	
 	return data
 	
@@ -51,21 +54,55 @@ def readAllnp(fileHandle, path, dims, dtype='>f', reverse=False):
 	fnames = [filename for filename in os.listdir(path) if filename.startswith(fileHandle) and filename.endswith('.data')]
 	fnames.sort(reverse=reverse)
 
-	data = np.zeros((len(fnames), dims[1], dims[0]))
+	if len(dims) == 2:
+		data = np.zeros((len(fnames), dims[0], dims[1]))
+	elif len(dims) == 3:
+		data = np.zeros((len(fnames), dims[0], dims[1], dims[2]))
+	else:
+		print('Error: readData.readAllnp. dims must be length 2 or 3.')
+		sys.exit()
+		
 	for fi, fname in enumerate(fnames):
 		data[fi] = readnp(path+fname, dims, rec=0)
 	
 	return data
 	
 #==
-	
-def readVariable(VAR, path, file_format='nc', time_step=1, meta=False, interval=None):
+
+def readVariable(VAR, path, file_format='nc', time_step=1, var2D=False, meta=False, tt=None, xx=None, yy=None, zz=None):
 	'''Read mitgcm output for variable in given file format.
 	Options are rdmds or nc, with netCDF default.
 	If meta==True, returns additional metadata useful for plotting.'''
 			
 	from varDict import varDict
-
+	
+	# First check if sub-intervals are needed.
+	if tt is not None:
+		if tt == -1:
+			tt = [-1, None]
+		elif not isinstance(tt, list):
+			tt = [tt, tt+1]
+	else:
+		tt = [None, None]
+		
+	if xx is not None:
+		if not isinstance(xx, list):
+			xx = [xx, xx+1]
+	else:
+		xx = [None, None]
+		
+	if yy is not None:
+		if not isinstance(yy, list):
+			yy = [yy, yy+1]
+	else:
+		yy = [None, None]
+		
+	if zz is not None:
+		if not isinstance(zz, list):
+			zz = [zz, zz+1]
+	else:
+		zz = [None, None]	
+		
 	if file_format == 'rdmds':
 		from MITgcmutils import rdmds
 		import numpy as np
@@ -74,14 +111,17 @@ def readVariable(VAR, path, file_format='nc', time_step=1, meta=False, interval=
 	
 	elif file_format == 'nc':
 		from netCDF4 import Dataset
+		from numpy import squeeze as sq
 		fname = varDict[VAR]['fname'] + '.nc'
+		
 		if meta:
 			return Dataset(path+fname, 'r')
 		else:
-			if interval is not None:
-				return Dataset(path+fname, 'r')[VAR][interval[0]:interval[1]+1,]
+			if var2D:
+				return sq(Dataset(path+fname, 'r')[VAR][tt[0]:tt[1],yy[0]:yy[1],xx[0]:xx[1]])
 			else:
-				return Dataset(path+fname, 'r')[VAR][:]
+				return sq(Dataset(path+fname, 'r')[VAR][tt[0]:tt[1],zz[0]:zz[1],yy[0]:yy[1],xx[0]:xx[1]])
+		
 		
 	else:
 		print('Error: readData.readVariable. file_format must be rdmds or nc')

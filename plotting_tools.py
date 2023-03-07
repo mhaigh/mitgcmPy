@@ -238,7 +238,7 @@ def maskDraftYZ(data, grid, color='grey', xi=10, subregion=False, lats=[], depth
 
 #==
 
-def getTextData(TIME, t_format, xloc, yloc, color='k', short_ctime=True):
+def getTextData(TIME, t_format, xloc, yloc, color='k', short_ctime=True, ndays=1, lag=False, lagTime=0):
 	'''Get text data for animation plots.'''
 
 	if t_format == 'month':
@@ -247,9 +247,12 @@ def getTextData(TIME, t_format, xloc, yloc, color='k', short_ctime=True):
 		text = [t_format + ' ' + str(int(tt)) for tt in t]
 
 	elif t_format == 'day':
-		tscale_val = 86400.
+		tscale_val = 86400. * ndays
 		t = TIME / tscale_val
-		text = [t_format + ' ' + str(int(tt)) for tt in t]
+		if lag:
+			text = ['lag = ' + str(int(lagTime-ndays*tt)) + ' days' for tt in t]
+		else:
+			text = [t_format + ' ' + str(int(ndays*tt)) for tt in t]
 		
 	elif t_format == 'ctime':
 		from time import ctime

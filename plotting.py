@@ -1144,7 +1144,7 @@ def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh
 			cax.set_array(data[i].flatten())
 			if text_data is not None:
 				setText(ax, text_data, i=i, set_invisible=True)
-
+			
 		# End if mesh	
 
 	else:
@@ -1170,7 +1170,6 @@ def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh
 			if text_data is not None:
 				setText(ax, text_data, i=i, set_invisible=True)
 			ax.contourf(X, Y, data[i], cmap=cmap, levels=np.linspace(vmin, vmax, nlevels))	
-
 	#==
 	
 	fig.colorbar(cax, ax=ax)
@@ -1196,6 +1195,89 @@ def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh
 		plt.show()
 		
 #==
+
+def animate1by1varCbar(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh=True, cmap='jet', vmin=None, vmax=None, xlabel='', ylabel='', save=True, outpath='', outname='animate1by1.mp4', show=False, dpi=200, fps=8, bitrate=-1, text_data=None, contour=None, contourLevels=None):
+
+	# Make animation
+	fig = plt.figure(figsize=figsize, dpi=dpi)
+	ax = fig.add_subplot()
+	plt.gca().patch.set_color('.25')
+
+	if mesh:
+		if X is not None and Y is not None:
+			cax = ax.pcolormesh(X, Y, data[0], cmap=cmap)
+		else: 
+			cax = ax.pcolormesh(data[0], cmap=cmap)
+			
+		if text_data is not None:
+			setText(ax, text_data, i=0)	
+
+		if contour is not None:
+			if contourLevels is None:
+				plt.contour(X, Y, contour, colors='k', linestyles='solid', linewidths=0.4)
+			else:
+				plt.contour(X, Y, contour, colors='k', linestyles='solid', linewidths=0.4, levels=contourLevels)
+
+		plt.grid()
+
+		def animate(i):
+			print(i)
+			ax.clear()
+			cax.set_array(data[i].flatten())
+			if text_data is not None:
+				setText(ax, text_data, i=i, set_invisible=True)
+			
+		# End if mesh	
+
+	else:
+		nlevels = 9
+		if X is not None and Y is not None:
+			cax = ax.contourf(X, Y, data[0], cmap=cmap)
+		else: 
+			cax = ax.contourf(data[0], cmap=cmap)
+		cb = fig.colorbar(cax, ax=ax)		
+			
+		if text_data is not None:
+			setText(ax, text_data, i=0)
+
+		if contour is not None:
+			if contourLevels is None:
+				plt.contour(X, Y, contour, colors='k', linestyles='solid', linewidths=0.4)
+			else:
+				plt.contour(X, Y, contour, colors='k', linestyles='solid', linewidths=0.4)
+
+
+		def animate(i):
+			print(i)
+			ax.clear()
+			#plt.grid()
+			#cax.set_data(data[i].flatten())			
+			if text_data is not None:
+				setText(ax, text_data, i=i, set_invisible=True)
+			ax.contourf(X, Y, data[i], cmap=cmap)
+			
+	#==
+	
+	plt.xlabel(xlabel, fontsize=fontsize)
+	plt.ylabel(ylabel, fontsize=fontsize)
+	plt.title(title, fontsize=fontsize)
+	plt.grid() 
+
+	# Get number of timesteps/frames.
+	if isinstance(data, list):
+		Nt = len(data)
+	else:
+		Nt = data.shape[0]
+		
+	anim = animation.FuncAnimation(fig, animate, interval=50, frames=Nt)
+	plt.tight_layout()
+	plt.draw()
+	
+	if save:
+		anim.save(outpath+outname,metadata={'artist':'Guido'},writer='ffmpeg',fps=fps,bitrate=bitrate)
+		
+	if show:
+		plt.show()
 
 
 def animateLine(data, X=None, figsize=(5,4), title='', labels=None, fontsize=14, vmin=None, vmax=None, xlabel='', ylabel='', save=True, outpath='', outname='animateLine.mp4', show=False, dpi=200, fps=8, bitrate=-1, text_data=None, constLine=None, constLineLabel=None, constLineStyle=['solid', 'dashed', 'dotted']):

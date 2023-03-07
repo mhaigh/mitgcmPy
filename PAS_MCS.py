@@ -1265,10 +1265,11 @@ if animateUVT:
 #==
 
 # Rough vorticity budget
-vortBudget = False
+vortBudget = True
 if vortBudget:
 
-	path = '/home/michael/Documents/data/MCS_117/run/'
+#	path = '/home/michael/Documents/data/MCS_117/run/'
+	path = '/home/michael/Documents/data/IdealisedAmundsenSea_master/IdealisedAmundsenSea3/data/MCS_161/run/'
 	grid = Grid(path)
 
 	X = grid.XC[1,:]/1000.
@@ -1283,13 +1284,13 @@ if vortBudget:
 
 	VAR = 'UVEL'
 	vmin, vmax, cmap, title = getPlottingVars(VAR)
-	u = readVariable(VAR, path, file_format='nc', meta=True)
-	TIME = u['TIME'][ts:]
-	u = u[VAR][ts:,]
+	u = readVariable(VAR, path, file_format='nc', meta=False, tt=[ts,None])
+	nt = u.shape[0]
+	TIME = np.linspace(1,nt,nt)
 
 	VAR = 'VVEL'
 	vmin, vmax, cmap, title = getPlottingVars(VAR)
-	v = readVariable(VAR, path, file_format='nc', meta=False)[ts:]
+	v = readVariable(VAR, path, file_format='nc', meta=False, tt=[ts,None])
 
 	# Advection term
 	
@@ -1312,13 +1313,14 @@ if vortBudget:
 	
 	# Vortex stretching term.
 	depth = - grid.bathy
-	PHIBOT = readVariable('PHIBOT', path, file_format='nc', meta=False)[ts:]
+	PHIBOT = readVariable('PHIBOT', path, file_format='nc', meta=False, tt=[ts,None], var2D=True)
 	Pb = depth * rho0 * g + PHIBOT * rho0
 	Pb = np.mean(Pb, axis=0)
 	
 	J = -tools.ddy(Pb, dy) * tools.ddx(depth, dx) + tools.ddx(Pb, dx) * tools.ddy(depth, dy)
+	#J = adv.copy()
 	
-	vmin = -1.e-4; vmax = -vmin
+	vmin = -1.e-5; vmax = -vmin
 	cbar = [False, False, True]
 	titles = ['Vort. advection', 'beta term', 'Vort. stretching']
 
@@ -1328,7 +1330,7 @@ if vortBudget:
 	bV = ptt.maskBathyXY(bV, grid, 0)
 	J = ptt.maskBathyXY(J, grid, 0)
 		
-	pt.plot1by3([adv, bV, J], vmin=vmin, vmax=vmax, mesh=True, cbar=cbar, titles=titles, width_ratios=[1,1,1.1])
+	pt.plot1by3([adv, adv+J, J], vmin=vmin, vmax=vmax, mesh=True, cbar=cbar, titles=titles, width_ratios=[1,1,1.1])
 
 	quit()
 	

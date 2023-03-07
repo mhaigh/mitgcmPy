@@ -1,4 +1,3 @@
-
 # tools.py
 
 import sys
@@ -7,8 +6,7 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 
-#==========================================================
-
+#====================================================================================
 
 def maskEdges(data, size, dims=None):
 	'''Given data mask its edges.
@@ -189,13 +187,15 @@ def depthAverage(data, Z, timeDep=True):
 def depthIntegral(data, grid, timeDep=True, SSH=None, norm=True):
 	'''Return depth integral (sum) of data.'''
 	
+	hFac = grid.hFacC
+	
 	if timeDep:
 		axis = 1
 	else:
 		axis = 0
 
 	if norm:
-		normval = np.sum(grid.DRF * grid.hFacW, axis=axis)
+		normval = np.sum(grid.DRF * hFac, axis=0)
 	else:
 		normval = 1
 
@@ -204,15 +204,15 @@ def depthIntegral(data, grid, timeDep=True, SSH=None, norm=True):
 		if norm:
 			normval = normval + SSH
 		if timeDep:
-			T0 = data[:,0] * grid.hFacW[0] * DRF0
-			return	(T0 + np.sum(data[:,1:] * grid.hFacW[1:] * grid.DRF[1:], axis=axis)) / normval
+			T0 = data[:,0] * hFac[0] * DRF0
+			return	(T0 + np.sum(data[:,1:] * hFac[1:] * grid.DRF[1:], axis=axis)) / normval
 		else: 
-			T0 = data[0] * grid.hFacW[0] * DRF0
-			return	(T0 + np.sum(data[1:] * grid.hFacW[1:] * grid.DRF[1:], axis=axis)) / normval
+			T0 = data[0] * hFac[0] * DRF0
+			return	(T0 + np.sum(data[1:] * hFac[1:] * grid.DRF[1:], axis=axis)) / normval
 			
 	else:
 		normval = np.where(normval==0.0, 1, normval)
-		return np.sum(data * grid.hFacW * grid.DRF, axis=axis) / normval
+		return np.sum(data * hFac * grid.DRF, axis=axis) / normval
 
 #==
 

@@ -11,7 +11,7 @@ import plotting_tools as ptt
 
 import tools
 
-from readData import readVariable
+from readData import * 
 from varDict import getPlottingVars, getTrefSref
 
 import time
@@ -54,22 +54,22 @@ if animBin:
 	
 	#==
 	
-	path = '/home/michael/Documents/data/MCS_161/run/'
+	path = '/home/michael/Documents/data/MCS_ad1/run/'
 	
-	#VAR = 'ADJtaux'; mult_gencost = 1.e9; reverse = True; vmax = 1.e-3; vmin = -vmax
-	#title=VAR + ' (deg. C/(N m$^{-2}$)), OBJ=on-shelf heat, days 90-120'
+	VAR = 'ADJtaux'; mult_gencost = 1.e9; reverse = True; vmax = 1.e-3; vmin = -vmax
+	title=VAR + ' (deg. C/(N m$^{-2}$)), OBJ=on-shelf heat, days 90-120'
 		
-	VAR = 'stateTheta'; mult_gencost = 1.; reverse = False; vmax = 2; vmin = -vmax
-	title = VAR
+	#VAR = 'stateTheta'; mult_gencost = 1.; reverse = False; vmax = 2; vmin = -vmax
+	#title = VAR
 	
 	#VAR = 'm_boxmean_theta.0000000000.data'; mult_gencost = 1; reverse=False
 	#vmax = 0; vmin = -1.e-4; title = VAR
 		
 	nx = 240; ny = 200
-	dims = (nx, ny)
+	dims = (ny, nx)
 	
-	#data = readAllnp(VAR, path, dims, reverse=reverse) / mult_gencost
-	data = readnp(path+VAR, dims, rec=-1)
+	data = readAllnp(VAR, path, dims, reverse=reverse) / mult_gencost
+	#data = readnp(path+VAR, dims, rec=-1)
 	print(data.shape)
 	nt = data.shape[0]
 	#pt.plot1by1(data[0]); quit()
@@ -95,7 +95,9 @@ if animBin:
 	#for i in range(data.shape[0]):
 	#	pt.plot1by1(data[i])
 			
-	plt.plot(np.sum(data, axis=(1,2))); plt.show(); quit()	
+	#plt.plot(np.sum(data, axis=(1,2))); plt.show(); quit()	
+	
+	pt.plot1by1(data[-30,], X, Y, mesh=True, cmap='bwr', vmin=0.4*vmin, vmax=0.4*vmax, title='HC sens. to zonal wind, 60 day lag (deg. C/(N m$^{-2}$))', xlabel='Lon (km)', ylabel='Lat (km)', fontsize=10, contour=contour); quit()
 	
 	pt.animate1by1(data, X, Y, vmin=vmin, vmax=vmax, cmap='bwr', title=title, text_data=text_data, fontsize=9, contour=contour, contourLevels=levels)
 	
@@ -147,44 +149,6 @@ if binReadTest:
 
 	quit()
 	
-#==
-	
-objTest = 0
-if objTest:
-
-	path = '/home/michael/Documents/data/MCS/run/'
-
-	VAR1 = 'stateTheta.0000000000.data'; norm1 = 1.e9
-	VAR2 = 'm_boxmean_theta.0000000000.data'; norm2 = 1.e0
-
-	nx = 240; ny = 200
-	dims = (nx, ny)
-	
-	grid = Grid(path)
-	X = grid.XC / 1000.
-	Y = grid.YC / 1000.
-	
-	vol = grid.hFacC * grid.DRF * grid.RAC
-	
-	data1 = readnp(path+VAR1, dims, rec=-1)# / norm1
-	
-	# Integrate over volume and normalise.
-	data1 = np.sum(vol * data1, axis=0)	
-	totvol = np.sum(vol)
-	data1 = data1 / totvol	
-	
-	sum1 = np.sum(data1)#*norm1
-
-	data2 = readnp(path+VAR2, dims, rec=0)# / norm2
-	sum2 = np.sum(data2)#*norm2
-	
-	print(sum1)
-	print(sum2)
-	print(sum1/sum2)
-
-	pt.plot1by2([data1, data2-data1])
-	
-	quit()
 
 #==
 	
@@ -423,20 +387,20 @@ if TEST_thetaHeight:
 
 #==
 
-TEST_rho = False
+TEST_rho = True
 if TEST_rho:
 
-	path = '/home/michael/Documents/data/MCS_038/run/'
-	
+	#path = '/home/michael/Documents/data/MCS_038/run/'
+	path = '/home/michael/Documents/data/IdealisedAmundsenSea_master/IdealisedAmundsenSea1/data/MCS_161/run/'
 	grid = Grid(path)
 	
 	X = grid.XC[1,:]/1000.
 	Y = grid.YC[:,1]/1000.
 	Z = grid.RC.squeeze()
 
-	Rho1 = readVariable('RHOAnoma', path, file_format='nc', meta=False)[-2:]
-	T = readVariable('THETA', path, file_format='nc', meta=False)[-2:]
-	S = readVariable('SALT', path, file_format='nc', meta=False)[-2:]
+	Rho1 = readVariable('RHOAnoma', path, file_format='nc', meta=False, tt=-1)
+	T = readVariable('THETA', path, file_format='nc', meta=False, tt=-1)
+	S = readVariable('SALT', path, file_format='nc', meta=False, tt=-1)
 
 	rho0 = 1030.
 	tAlpha=3.90e-5
@@ -445,14 +409,10 @@ if TEST_rho:
 	Tref, Sref = getTrefSref()
 	Rho2 = tools.EOSlinear(rho0, sBeta, tAlpha, S, Sref, T, Tref)
 
-	for ti in range(Rho1.shape[0]):
-		Rho1[ti,] = ptt.maskBathyAll(Rho1[ti,], grid)
-		Rho2[ti,] = ptt.maskBathyAll(Rho2[ti,], grid)
-	
-	#plt.contourf(Y, Z, S[-1,:,:,-1]); plt.colorbar(); plt.show(); quit()
-	
 	vmin = -0.2; vmax = -vmin
-	pt.plot1by2([Rho1[-1,...,-1]-Rho2[-1,...,-1], Rho2[-1,...,-1]], X=[Y,Y], Y=[Z,Z], vmin=[vmin,vmin], vmax=[vmax,vmax])
+	pt.plot1by2([Rho1[...,-1], Rho2[...,-1]], X=[Y,Y], Y=[Z,Z], vmin=[vmin,vmin], vmax=[vmax,vmax])
+	
+	quit()
 
 #==
 
