@@ -30,9 +30,6 @@ if HEAT_CONTENT:
 	EXPS = ['MCS_125', 'MCS_127']
 	#path = '/data/oceans_output/shelf/michai/mitgcm/'
 	path = '/home/michael/Documents/data/'
-
-	
-	#pt.plot1by1(grid.bathy, mesh=True, vmin=-700, vmax=-500); quit()
 	
 	ts = 0
 	
@@ -65,7 +62,7 @@ if HEAT_CONTENT:
 	
 	quit()
 			
-HEAT_TRANSPORT = True
+HEAT_TRANSPORT = False
 if HEAT_TRANSPORT:
 	
 	ts = 0	
@@ -78,8 +75,10 @@ if HEAT_TRANSPORT:
 
 	BATHY = 'ES'
 	#path = '/data/oceans_output/shelf/michai/mitgcm/MCS_129/run/'
-	path = '/home/michael/Documents/data/MCS_141/run/'
+	path = '/home/michael/Documents/data/MCS_144/run/'
 	grid = Grid(path)
+	
+	pt.plot1by1(grid.bathy); quit()
 
 	X = grid.XC[1,:] / 1000.
 	Y = grid.YC[:,1] / 1000.
@@ -88,6 +87,8 @@ if HEAT_TRANSPORT:
 	# Subregions for heat transport.
 
 	lat = 95
+	print(Y[lat])
+	quit()
 
 	# troughW
 	lonsW = [100e3, 200e3]; depthW = [-10, -800]
@@ -111,7 +112,6 @@ if HEAT_TRANSPORT:
 	labelAll = 'All'
 	labelU = 'Uniform lons'
 
-	
 	vlines = [lonsW[0]/1.e3, lonsW[1]/1.e3, lonsE[0]/1.e3, lonsE[1]/1.e3, lonsES[1]/1.e3]
 	hlines = [Y[lat]]	
 	pt.plot1by1(grid.bathy, X=X, Y=Y, vmin=-1000, vmax=-300, mesh=True, hlines=hlines, vlines=vlines)
@@ -173,7 +173,7 @@ if HEAT_TRANSPORT:
 		areaUES = areaAll - areaES
 		TUES = TUES / areaUES
 		areaUWES = areaAll - areaES - areaW
-		TUWES = TUWES / areaUWE
+		TUWES = TUWES / areaUWES
 	else:
 		title = 'Meridional heat transport across shelf break (TW)'
 
@@ -224,6 +224,69 @@ if HEAT_TRANSPORT:
 
 	quit()	
 
+#==
+
+baroHeatTransport = False
+if baroHeatTransport:
+
+	#path = '/data/oceans_output/shelf/michai/mitgcm/MCS_129/run/'
+	path = '/home/michael/Documents/data/MCS_141/run/'
+	grid = Grid(path)
+	bathy = grid.bathy#
+	bathy = ptt.maskBathyXY(bathy, grid, zi=0, timeDep=False)
+				
+	X = grid.XC[1,:]/1000.
+	Y = grid.YC[:,1]/1000.
+	
+	ts = 160
+	Tf = -2
+	d = 4
+		
+	Cp = 3974.0 # Units J / (kg C) = (kg m2 / s2) / (kg C) = m2 / (s2 C)
+	rho0 = 1030. # Units kg / m3
+
+	#==
+
+	T = readVariable('THETA', path, meta=False)[ts:] - Tf
+	u = tools.interp(readVariable('UVEL', path, meta=False)[ts:], 'u')
+	v = tools.interp(readVariable('VVEL', path, meta=False)[ts:], 'v')
+	
+	print(u.shape)
+	u = np.sum(rho0 * Cp * u * T, axis=0)
+	v = np.sum(rho0 * Cp * v * T, axis=0)
+	print(u.shape)
+	
+	u = np.mean(u, axis=0)
+	v = np.mean(v, axis=0)
+	
+	C = (u**2 + v**2)**0.5
+	u /= C
+	v /= C
+	
+	#==
+	
+	yn = 110
+	u = u[:yn]
+	v = v[:yn]
+	#X = X[:yn]
+	Y = Y[:yn]
+	C = C[:yn]
+	bathy = bathy[:yn]
+	
+	
+	u = u[::d, ::d]
+	v = v[::d, ::d]
+	C = C[::d, ::d]
+	Xd = X[::d]
+	Yd = Y[::d]
+	
+	cvmin = 0.2e7; cvmax = 1.e7
+	C = tools.boundData(C, cvmin, cvmax)
+	scale=30
+	
+	pt.quiver1by1(u, v, Xd, Yd, scale=scale, C=C, ccmap='jet', contour=bathy, X=X, Y=Y, cmap='YlGn', contourf=False, vmin=-800, vmax=-300, figsize=(8,5))
+	quit()
+	
 #==
 
 HEAT_TRANSPORT_PAS = False
@@ -1082,7 +1145,7 @@ if animateUVTdepth:
 #==
 
 # Animate velocity vectors and temperature at fixed level.
-animateUVT = True
+animateUVT = False
 if animateUVT:
 
 	PAS = False
@@ -1094,7 +1157,6 @@ if animateUVT:
 		contour = grid.bathy; vmin = -800; vmax = -100; ctitle = 'bathy'
 		#contour = grid.draft; vmin = -600; vmax = -0; ctitle = 'Ice shelf draft'
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
-
 
 		vmin = -800; vmax = -100
 
@@ -1147,28 +1209,25 @@ if animateUVT:
 		ts = 0; te = -1
 
 		#path = '/data/oceans_output/shelf/michai/mitgcm/MCS_126/run/'
-		path = '/home/michael/Documents/data/MCS_132/run/'
+		path = '/home/michael/Documents/data/PISOMIP_003/run/'
 		grid = Grid(path)
 		contour = grid.bathy
 		contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
+		
+		depth = -10; level = grid.getIndexFromDepth(depth)
 
-		#pt.plotMbyN(grid.bathy, mesh=True); quit()
-
-		depth = -450; level = grid.getIndexFromDepth(depth)
-
-		vmin = -600; vmax = -500
+		vmin = -800; vmax = -500
 		X = grid.XC[1,:]/1000.
 		Y = grid.YC[:,1]/1000.
 		Z = grid.RC.squeeze()
 
 		# Load time-mean velocities
 		u = readVariable('UVEL', path, meta=False)[ts:, level]
-		print(u.shape)
 		v = readVariable('VVEL', path, meta=False)[ts:, level]
 		u = tools.interp(u, 'u'); v = tools.interp(v, 'v')
 
 		# Load temperature
-		T = readVariable('THETA', path, meta=False)[ts:, level]
+		T = readVariable('UVEL', path, meta=False)[ts:, level]
 		cvmin, cvmax, ccmap, title = getPlottingVars('THETA')
 		title = '(u, v); T; bathy; Z = ' + str(grid.RC.squeeze()[level]) + ' m'
 
@@ -1182,6 +1241,8 @@ if animateUVT:
 			u[ti] = ptt.maskBathyXY(u[ti], grid, level, timeDep=False)
 			v[ti] = ptt.maskBathyXY(v[ti], grid, level, timeDep=False)
 			T[ti] = ptt.maskBathyXY(T[ti], grid, level, timeDep=False)
+			
+		#pt.plot1by1(np.mean(u[-24:],axis=0)); quit()
 			
 	#==
 
@@ -1204,10 +1265,11 @@ if animateUVT:
 #==
 
 # Rough vorticity budget
-vortBudget = False
+vortBudget = True
 if vortBudget:
 
-	path = '/home/michael/Documents/data/MCS_117/run/'
+#	path = '/home/michael/Documents/data/MCS_117/run/'
+	path = '/home/michael/Documents/data/IdealisedAmundsenSea_master/IdealisedAmundsenSea3/data/MCS_161/run/'
 	grid = Grid(path)
 
 	X = grid.XC[1,:]/1000.
@@ -1222,13 +1284,13 @@ if vortBudget:
 
 	VAR = 'UVEL'
 	vmin, vmax, cmap, title = getPlottingVars(VAR)
-	u = readVariable(VAR, path, file_format='nc', meta=True)
-	TIME = u['TIME'][ts:]
-	u = u[VAR][ts:,]
+	u = readVariable(VAR, path, file_format='nc', meta=False, tt=[ts,None])
+	nt = u.shape[0]
+	TIME = np.linspace(1,nt,nt)
 
 	VAR = 'VVEL'
 	vmin, vmax, cmap, title = getPlottingVars(VAR)
-	v = readVariable(VAR, path, file_format='nc', meta=False)[ts:]
+	v = readVariable(VAR, path, file_format='nc', meta=False, tt=[ts,None])
 
 	# Advection term
 	
@@ -1251,13 +1313,14 @@ if vortBudget:
 	
 	# Vortex stretching term.
 	depth = - grid.bathy
-	PHIBOT = readVariable('PHIBOT', path, file_format='nc', meta=False)[ts:]
+	PHIBOT = readVariable('PHIBOT', path, file_format='nc', meta=False, tt=[ts,None], var2D=True)
 	Pb = depth * rho0 * g + PHIBOT * rho0
 	Pb = np.mean(Pb, axis=0)
 	
 	J = -tools.ddy(Pb, dy) * tools.ddx(depth, dx) + tools.ddx(Pb, dx) * tools.ddy(depth, dy)
+	#J = adv.copy()
 	
-	vmin = -1.e-4; vmax = -vmin
+	vmin = -1.e-5; vmax = -vmin
 	cbar = [False, False, True]
 	titles = ['Vort. advection', 'beta term', 'Vort. stretching']
 
@@ -1267,14 +1330,14 @@ if vortBudget:
 	bV = ptt.maskBathyXY(bV, grid, 0)
 	J = ptt.maskBathyXY(J, grid, 0)
 		
-	pt.plot1by3([adv, bV, J], vmin=vmin, vmax=vmax, mesh=True, cbar=cbar, titles=titles, width_ratios=[1,1,1.1])
+	pt.plot1by3([adv, adv+J, J], vmin=vmin, vmax=vmax, mesh=True, cbar=cbar, titles=titles, width_ratios=[1,1,1.1])
 
 	quit()
 	
 #==
 	
 # Animate velocity vectors and temperature at fixed level.
-animateUVT_npy = True
+animateUVT_npy = False
 if animateUVT_npy:
 
 

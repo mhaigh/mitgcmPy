@@ -117,7 +117,7 @@ class Grid:
 			
 	#==
 	
-	def XYsubr(self, lons, lats):
+	def XYsubr(self, lons, lats, data=None):
 		'''Return 1D array of subregion of longitudes.
 		Input lons should be list/tuple with two entries.'''
 		
@@ -133,7 +133,10 @@ class Grid:
 		iw = np.argmin(np.abs(self.XC[i0, :] - lons[0]))
 		ie = np.argmin(np.abs(self.XC[i0, :] - lons[1]))
 		
-		return self.XC[ys:yn+1, iw:ie+1] , self.YC[ys:yn+1, iw:ie+1]
+		if data is None:
+			return self.XC[ys:yn+1, iw:ie+1].copy(), self.YC[ys:yn+1, iw:ie+1].copy()
+		else:
+			return self.XC[ys:yn+1, iw:ie+1].copy(), self.YC[ys:yn+1, iw:ie+1].copy(), data[ys:yn+1, iw:ie+1].copy()
 	
 	#==
 	
@@ -148,7 +151,7 @@ class Grid:
 		iw = np.argmin(np.abs(self.XC[yi, :] - lons[0]))
 		ie = np.argmin(np.abs(self.XC[yi, :] - lons[1]))
 		
-		return self.XC[yi, iw:ie+1] 
+		return self.XC[yi, iw:ie+1].copy()
 		
 	#==
 
@@ -163,7 +166,7 @@ class Grid:
 		js = np.argmin(np.abs(self.YC[:, xi] - lats[0]))
 		jn = np.argmin(np.abs(self.YC[:, xi] - lats[1]))
 		
-		return self.YC[js:jn+1, xi] 
+		return self.YC[js:jn+1, xi].copy()
 		
 		#==
 
@@ -178,11 +181,11 @@ class Grid:
 		kt = np.argmin(np.abs(self.RC.squeeze() - depths[0]))
 		kb = np.argmin(np.abs(self.RC.squeeze() - depths[1]))
 		
-		return self.RC.squeeze()[kt:kb+1] 
+		return self.RC.squeeze()[kt:kb+1].copy()
 	
 	def getZFfromZC(self):
 		
-		zc = self.RC[:].squeeze()
+		zc = self.RC[:].squeeze().copy()
 	
 
 		

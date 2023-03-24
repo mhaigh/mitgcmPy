@@ -11,7 +11,7 @@ import plotting_tools as ptt
 
 import tools
 
-from readData import readVariable
+from readData import * 
 from varDict import getPlottingVars, getTrefSref
 
 import time
@@ -40,12 +40,255 @@ import time
 #fname = 'stateUvel.nc'; var = 'UVEL'; cmap = 'coolwarm'; vmax = 0.1; vmin = -vmax
 #fname = 'stateVvel.nc'; var = 'VVEL'; vmin = -0.2; vmax = 0.2
 
+#==
+
+# SIZE 12x10 tiled grid 480318175/
+# SIZE 24x10 tiled grid 490234079
+
+
+		
+#==
+		
+animBin = 0
+if animBin:
+	
+	#==
+	
+	path = '/home/michael/Documents/data/MCS_ad1/run/'
+	
+	VAR = 'ADJtaux'; mult_gencost = 1.e9; reverse = True; vmax = 1.e-3; vmin = -vmax
+	title=VAR + ' (deg. C/(N m$^{-2}$)), OBJ=on-shelf heat, days 90-120'
+		
+	#VAR = 'stateTheta'; mult_gencost = 1.; reverse = False; vmax = 2; vmin = -vmax
+	#title = VAR
+	
+	#VAR = 'm_boxmean_theta.0000000000.data'; mult_gencost = 1; reverse=False
+	#vmax = 0; vmin = -1.e-4; title = VAR
+		
+	nx = 240; ny = 200
+	dims = (ny, nx)
+	
+	data = readAllnp(VAR, path, dims, reverse=reverse) / mult_gencost
+	#data = readnp(path+VAR, dims, rec=-1)
+	print(data.shape)
+	nt = data.shape[0]
+	#pt.plot1by1(data[0]); quit()
+	#plt.plot(np.mean(np.abs(data),axis=(1,2))); plt.show(); quit()
+
+	#==
+	
+	grid = Grid(path)
+	X = grid.XC / 1000.
+	Y = grid.YC / 1000.
+	data = ptt.maskBathyXY(data, grid, 0, timeDep=True)
+			
+	#pt.plot1by1(data[0], X=X, Y=Y)
+	if reverse:
+		time = 2*86400*np.linspace(nt,1,nt)
+	else:
+		time = 2*86400*np.linspace(0,nt,nt+1)
+	text_data = ptt.getTextData(time, 'day', X[1,1], Y[1,1], color='k')
+		
+	contour = grid.bathy
+	levels = [-600, -501, -401]
+	
+	#for i in range(data.shape[0]):
+	#	pt.plot1by1(data[i])
+			
+	#plt.plot(np.sum(data, axis=(1,2))); plt.show(); quit()	
+	
+	pt.plot1by1(data[-30,], X, Y, mesh=True, cmap='bwr', vmin=0.4*vmin, vmax=0.4*vmax, title='HC sens. to zonal wind, 60 day lag (deg. C/(N m$^{-2}$))', xlabel='Lon (km)', ylabel='Lat (km)', fontsize=10, contour=contour); quit()
+	
+	pt.animate1by1(data, X, Y, vmin=vmin, vmax=vmax, cmap='bwr', title=title, text_data=text_data, fontsize=9, contour=contour, contourLevels=levels)
+	
+	quit()
+
+#==
+
+binReadTest = 0
+if binReadTest:
+
+	path = '/home/michael/Documents/data/MCS/run/'
+
+	# = 'adxx_bottomdrag.0000000000.data'
+	VAR = 'stateTheta.0000000001.data'
+	#VAR = 'm_boxmean_theta.0000000000.data'
+	#VAR = 'adxx_theta.0000000000.data'
+	#VAR = 'ADJtaux.0000002304.data'
+	#VAR = 'state2D.0000008640.data'
+
+	nx = 240; ny = 200
+	dims = (nx, ny)
+	
+	grid = Grid(path)
+	X = grid.XC / 1000.
+	Y = grid.YC / 1000.
+
+	#plt.plot(Y[:,100], grid.bathy[:,100]); plt.grid(); plt.show(); quit()
+	#pt.plot1by1(grid.bathy, mesh=True); quit()
+	
+	#nx = 600; ny = 384
+	data = readnp(path+VAR, dims, rec=-1)# / 1.e9
+	print(data.shape)
+
+	#data = data[0]
+	#data = np.mean(data, axis=0)
+	
+	#vmax = 1.e6; vmin = -vmax
+	#vmax = 1; vmin = -vmax
+	vmax = None; vmin = None
+	 		
+	#data[:, 1:][:, ::2] = data[:,::2]
+	
+	#data = np.mean(data,axis=0); data = np.where(data<0, data, 0)
+	#pt.plot1by1(data[24], mesh=True)#, vmax=1, vmin=-1)
+	#plt.plot(data[-1, :]); plt.show(); plt.title(VAR)
+ 	
+	#for i in range(data.shape[0]):
+	#	pt.plot1by1(data[i])#, X=X, Y=Y, vmin=vmin, vmax=vmax, mesh=True, title=VAR)
+
+	quit()
+	
+#==
+
+readWindBin = 0
+if readWindBin:
+
+	path = '/home/michael/Documents/data/MCSwinds/'
+	
+	fnames = ['taux_05cos.bin', 'taux_05cos_tr16.bin', 'taux_05cos_tr-16.bin']
+	labels = ['Default wind', 'Southward shift', 'Northward shift']
+	nx = 240; ny = 200
+	dims = (ny, nx)
+	
+	y = np.linspace(0,ny*2.5,ny)
+	
+	for fi, fname in enumerate(fnames):
+		data = readnp(path+fnames[fi], dims, rec=0, dtype='>f8')[...,0]
+		plt.plot(data, y, label=labels[fi])
+	
+	plt.grid()
+	plt.legend()
+	plt.show()
+	quit()
+	
+#==
+	
+# Read MITgcm binary output using rdmds.
+mitgcmutilsTest = 0
+if mitgcmutilsTest:
+
+	from MITgcmutils import rdmds
+	from MITgcmutils.mds import readmeta
+	
+	path = '/home/michael/Documents/data/MCStheta/run/'
+	#VAR = 'adxx_tauu.effective.0000000000'
+	#VAR = 'Eta.0000000576'
+	#VAR = 'stateExf.0000000001'
+	VAR = 'm_boxmean_theta.0000000000'
+	#VAR = 'ADJtaux.0000008928'
+	
+	data = rdmds(path+VAR)
+	
+	for i in range(1):
+		data = rdmds(path+VAR, returnmeta=False, rec=i)
+		print(data.shape)
+				
+		pt.plot1by1(data)
+	quit()
+	
+	
+# A selection of binary-reading functions for testing.		
+binReadTest = 0
+if binReadTest:
+
+	from scipy.io import FortranFile
+
+	path = '/home/michael/Documents/data/MCS/run/'
+	VAR = 'adxx_tauu.effective.0000000000.data'
+	#VAR = 'm_boxmean_eta.0000000000.data'
+	#VAR = 'state2D.0000000576.data'
+	
+	def readnp(inputfilename, nx, ny):
+
+		dtype = '>f'
+		count = 1*nx*ny
+		size = np.dtype(dtype).itemsize
+		f = open(inputfilename, 'rb')
+		#f.seek(count*size)
+		data = np.fromfile(f, dtype=dtype, count=-1)
+		data = data.reshape((int(data.size/(ny*nx)),ny,nx))
+
+		return data
+
+	def readF(inputfilename):
+			f = FortranFile(inputfilename, 'r')
+			f = f.read_reals(dtype='float64')
+			return f
+	
+	def readslice(inputfilename,nx,ny,timeslice):
+		f = open(inputfilename,'rb')
+		f.seek(8*timeslice*nx*ny)
+		field = np.fromfile(f,dtype='float64',count=nx*ny)
+		field = np.reshape(field,(ny,nx))
+		f.close()
+		return field
+
+	#for i in range(3):
+		#field = readslice(path+VAR, 240,200,i)
+	#	field = readnp(path+VAR, 240, 200, i)
+		#print(np.mean(field))
+		#print(field)	
+	#	pt.plot1by1(field, vmin=-1.e-7, vmax=1.e-7)
+
+	data = readnp(path+VAR, 240, 200)
+	
+	print(data.shape)
+	pt.plot1by1(data[0]); quit()
+	
+	for i in range(data.shape[0]):
+		pt.plot1by1(data[i])
+    	
+	quit()
+
+
+xmitgcmTest = 0
+if xmitgcmTest:
+
+	from xmitgcm import open_mdsdataset
+	path = '/home/michael/Documents/data/MCS/run/'
+	
+	VAR = 'adxx_tauu.0000000000.data'
+	VAR = 'm_boxmean_eta.0000000000'
+	
+	data = open_mdsdataset(path, prefix=['adxx_tauu'], read_grid=False, ignore_unknown_vars=True)
+	
+	print(data)
+	data = np.array(data.to_array(dtype=float))
+	print(data.shape)
+	
+	quit()
+
+volTest = False
+if volTest:
+
+	path = '/home/michael/Documents/data/MCS_141/run/'
+	grid = Grid(path)
+	 
+	xlims = None#[98750,198750]
+	ylims = [0, 238750]
+	zlims = [0, -500]
+	
+	vol = grid.volume(xlims=xlims, ylims=ylims, zlims=zlims)
+		
+	print(vol)
+	
+	quit()
+		
+#==
 
 fbeta = False
 if fbeta:
-
-
-
 	Omega = 2 * np.pi / 86400.
 	a = 6371.e3
 	
@@ -169,17 +412,17 @@ if TEST_thetaHeight:
 TEST_rho = False
 if TEST_rho:
 
-	path = '/home/michael/Documents/data/MCS_038/run/'
-	
+	#path = '/home/michael/Documents/data/MCS_038/run/'
+	path = '/home/michael/Documents/data/IdealisedAmundsenSea_master/IdealisedAmundsenSea1/data/MCS_161/run/'
 	grid = Grid(path)
 	
 	X = grid.XC[1,:]/1000.
 	Y = grid.YC[:,1]/1000.
 	Z = grid.RC.squeeze()
 
-	Rho1 = readVariable('RHOAnoma', path, file_format='nc', meta=False)[-2:]
-	T = readVariable('THETA', path, file_format='nc', meta=False)[-2:]
-	S = readVariable('SALT', path, file_format='nc', meta=False)[-2:]
+	Rho1 = readVariable('RHOAnoma', path, file_format='nc', meta=False, tt=-1)
+	T = readVariable('THETA', path, file_format='nc', meta=False, tt=-1)
+	S = readVariable('SALT', path, file_format='nc', meta=False, tt=-1)
 
 	rho0 = 1030.
 	tAlpha=3.90e-5
@@ -188,14 +431,10 @@ if TEST_rho:
 	Tref, Sref = getTrefSref()
 	Rho2 = tools.EOSlinear(rho0, sBeta, tAlpha, S, Sref, T, Tref)
 
-	for ti in range(Rho1.shape[0]):
-		Rho1[ti,] = ptt.maskBathyAll(Rho1[ti,], grid)
-		Rho2[ti,] = ptt.maskBathyAll(Rho2[ti,], grid)
-	
-	#plt.contourf(Y, Z, S[-1,:,:,-1]); plt.colorbar(); plt.show(); quit()
-	
 	vmin = -0.2; vmax = -vmin
-	pt.plot1by2([Rho1[-1,...,-1]-Rho2[-1,...,-1], Rho2[-1,...,-1]], X=[Y,Y], Y=[Z,Z], vmin=[vmin,vmin], vmax=[vmax,vmax])
+	pt.plot1by2([Rho1[...,-1], Rho2[...,-1]], X=[Y,Y], Y=[Z,Z], vmin=[vmin,vmin], vmax=[vmax,vmax])
+	
+	quit()
 
 #==
 
@@ -368,48 +607,37 @@ if TEST_depthAverage:
 
 #==
 
-TEST_animate = True
+TEST_animate = False
 if TEST_animate:
 
 	#path = '/home/michael/Documents/data/MCS_002/run/'
 
-	path = '/home/michael/Documents/data/MCS_141/run/'
-	#path = '/home/michael/Documents/data/PISOMIP_001/run/'
-	#pathG = '/home/michael/Documents/data/MCS_018/run/'
+	path = '/home/michael/Documents/data/MCS_304/run/'
 
 	grid = Grid(path)
+	print(grid.hFac.shape)
+	plt.plot(grid.bathy[:,0]); plt.show(); quit()
+	
 	#grid = Grid_PAS(path)
 	X = grid.YC[:,1]/1000.
 	Y = grid.RC.squeeze()
 
 	#VAR = 'ETAN'
-	#VAR = 'RHOAnoma'
 	VAR = 'THETA'
-	#VAR = 'PHIHYD'
-	#VAR = 'DFrE_TH'
-	#VAR = 'WVELTH'#','UVELTH','VVELTH','WVELTH', 'TOTTTEND'
 	#VAR = 'SALT'	
 	#VAR = 'UVEL'	
-	#VAR = 'VVEL'
-	#VAR = 'WVEL'
-
+	
 	vmin, vmax, cmap, title = getPlottingVars(VAR)
 	#vmin = 33.32; vmax = 34.5
-	data = readVariable(VAR, path, file_format='nc', meta=True)
-	print(data)
-	
-	#pt.plot1by1(grid.bathy); quit()
+	data = readVariable(VAR, path, file_format='nc', meta=False, tt=[-200,None])
 		
-	text_data = ptt.getTextData(data.variables['TIME'][:], 'month', X[1], Y[-2], color='k')
-	data = data[VAR][:]
-
-	MEAN = False
+	MEAN = True
 	ASYM = False
 	if not MEAN:
 		for ti in range(data.shape[0]):
 			data[ti,] = ptt.maskBathyAll(data[ti,], grid)
 		#data = np.ma.mean(data, axis=3)
-		data = data[...,0]
+		data = data[...,120]
 		#data = np.mean(data[...,1:40], axis=-1)
 	
 	else:
@@ -425,6 +653,8 @@ if TEST_animate:
 	#plt.pcolor(np.mean(data[48:,], axis=0), vmin=vmin, vmax=vmax, cmap=cmap); plt.colorbar(); plt.show(); quit()
 
 	data = tools.boundData(data, vmin, vmax, scale=0.99999)
+
+	data = grid.hFacC.transpose([2,0,1]); vmin = 0; vmax = 1
 	
 	# PLOT.
 
@@ -432,7 +662,7 @@ if TEST_animate:
 	xlabel = 'LATITUDE (km)'; ylabel = 'DEPTH (m)'
 	#pt.plot1by1(data[-1], X, Y, xlabel=xlabel, ylabel=ylabel, title=title, cmap=cmap, vmin=vmin, vmax=vmax, mesh=False); quit()
 
-	pt.animate1by1(data, X, Y, vmin=vmin, vmax=vmax, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=False, text_data=text_data)
+	pt.animate1by1(data, X, Y, vmin=vmin, vmax=vmax, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=False)
 		
 	quit()
 	
@@ -480,8 +710,10 @@ if animateSurface:
 
 	#path = '/home/michael/Documents/data/PAS_666/run/'
 	#path = '/home/michael/Documents/data/PISOMIP_003/run/'
-	path = '/home/michael/Documents/data/MCS_123/run/'
-
+	path_root = '/home/michael/Documents/data/'
+	run = 'PISOMIP_001'
+	
+	path = path_root + run + '/run/'
 	grid = Grid(path)
 	#grid = Grid_PAS(path)
 	bathy = grid.bathy
@@ -493,7 +725,7 @@ if animateSurface:
 	ny, nx = bathy.shape
 	
 	#VAR = 'ETAN'
-	VAR = 'PHIBOT'
+	#VAR = 'PHIBOT'
 	#VAR = 'RHOAnoma'
 	#VAR = 'THETA' 
 	#VAR = 'PHIHYD'
@@ -505,16 +737,33 @@ if animateSurface:
 	#VAR = 'VVEL'
 	#VAR = 'WVEL'
 	#VAR = 'botTauX'
+	#VAR = 'ADTAUU'
+	VAR = 'ISOTHERM'
 
-	flatVars = ['ETAN', 'botTauX', 'PHIBOT']
+	flatVars = ['ETAN', 'botTauX', 'PHIBOT', 'ISOTHERM']
 
-	vmin, vmax, cmap, title = getPlottingVars(VAR)
+	if VAR == 'ISOTHERM':
+	
+		data = readVariable('ETAN', path, file_format='nc', meta=True)
+		text_data = ptt.getTextData(data.variables['TIME'][:], 'month', X[1], Y[1], color='k')
+		
+		data = np.load(path+'ThermZ_m05_'+run+'.npy')
+		vmin = -600; vmax=-150;	cmap = 'YlOrRd'
+		#vmin = -500; vmax = -350; cmap = 'jet'
+		title = run + ' -0.5 deg. C isotherm depth'
+		print(data.shape)
+		
+	else:
+			
+		vmin, vmax, cmap, title = getPlottingVars(VAR)
 
-	data = readVariable(VAR, path, file_format='nc', meta=True)
-	print(data)
+		data = readVariable(VAR, path, file_format='nc', meta=True)
+		print(data.variables)
 
-	text_data = ptt.getTextData(data.variables['TIME'][:], 'month', X[1], Y[1], color='k')
-	data = data[VAR][:]
+		text_data = ptt.getTextData(data.variables['TIME'][:], 'month', X[1], Y[1], color='k')
+		data = data[VAR][-120:]
+		
+	#==
 
 	PLOT_MEAN = False
 	if PLOT_MEAN:
@@ -529,7 +778,7 @@ if animateSurface:
 	level = 0
 
 	if VAR not in flatVars:
-		level = 25
+		level = 18
 		data = data[:,level]
 		print('Z = ' + str(grid.RC.squeeze()[level]))
 
@@ -538,7 +787,7 @@ if animateSurface:
 	#data = tools.boundData(data, vmin, vmax, scale=0.99999)
 	data = ptt.maskBathyXY(data, grid, level, timeDep=True)
 
-	SUBR = 1
+	SUBR = 0
 	if SUBR:
 		lats = [120.e3, 270.e3]; lons = [500.e3, 600.e3]#[230, 270]#
 		latsi = grid.getIndexFromLat(lats); lonsi = grid.getIndexFromLon(lons)
@@ -548,17 +797,16 @@ if animateSurface:
 	#data = np.mean(data, axis=3)
 
 	#vmin = None; vmax = None
-	#vmin = -0.1; vmax = -vmin
 	#vmin = 33.375; vmax=33.575 # For SSS
-
-	pt.animate1by1(data, X, Y, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=True, text_data=text_data, outname='animate1by1Surf.mp4', vmin=vmin, vmax=vmax)
+	
+	pt.animate1by1(data, X, Y, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=True, text_data=text_data, outname='animate1by1Surf.mp4', vmin=vmin, vmax=vmax, contour=grid.bathy)
 
 	quit()
 	
 	
 #==
 
-animateCONV = True
+animateCONV = False
 if animateCONV:
 
 	path = '/home/michael/Documents/data/MCS_123/run/'
@@ -668,7 +916,7 @@ animateQuivers = False
 if animateQuivers:
 
 	#path = '/home/michael/Documents/data/PAS_666/run/'
-	path = '/home/michael/Documents/data/MCS_038/run/'
+	path = '/home/michael/Documents/data/MCS_308/run/'
 	#path = '/data/oceans_output/shelf/pahol/mitgcm/PAS_851/run/'
 
 	# Sample rate
@@ -973,7 +1221,7 @@ if animateUbots:
 #==
 
 
-animateDragBot = False
+animateDragBot = True
 if animateDragBot:
 	# Animate zonal mean Ubots for multiple MITgcm runs.
 	# Assumes that all use the same grid and have the same time dependencies.
@@ -984,8 +1232,8 @@ if animateDragBot:
 	#paths = [path_root+'MCS_113/run/', path_root+'MCS_104/run/']
 	#labels = ['wind16 botStress', 'wind0 botStress', 'wind0 x = 0', 'wind0 x = 120']
 	
-	paths = [path_root+'MCS_108/run/', path_root+'MCS_108/run/']
-	labels = ['wind16 botStress', 'wind0 botStress', 'wind0 x = 0', 'wind0 x = 120']
+	paths = [path_root+'MCS_104/run/', path_root+'MCS_104/run/']
+	labels = ['wind0 botStress', 'wind0 botStress', 'wind0 x = 0', 'wind0 x = 120']
 
 	grid = Grid(paths[0])
 	Y = grid.YC
