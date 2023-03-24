@@ -20,10 +20,10 @@ def readnp(inputfilename, dims, dtype='>f', rec=-1):
 	''''''
 	
 	if len(dims) == 2:
-		nx, ny = dims
+		ny, nx = dims
 		count = nx * ny
 	elif len(dims) == 3:
-		nx, ny, nz = dims
+		nz, ny, nx = dims
 		count = nx * ny * nz
 	else: 
 		print('Try again: dims should be length 2 or 3')
@@ -76,6 +76,7 @@ def readVariable(VAR, path, file_format='nc', time_step=1, var2D=False, meta=Fal
 			
 	from varDict import varDict
 	
+
 	# First check if sub-intervals are needed.
 	if tt is not None:
 		if tt == -1:
@@ -117,7 +118,7 @@ def readVariable(VAR, path, file_format='nc', time_step=1, var2D=False, meta=Fal
 		if meta:
 			return Dataset(path+fname, 'r')
 		else:
-			if var2D:
+			if fname == 'state2D.nc':
 				return sq(Dataset(path+fname, 'r')[VAR][tt[0]:tt[1],yy[0]:yy[1],xx[0]:xx[1]])
 			else:
 				return sq(Dataset(path+fname, 'r')[VAR][tt[0]:tt[1],zz[0]:zz[1],yy[0]:yy[1],xx[0]:xx[1]])

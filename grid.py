@@ -120,7 +120,7 @@ class Grid:
 		iw = np.argmin(np.abs(self.XC[i0, :] - lons[0]))
 		ie = np.argmin(np.abs(self.XC[i0, :] - lons[1]))
 		
-		return self.XC[ys:yn+1, iw:ie+1] , self.YC[ys:yn+1, iw:ie+1]
+		return self.XC[ys:yn+1, iw:ie+1].copy(), self.YC[ys:yn+1, iw:ie+1].copy()
 
 	#==
 
@@ -135,7 +135,7 @@ class Grid:
 		iw = np.argmin(np.abs(self.XC[yi, :] - lons[0]))
 		ie = np.argmin(np.abs(self.XC[yi, :] - lons[1]))
 		
-		return self.XC[yi, iw:ie+1] 
+		return self.XC[yi, iw:ie+1].copy()
 		
 	#==
 
@@ -150,7 +150,7 @@ class Grid:
 		js = np.argmin(np.abs(self.YC[:, xi] - lats[0]))
 		jn = np.argmin(np.abs(self.YC[:, xi] - lats[1]))
 		
-		return self.YC[js:jn+1, xi] 
+		return self.YC[js:jn+1, xi].copy()
 		
 		#==
 
@@ -165,10 +165,10 @@ class Grid:
 		kt = np.argmin(np.abs(self.RC.squeeze() - depths[0]))
 		kb = np.argmin(np.abs(self.RC.squeeze() - depths[1]))
 		
-		return self.RC.squeeze()[kt:kb+1] 
+		return self.RC.squeeze()[kt:kb+1].copy()
 		
 		
-	def volume(self, xlims=None, ylims=None, zlims=None, limsIndex=False):
+	def volume(self, xlims=None, ylims=None, zlims=None, limsIndex=False, SUM=False):
 		'''Return total wet volume of domain, or volume inside given limits.'''
 		
 		dx = self.DXG
@@ -207,8 +207,11 @@ class Grid:
 				z1 = zlims[1]+1
 			dz = dz[z0:z1]
 			hfac = hfac[z0:z1]
-						
-		return np.sum(dx * dy * dz * hfac)
+		
+		if SUM:
+			return np.sum(dx * dy * dz * hfac)
+		else:			
+			return dx * dy * dx * hfac
 	
 	
 		

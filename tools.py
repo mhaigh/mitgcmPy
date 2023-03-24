@@ -80,9 +80,10 @@ def heatContentShelf(theta, grid, shelf=500, rho=1030, Cp=3974.0, T0=-2, y0=96, 
 	bathy = np.tile(bathy, (z.shape[0], 1, 1))
 	z = np.tile(z, (1, bathy.shape[1], bathy.shape[2]))
 
+	print(1)
 	# Heat content times volume elements
 	HC = Cp * rho * (theta - T0) * grid.DXG * grid.DYG * grid.hFacC * grid.DRF
-	
+	print(2)
 	# Same for initial heat content
 	theta0 = -1.8 * np.ones(HC.shape)
 	HC0 = Cp * rho * (theta0 - T0) * grid.DXG * grid.DYG * grid.hFacC * grid.DRF
@@ -108,6 +109,15 @@ def heatContentShelf(theta, grid, shelf=500, rho=1030, Cp=3974.0, T0=-2, y0=96, 
 		TCH0 += np.sum(HCtmp0)	
 
 	return TCH, TCH0
+
+#==
+
+def heatContentShelfFast(theta, shelf=500, rho=1030, Cp=3974.0, T0=-1.8):
+	'''Return scalar heat content on shelf.
+	Assumes theta is snapshot or time-mean value.'''
+	
+	# Heat content times volume elements
+	return np.sum(Cp * rho * (theta - T0), axis=(1,2,3)) * 2.5e3 * 2.5e3 * 20
 	
 #==
 
@@ -382,7 +392,7 @@ def ddz(f, dz=1, axis=-3):
 		sys.exit()
 #==
 
-def bottom(data, grid, cellPos, timeDep=True):
+def bottom(data, grid, cellPos, timeDep=True, shiftUp=None):
 	'''Return value of data at bottom of domain.
 	Must specify if at u, v, or h location of grid cells.'''
 
@@ -393,7 +403,7 @@ def bottom(data, grid, cellPos, timeDep=True):
 	elif cellPos == 'h':
 		hFac = grid.hFacC
 	else:
-		print('Error: tools.bottom. Must provide valid cellPos.')
+		print('Error: tools.bottom. Must provide v alid cellPos.')
 		sys.exit()
 
 	if timeDep:
@@ -406,6 +416,10 @@ def bottom(data, grid, cellPos, timeDep=True):
 	for k in range(1,Nz):
 		bottom += hFac[k] > 0
 	bottom = bottom.astype(int)
+	
+	if shiftUp is not None:
+		bottom = np.where(bottom!=0, bottom-shiftUp, bottom)
+
 
 	# bottom is Ny, Nx array of z grid points.
 	Y = [[i]*Nx for i in range(Ny)]
@@ -545,7 +559,10 @@ def getIsothermHeight(T, THERM, grid, timeDep=True, interp=True, botVal=np.nan):
 
 		# Heights of levels above and below
 		ThermZup = grid.RC.squeeze()[Tz-1]
-		Tz1 = Tz+1; Tz1 = np.where(Tz1>=Nz, Tz1-1, Tz)
+		#Tz1 = Tz+1
+		
+		Tz1 = np.where(grid.hFacC==1, Tz+1, Tz)
+		#Tz1 = np.where(Tz1>=Nz, Tz1-1, Tz)
 		ThermZdown = grid.RC.squeeze()[Tz1]
 
 		Y = [[i]*Nx for i in range(Ny)]
@@ -764,5 +781,20 @@ def getTSrel(grid, salttoptop=33.2, salttop=33.8, saltbot=34.7, temptop=-1.8, te
 		Srel[zi-1] = salttop - (nztophc - zi+1) * dstop
 
 	return Trel, Srel
+	
+#==
+
+def getRelMask(grid, maskWidth=4):
+	'''Return 3D file with values for T/S relaxation mask.'''
+	
+	mask = np.zeros((grid.Nz, grid.Ny, grid.Nx))
+	
+	for i in range(maskWidth):
+		mask[:,i+1,:] = 1 - i / maskWidth
+		mask[:,grid.Ny-i-2,:] = 1 - i / maskWidth
+		
+	return mask
+
+
 
 

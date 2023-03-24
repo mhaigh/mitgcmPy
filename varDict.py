@@ -17,7 +17,7 @@ Rho = {'fname':'stateRho', 'VAR':'RHOAnoma', 'vmin':-.2, 'vmax':.2, 'cmap':'jet'
 Theta = {'fname':'stateTheta', 'VAR':'THETA', 'vmin':-1.8, 'vmax':1, 'cmap':'coolwarm', 'title':'THETA (deg. C)','TrefN':TrefN}
 Salt = {'fname':'stateSalt', 'VAR':'SALT', 'vmin':33.2, 'vmax':34.5, 'cmap':'jet', 'title':'Salinity (g/kg)', 'SrefN':SrefN}
 Uvel = {'fname':'stateUvel', 'VAR':'UVEL', 'vmin':-0.2, 'vmax':0.2, 'cmap':'coolwarm', 'title':'U (m/s)'}
-Vvel = {'fname':'stateVvel', 'VAR':'VVEL', 'vmin':-0.01, 'vmax':0.01, 'cmap':'coolwarm', 'title':'V (m/s)'}
+Vvel = {'fname':'stateVvel', 'VAR':'VVEL', 'vmin':-0.02, 'vmax':0.02, 'cmap':'coolwarm', 'title':'V (m/s)'}
 Wvel = {'fname':'stateWvel', 'VAR':'WVEL', 'vmin':-1.e-5, 'vmax':1.e-5, 'cmap':'coolwarm', 'title':'W (m/s)'}
 
 
@@ -32,7 +32,7 @@ varDict['PHIHYD'] = {'fname':'state2D', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwar
 varDict['PHIBOT'] = {'fname':'state2D', 'vmin':-1, 'vmax':1, 'cmap':'coolwarm', 'title':'Bottom hydr. pressure pot. anom.'}
 varDict['botTauX'] = {'fname':'state2D', 'vmin':-0.05, 'vmax':0.05, 'cmap':'coolwarm', 'title':'Zonal bottom stress'}
 varDict['botTauY'] = {'fname':'state2D', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Merid. bottom stress'}
-varDict['oceTAUX'] = {'fname':'state2D', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Zonal surface stress'}
+varDict['oceTAUX'] = {'fname':'state2D', 'vmin':-0.025, 'vmax':0.025, 'cmap':'coolwarm', 'title':'Zonal surface stress'}
 varDict['oceTAUY'] = {'fname':'state2D', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Merid. surface stress'}
 varDict['Um_dPhiX'] = {'fname':'stateUdpdx', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Zonal PGF'}
 varDict['Vm_dPhiX'] = {'fname':'stateVdpdx', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Merid. PGF'}

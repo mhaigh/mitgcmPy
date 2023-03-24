@@ -149,7 +149,29 @@ if binReadTest:
 
 	quit()
 	
+#==
 
+readWindBin = 0
+if readWindBin:
+
+	path = '/home/michael/Documents/data/MCSwinds/'
+	
+	fnames = ['taux_05cos.bin', 'taux_05cos_tr16.bin', 'taux_05cos_tr-16.bin']
+	labels = ['Default wind', 'Southward shift', 'Northward shift']
+	nx = 240; ny = 200
+	dims = (ny, nx)
+	
+	y = np.linspace(0,ny*2.5,ny)
+	
+	for fi, fname in enumerate(fnames):
+		data = readnp(path+fnames[fi], dims, rec=0, dtype='>f8')[...,0]
+		plt.plot(data, y, label=labels[fi])
+	
+	plt.grid()
+	plt.legend()
+	plt.show()
+	quit()
+	
 #==
 	
 # Read MITgcm binary output using rdmds.
@@ -387,7 +409,7 @@ if TEST_thetaHeight:
 
 #==
 
-TEST_rho = True
+TEST_rho = False
 if TEST_rho:
 
 	#path = '/home/michael/Documents/data/MCS_038/run/'
@@ -585,14 +607,17 @@ if TEST_depthAverage:
 
 #==
 
-TEST_animate = True
+TEST_animate = False
 if TEST_animate:
 
 	#path = '/home/michael/Documents/data/MCS_002/run/'
 
-	path = '/home/michael/Documents/data/MCS_154/run/'
+	path = '/home/michael/Documents/data/MCS_304/run/'
 
 	grid = Grid(path)
+	print(grid.hFac.shape)
+	plt.plot(grid.bathy[:,0]); plt.show(); quit()
+	
 	#grid = Grid_PAS(path)
 	X = grid.YC[:,1]/1000.
 	Y = grid.RC.squeeze()
@@ -601,26 +626,11 @@ if TEST_animate:
 	VAR = 'THETA'
 	#VAR = 'SALT'	
 	#VAR = 'UVEL'	
-
+	
 	vmin, vmax, cmap, title = getPlottingVars(VAR)
 	#vmin = 33.32; vmax = 34.5
-	data = readVariable(VAR, path, file_format='nc', meta=False)[-200:]
+	data = readVariable(VAR, path, file_format='nc', meta=False, tt=[-200,None])
 		
-	#text_data = ptt.getTextData(data.variables['TIME'][:], 'month', X[1], Y[-2], color='k')
-	#data = data[VAR][:][::2]
-	
-	
-	grid = Grid(path)
-	X = grid.XC / 1000.
-	Y = grid.YC / 1000.
-	
-	vol = grid.hFacC * grid.DRF * grid.RAC
-	vol = vol[:,:92,:]; data = data[:,:,:92,:]
-	
-	data = np.sum(vol * data, axis=(1,2,3))	
-	totvol = np.sum(vol); data = data / totvol	
-	plt.plot(data); plt.show(); quit()	
-	
 	MEAN = True
 	ASYM = False
 	if not MEAN:
@@ -643,6 +653,8 @@ if TEST_animate:
 	#plt.pcolor(np.mean(data[48:,], axis=0), vmin=vmin, vmax=vmax, cmap=cmap); plt.colorbar(); plt.show(); quit()
 
 	data = tools.boundData(data, vmin, vmax, scale=0.99999)
+
+	data = grid.hFacC.transpose([2,0,1]); vmin = 0; vmax = 1
 	
 	# PLOT.
 
@@ -650,7 +662,7 @@ if TEST_animate:
 	xlabel = 'LATITUDE (km)'; ylabel = 'DEPTH (m)'
 	#pt.plot1by1(data[-1], X, Y, xlabel=xlabel, ylabel=ylabel, title=title, cmap=cmap, vmin=vmin, vmax=vmax, mesh=False); quit()
 
-	pt.animate1by1(data, X, Y, vmin=vmin, vmax=vmax, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=False, text_data=text_data)
+	pt.animate1by1(data, X, Y, vmin=vmin, vmax=vmax, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=False)
 		
 	quit()
 	
@@ -693,13 +705,15 @@ if TEST_animateX:
 	
 #==
 
-animateSurface = True
+animateSurface = False
 if animateSurface:
 
 	#path = '/home/michael/Documents/data/PAS_666/run/'
 	#path = '/home/michael/Documents/data/PISOMIP_003/run/'
-	path = '/home/michael/Documents/data/MCS/run/'
-
+	path_root = '/home/michael/Documents/data/'
+	run = 'PISOMIP_001'
+	
+	path = path_root + run + '/run/'
 	grid = Grid(path)
 	#grid = Grid_PAS(path)
 	bathy = grid.bathy
@@ -723,17 +737,33 @@ if animateSurface:
 	#VAR = 'VVEL'
 	#VAR = 'WVEL'
 	#VAR = 'botTauX'
-	VAR = 'ADTAUU'
+	#VAR = 'ADTAUU'
+	VAR = 'ISOTHERM'
 
-	flatVars = ['ETAN', 'botTauX', 'PHIBOT']
+	flatVars = ['ETAN', 'botTauX', 'PHIBOT', 'ISOTHERM']
 
-	vmin, vmax, cmap, title = getPlottingVars(VAR)
+	if VAR == 'ISOTHERM':
+	
+		data = readVariable('ETAN', path, file_format='nc', meta=True)
+		text_data = ptt.getTextData(data.variables['TIME'][:], 'month', X[1], Y[1], color='k')
+		
+		data = np.load(path+'ThermZ_m05_'+run+'.npy')
+		vmin = -600; vmax=-150;	cmap = 'YlOrRd'
+		#vmin = -500; vmax = -350; cmap = 'jet'
+		title = run + ' -0.5 deg. C isotherm depth'
+		print(data.shape)
+		
+	else:
+			
+		vmin, vmax, cmap, title = getPlottingVars(VAR)
 
-	data = readVariable(VAR, path, file_format='nc', meta=True)
-	print(data.variables)
+		data = readVariable(VAR, path, file_format='nc', meta=True)
+		print(data.variables)
 
-	text_data = ptt.getTextData(data.variables['TIME'][:], 'month', X[1], Y[1], color='k')
-	data = data[VAR][-120:]
+		text_data = ptt.getTextData(data.variables['TIME'][:], 'month', X[1], Y[1], color='k')
+		data = data[VAR][-120:]
+		
+	#==
 
 	PLOT_MEAN = False
 	if PLOT_MEAN:
@@ -767,11 +797,8 @@ if animateSurface:
 	#data = np.mean(data, axis=3)
 
 	#vmin = None; vmax = None
-	vmin = -0.05; vmax = -vmin
 	#vmin = 33.375; vmax=33.575 # For SSS
 	
-	pt.plot1by1(data[-1], X=X, Y=Y)
-
 	pt.animate1by1(data, X, Y, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=True, text_data=text_data, outname='animate1by1Surf.mp4', vmin=vmin, vmax=vmax, contour=grid.bathy)
 
 	quit()
@@ -889,7 +916,7 @@ animateQuivers = False
 if animateQuivers:
 
 	#path = '/home/michael/Documents/data/PAS_666/run/'
-	path = '/home/michael/Documents/data/MCS_038/run/'
+	path = '/home/michael/Documents/data/MCS_308/run/'
 	#path = '/data/oceans_output/shelf/pahol/mitgcm/PAS_851/run/'
 
 	# Sample rate

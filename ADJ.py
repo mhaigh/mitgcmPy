@@ -18,25 +18,30 @@ import time
 
 #==========================================================
 
+# Meridional limits of mask:
+# YC>=2.21250e5
 
-objTest = 0
+objTest = 1
 if objTest:
 
 	path = '/home/michael/Documents/data/MCS/run/'
 
-	VAR1 = 'stateTheta.0000000000.data'; norm1 = 1.e9
+	VAR1 = 'stateTheta.0000000144.data'; norm1 = 1.e9
 	VAR2 = 'm_boxmean_theta.0000000000.data'; norm2 = 1.e0
 
-	nx = 240; ny = 200
-	dims = (nx, ny)
+	ny = 200; nx = 240
+	dims = (ny, nx)
 	
 	grid = Grid(path)
 	X = grid.XC / 1000.
 	Y = grid.YC / 1000.
 	
+	plt.plot(grid.bathy[:,120]); plt.grid(); plt.show(); quit()
+	
 	vol = grid.hFacC * grid.DRF * grid.RAC
 	
 	data1 = readnp(path+VAR1, dims, rec=-1)# / norm1
+	print(data1.shape)
 	
 	# Integrate over volume and normalise.
 	data1 = np.sum(vol * data1, axis=0)	
@@ -45,14 +50,18 @@ if objTest:
 	
 	sum1 = np.sum(data1)#*norm1
 
-	data2 = readnp(path+VAR2, dims, rec=0)# / norm2
+	data2 = readnp(path+VAR2, dims, rec=-1)
+	#data2 = np.mean(data2[0:30], axis=0)# / norm2
+	data2 = data2[0]
+	print(data2.shape)
+	
 	sum2 = np.sum(data2)#*norm2
 	
 	print(sum1)
 	print(sum2)
 	print(sum1/sum2)
 
-	pt.plot1by2([data1, data2-data1])
+	pt.plot1by2([data1, data2])#, vmin=-2.e-5, vmax=0.)
 	
 	quit()
 	
@@ -248,11 +257,9 @@ if kinDynSens:
 		
 	quit()
 	
-	
 #==
 
-
-animBin = 1
+animBin = 0
 if animBin:
 	
 	#==
@@ -293,4 +300,49 @@ if animBin:
 	pt.animate1by1varCbar(data, X, Y, vmin=vmin, vmax=vmax, cmap='bwr', title=title, text_data=text_data, fontsize=9, contour=contour, contourLevels=levels)
 	
 	quit()
+	
+#==
+
+adjTimings = 0
+if adjTimings:
+
+	times = [
+	[(48,1,1), 71.218007087707520],\
+	[(48,2,1), 129.52633404731750],\
+	[(48,2,2), 272.00419402122498],\
+	[(48,8,8), 4790.6619710922241],\
+	[(48,16,8), 10857.532526016235],\
+	[(48,16,16), 23602.149661064148],\
+	[(48,32,16), 54387.048799991608],\
+	[(48,32,32), 154051.76470588235]\
+	]
+	
+	scale = 1
+	Nts = []
+	runtimes = []
+	for time in times:
+		
+		chklevs = time[0]
+		Nts.append(chklevs[0] * chklevs[1] * chklevs[2])
+		runtimes.append(time[1]/scale)
+		
+	refx = [2**n for n in range(6,18)]
+	refy = [2**n/scale for n in range(6,18)]	
+	
+	fig, ax = plt.subplots()
+	plt.plot(Nts, runtimes)
+	plt.plot(refx,refy,linestyle='dashed', color='k')
+	plt.grid()
+	ax.set_xscale('symlog', base=2)
+	ax.set_yscale('symlog', base=2)
+	plt.xlabel('n timesteps')
+	plt.ylabel('Adjoint runtime (s)')
+
+	plt.show()
+
+
+
+
+
+
 
