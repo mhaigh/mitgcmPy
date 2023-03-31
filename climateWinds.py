@@ -7,6 +7,7 @@ from grid_PAS import Grid as Grid_PAS
 
 import plotting as pt
 import plotting_tools as ptt
+import tools 
 
 from scipy.io import loadmat
 
@@ -14,6 +15,14 @@ from scipy.io import loadmat
 
 windPath = '/home/michael/Documents/data/WINDS/'
 PASpath = '/home/michael/Documents/data/IdealisedAmundsenSea/data/PAS_851/run/'
+
+rhoa = 1.3 # kg / m3
+ca = 0.0053
+# ca values:
+# 0053 Bett et al.
+# 0.001 Holland et al. 2019
+# 1.25e-3 Dotto et al. 2020
+# 1.2e-3 u<11, (0.49+0.65u)e-3 11<u<25 m/s
 
 # Zonal and meridional limits.
 W = -130; E = -90;
@@ -54,45 +63,98 @@ f = loadmat(windPath + 'paneldata.mat')['paneldata']
 d = [1,1,1,1,4,1]
 titles = ['reconstruction', 'external', 'internal', 'GHG', 'IPO', 'ozone']
 
-for pi in range(6):
+#==
 
-	lat = f[pi,0]['lat'][0,0]
-	lon = f[pi,0]['lon'][0,0]
-	u = f[pi,0]['u'][0,0]
-	v = f[pi,0]['v'][0,0]
-	
-	xw = np.argmin(np.abs(lon[0,:]-W))
-	xe = np.argmin(np.abs(lon[0,:]-E))
-	ys = np.argmin(np.abs(lat[:,0]-S))
-	yn = np.argmin(np.abs(lat[:,0]-N))
+if True:
 
-	lat = lat[ys:yn, xw:xe]
-	lon = lon[ys:yn, xw:xe]
-	u = u[ys:yn, xw:xe]
-	v = v[ys:yn, xw:xe]
+	nyears = 100
 	
-	latd = lat[::d[pi],::d[pi]]
-	lond = lon[::d[pi],::d[pi]]
-	ud = u[::d[pi],::d[pi]]
-	vd = v[::d[pi],::d[pi]]
+	for pi in [1,4]:
+	
+		lat = f[pi,0]['lat'][0,0]
+		lon = f[pi,0]['lon'][0,0]
+		u = f[pi,0]['u'][0,0]
+		v = f[pi,0]['v'][0,0]
+		
+		xw = np.argmin(np.abs(lon[0,:]-W))
+		xe = np.argmin(np.abs(lon[0,:]-E))
+		ys = np.argmin(np.abs(lat[:,0]-S))
+		yn = np.argmin(np.abs(lat[:,0]-N))
 
-	# Colour in land.
-	
-	uav = np.mean(u, axis=1)
-	uav = uav * 0.3*(E-W) / np.max(np.abs(uav)) + (W+E)/2
-	zeros = np.zeros(uav.shape[0]) + (W+E)/2
-	
-	#plt.imshow(land[::-1], interpolation='none', cmap=cmap, norm=norm, extent=extent, aspect=2)
-	plt.plot(uav, lat[:,0], color='r')
-	plt.plot(zeros, lat[:,0], linestyle='dashed', color='r')
-	plt.contourf(lonPAS_, latPAS_, land_, cmap=cmap)
-	#plt.contourf(lonPAS, latPAS, land, cmap=cmap)
-	plt.contour(lonPASbathy, latPASbathy, bathy, levels=[-1000], colors='k', linestyles='solid')
-	plt.quiver(lond, latd, ud, vd)
-	
-	plt.title(titles[pi])
-	plt.xlim([W, E]); plt.ylim([S, N])
+		lat = lat[ys:yn, xw:xe]
+		lon = lon[ys:yn, xw:xe]
+		u = u[ys:yn, xw:xe]
+		v = v[ys:yn, xw:xe]
+		
+		latd = lat[::d[pi],::d[pi]]
+		lond = lon[::d[pi],::d[pi]]
+		ud = u[::d[pi],::d[pi]]
+		vd = v[::d[pi],::d[pi]]
+
+		#u *= 2; v *= 2
+
+		u *= nyears
+		v *= nyears
+
+		# Colour in land.
+		
+		tauRef = 0.025 * tools.get05cosWind(u.shape[1], u.shape[0])[:,0]
+		uRef = (tauRef/(rhoa*ca))
+		
+		uabs = (u**2+v**2)**0.5
+		tau = ca * rhoa * uabs * u
+
+		uav = np.mean(u, axis=-1)
+		tau_av = np.mean(u, axis=1)
+		
+		plt.plot(uRef+uav, lat[:,0], label=titles[pi])
+		plt.plot(uav, lat[:,0], label=titles[pi])
+	plt.grid()
+	plt.legend()
 	plt.show()
-	
+
+#==
+
+if False:
+	for pi in range(6):
+
+		lat = f[pi,0]['lat'][0,0]
+		lon = f[pi,0]['lon'][0,0]
+		u = f[pi,0]['u'][0,0]
+		v = f[pi,0]['v'][0,0]
+		
+		xw = np.argmin(np.abs(lon[0,:]-W))
+		xe = np.argmin(np.abs(lon[0,:]-E))
+		ys = np.argmin(np.abs(lat[:,0]-S))
+		yn = np.argmin(np.abs(lat[:,0]-N))
+
+		lat = lat[ys:yn, xw:xe]
+		lon = lon[ys:yn, xw:xe]
+		u = u[ys:yn, xw:xe]
+		v = v[ys:yn, xw:xe]
+		
+		latd = lat[::d[pi],::d[pi]]
+		lond = lon[::d[pi],::d[pi]]
+		ud = u[::d[pi],::d[pi]]
+		vd = v[::d[pi],::d[pi]]
+
+		# Colour in land.
+		
+		uav = np.mean(u, axis=1)
+		uav = uav * 0.3*(E-W) / np.max(np.abs(uav)) + (W+E)/2
+		zeros = np.zeros(uav.shape[0]) + (W+E)/2
+		
+		#plt.imshow(land[::-1], interpolation='none', cmap=cmap, norm=norm, extent=extent, aspect=2)
+		plt.plot(uav, lat[:,0], color='r')
+		plt.plot(zeros, lat[:,0], linestyle='dashed', color='r')
+		plt.contourf(lonPAS_, latPAS_, land_, cmap=cmap)
+		#plt.contourf(lonPAS, latPAS, land, cmap=cmap)
+		plt.contour(lonPASbathy, latPASbathy, bathy, levels=[-1000], colors='k', linestyles='solid')
+		plt.quiver(lond, latd, ud, vd)
+		
+		plt.title(titles[pi])
+		plt.xlim([W, E]); plt.ylim([S, N])
+		plt.show()
+		
 	
 	

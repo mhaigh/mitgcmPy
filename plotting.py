@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib.gridspec as gridspec
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from plotting_tools import setText, getContourfLevels, maskBathyXY, maskDraftXY, makeList, doTicks, doTitle, doLabels
 
@@ -147,7 +148,7 @@ def plot1by1(data, X=None, Y=None, contour=None, contourlevels=None, figsize=(5,
 	
 #==
 
-def line1byN(data, labels, colours, xlims, ylims, titles, xlabels, ylabels, xticks, xticksvis, yticks, yticksvis, fontsize=14, figsize=(9,3), text_data=None, save=False, outname='line1byN.png', show=True):
+def line1byN(data, labels, colours, xlims, ylims, titles, xlabels, ylabels, xticks, xticksvis, yticks, yticksvis, fontsize=14, figsize=(9,3), text_data=None, loc=2, save=False, outname='line1byN.png', show=True):
 
 	N = len(data)
 	if N == 3:
@@ -177,7 +178,7 @@ def line1byN(data, labels, colours, xlims, ylims, titles, xlabels, ylabels, xtic
 		plt.ylabel(ylabels[pi], fontsize=fontsize-2)
 		plt.grid()
 	
-	plt.legend(loc=2) 
+	plt.legend(loc=loc) 
 	
 	plt.tight_layout()
 		
@@ -1211,7 +1212,7 @@ def quiver2plot1(u, v, Xd, Yd, data, X, Y, C=[None]*2, ccmap='bwr', contourf=[No
 
 #==
 
-def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh=True, cmap='jet', vmin=None, vmax=None, xlabel='', ylabel='', save=True, outpath='', outname='animate1by1.mp4', show=False, dpi=200, fps=8, bitrate=-1, text_data=None, contour=None, hline=None):
+def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh=True, cmap='jet', vmin=None, vmax=None, xlabel='', ylabel='', save=True, outpath='', outname='animate1by1.mp4', show=False, dpi=200, fps=8, bitrate=-1, text_data=None, contour=None, hlines=[]):
 
 	# Make animation
 	fig = plt.figure(figsize=figsize, dpi=dpi)
@@ -1229,13 +1230,16 @@ def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh
 		if contour is not None:
 			plt.contour(X, Y, contour, colors='k', linestyles='solid', linewidths=0.4)
 
+		for hline in hlines:
+			plt.axvline(hline, color='k', linewidth=1.0, linestyle='--')
+
 		plt.grid()
 		
 		def animate(i):
 			cax.set_array(data[i].flatten())
 			if text_data is not None:
 				setText(ax, text_data, i=i, set_invisible=True)
-			if hline is not None:
+			for hline in hlines:
 				plt.axvline(hline, color='k', linewidth=1.0, linestyle='--')
 
 		# End if mesh	
@@ -1252,7 +1256,7 @@ def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh
 		if contour is not None:
 			plt.contour(X, Y, contour, colors='k', linestyles='solid', linewidths=0.4)
 			
-		if hline is not None:
+		for hline in hlines:
 			plt.axvline(hline, color='k', linewidth=1.0, linestyle='--')
 
 		def animate(i):
@@ -1262,7 +1266,7 @@ def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh
 			if text_data is not None:
 				setText(ax, text_data, i=i, set_invisible=True)
 			ax.contourf(X, Y, data[i], cmap=cmap, levels=np.linspace(vmin, vmax, nlevels))	
-			if hline is not None:
+			for hline in hlines:
 				plt.axvline(hline, color='k', linewidth=1.0, linestyle='--')
 	#==
 	
@@ -1287,11 +1291,70 @@ def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh
 		
 	if show:
 		plt.show()
+
+#==
+
+def animate1by1varCbar(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh=True, cmap='jet', xlabel='', ylabel='', save=True, outpath='', outname='animate1by1.mp4', show=False, dpi=200, fps=8, bitrate=-1, text_data=None, contour=None, hline=None, vmin=None, vmax=None):
+
+	# Make animation
+	fig = plt.figure(figsize=figsize, dpi=dpi)
+	ax = fig.add_subplot(111)
+	ax.patch.set_color('.25')
+	
+	div = make_axes_locatable(ax)
+	cax = div.append_axes('right', '5%', '5%')
+
+	if mesh:
+		#if X is not None and Y is not None:
+		#	cax = ax.pcolormesh(X, Y, data[0], cmap=cmap)
+		#else: 
+		#	cax = ax.pcolormesh(data[0], cmap=cmap)
+		#if text_data is not None:
+		#	setText(ax, text_data, i=0)	
+
+
+		ax.contour(X, Y, contour, colors='k', linestyles='solid', linewidths=0.4)
+
+		#fig.colorbar(cax, ax=ax)
 		
+		def animate(i):
+			#ax.cla()
+			#cax.set_array(data[i].flatten())
+			vmax = 0.5 * np.max(np.abs(data[i]))
+			pc = ax.pcolormesh(X, Y, data[i], cmap=cmap, vmin=-vmax, vmax=vmax)
+			if text_data is not None:
+				setText(ax, text_data, i=i, set_invisible=True)
+			if hline is not None:
+				plt.axvline(hline, color='k', linewidth=1.0, linestyle='--')
+			cax.cla()
+			fig.colorbar(pc, cax=cax)
+			ax.text(X[0,1], Y[-1,0]+15, title, fontsize=fontsize)
+
+	#==
+	
+
+
+	
+	# Get number of timesteps/frames.
+	if isinstance(data, list):
+		Nt = len(data)
+	else:
+		Nt = data.shape[0]
+		
+	anim = animation.FuncAnimation(fig, animate, interval=50, frames=Nt)
+	#plt.tight_layout()
+	plt.draw()
+	
+	if save:
+		anim.save(outpath+outname,metadata={'artist':'Guido'},writer='ffmpeg',fps=fps,bitrate=bitrate)
+		
+	if show:
+		plt.show()
+
 #==
 
 
-def animateLine(data, X=None, figsize=(5,4), title='', labels=None, fontsize=14, vmin=None, vmax=None, xlabel='', ylabel='', save=True, outpath='', outname='animateLine.mp4', show=False, dpi=200, fps=8, bitrate=-1, text_data=None, constLine=None, constLineLabel=None, constLineStyle=['solid', 'dashed', 'dotted']):
+def animateLine(data, X=None, figsize=(5,4), title='', labels=None, fontsize=14, vmin=None, vmax=None, xlabel='', ylabel='', save=True, outpath='', outname='animateLine.mp4', show=False, dpi=200, fps=8, bitrate=-1, text_data=None, constLine=None, constLineLabel=None, constLineStyle=['solid', 'dashed', 'dotted'], transposeAx=False):
 
 	# Make animation
 	fig = plt.figure(figsize=figsize, dpi=dpi)

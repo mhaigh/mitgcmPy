@@ -151,7 +151,7 @@ if binReadTest:
 	
 #==
 
-readWindBin = 0
+readWindBin = 1
 if readWindBin:
 
 	path = '/home/michael/Documents/data/MCSwinds/'
@@ -161,12 +161,29 @@ if readWindBin:
 	nx = 240; ny = 200
 	dims = (ny, nx)
 	
+	pathBathy =  '/home/michael/Documents/data/MCS_308/run/'
+	grid = Grid(pathBathy)
+	contour = grid.bathy
+	
+	CURL = True
+	
 	y = np.linspace(0,ny*2.5,ny)
+	x = np.linspace(0,nx*2.5,nx)
 	
 	for fi, fname in enumerate(fnames):
 		data = readnp(path+fnames[fi], dims, rec=0, dtype='>f8')[...,0]
-		plt.plot(data, y, label=labels[fi])
-	
+
+		plt.contourf(x, y, contour)
+
+		if CURL:		
+			plt.plot(300+1.6e9*tools.ddx(data, 2.5e3), y, label=labels[fi])
+			plt.xlabel('Wind stress curl')
+		else:
+			plt.plot(1.e4*data+300, y, label=labels[fi])
+			plt.xlabel('Wind stress')
+			
+	plt.colorbar()	
+	plt.ylabel('Lat')
 	plt.grid()
 	plt.legend()
 	plt.show()

@@ -28,30 +28,38 @@ if animYZ:
 	run = 'MCS_308'; xx = [50,120]; xi = 120#301 and 302
 	#run = 'MCS_303'; xx = [0,None]; xi=120#304 and 305
 	
+	ylims = [92,118]
+	
 	path = '/home/michael/Documents/data/'+run+'/run/'
 	grid = Grid(path)
 	X = grid.XC / 1000.
 	Y = grid.YC[:,0] / 1000.
 	Z = grid.RC.squeeze()
 	
-	VAR = 'THETA'	
+	VAR = 'UVEL'	
 	data = readVariable(VAR, path, file_format='nc', meta=False, xx=xx, tt=[0,None])
 	vmin, vmax, cmap, title = getPlottingVars(VAR)	
 
 	#==
 	
 	data = np.mean(data, axis=-1)
+	#data = data[..., xi]
 	data = ptt.maskBathyYZ(data, grid, 0, timeDep=True, xi=120)
 			
 	nt = data.shape[0]; ndays = 30;
 	time = ndays*86400*np.linspace(0, nt-1, nt)
 	text_data = ptt.getTextData(time, 'month', Y[1], Z[-1], color='k')
 		
-	hline = grid.YC[92,0]/1000.
+	#hlines = [grid.YC[92,0]/1000.]
+	hlines = [Y[ylims[0]], Y[ylims[1]]] 
 	
 	data = tools.boundData(data, vmin, vmax)
 	
-	pt.animate1by1(data, Y, Z, vmin=vmin, vmax=vmax, cmap='coolwarm', text_data=text_data, mesh=False, hline=hline, outname=VAR+'_'+run+'.mp4')
+	#if ylims is not None:
+	#	data = data[...,ylims[0]:ylims[1]]
+	#	Y = Y[ylims[0]:ylims[1]]
+		
+	pt.animate1by1(data, Y, Z, vmin=vmin, vmax=vmax, cmap='coolwarm', text_data=text_data, mesh=False, hlines=hlines, outname=VAR+'_'+run+'.mp4')
 	
 	quit()
 	
@@ -61,7 +69,7 @@ surfBotFlow = 0
 if surfBotFlow:
 
 	path_root = '/home/michael/Documents/data/'
-	paths = ['MCS_154', 'MCS_301', 'MCS_302']
+	paths = ['MCS_303', 'MCS_304', 'MCS_305']
 	
 	path = path_root+ paths[0] + '/run/'	
 	grid = Grid(path)
@@ -102,13 +110,13 @@ if surfBotFlow:
 	
 #==
 
-surfBotFlowAnim = 0
-if surfBotFlowAnim:
+topMinusBotFlow = 0
+if topMinusBotFlow:
 
 	path_root = '/home/michael/Documents/data/'
 
 	#paths = ['MCS_154', ['MCS_306', 'MCS_302']]; bathyName = 'bathyS'; 	xx = [50,120]
-	paths = ['MCS_303', ['MCS_304', 'MCS_305']]; bathyName = 'bathyUniform'; xx = [0,None]
+	paths = ['MCS_308', ['MCS_309', 'MCS_310']]; bathyName = 'bathyUniform'; xx = [0,None]
 	labels = ['Southward shift', 'Northward shift']
 		
 	ttref = [-120, None]
@@ -187,6 +195,128 @@ if surfBotFlowAnim:
 	
 	pt.animateLine(data[1], X=Y[1:-1], transposeAx=True, vmin=-0.1, vmax=vmax, xlabel=xlabel, ylabel=ylabel, labels=labels, text_data=text_data, constLine=[botRef[1:-1]], constLineLabel=constLineLabel, constLineStyle=constLineStyle, outname='animBotFlow_'+bathyName+'.mp4')
 	
+#==
+
+surfBotFlowAnim = 1
+if surfBotFlowAnim:
+
+	path_root = '/home/michael/Documents/data/'
+
+	#paths = ['MCS_154', ['MCS_306', 'MCS_302']]; bathyName = 'bathyS'; 	xx = [50,120]
+	paths = ['MCS_308', ['MCS_309', 'MCS_310']]; bathyName = 'bathyS'; xx = [50,120]
+	labels = ['Southward shift', 'Northward shift']
+	
+	SMOOTH = False
+	
+	ttref = [0, None]
+	tt = [0, None]
+	
+	ylims = [92,118]
+		
+	# First get reference flow from IC run.
+	path = path_root + paths[0] + '/run/'
+	grid = Grid(path)
+	X = grid.XC / 1000.
+	Y = grid.YC[:,0] / 1000.
+	Z = grid.RC.squeeze()
+	
+	VAR = 'UVEL'	
+	vmin, vmax, cmap, title = getPlottingVars(VAR)	
+	tmp = readVariable(VAR, path, file_format='nc', meta=False,  tt=ttref)
+	
+	# Time mean surface flow
+	surfRef = np.mean(tmp[:,0,:,xx[0]:xx[1]], axis=(0,-1))
+	
+	# Time mean bottom flow
+	ub = tools.bottom(tmp, grid, 'u', shiftUp=1)
+	botRef = np.mean(ub[...,xx[0]:xx[1]], axis=(0,-1))
+
+	baroclRef = np.mean(tmp[:,0,ylims[0]:ylims[1]+1,:] - ub[:,ylims[0]:ylims[1]+1,:], axis=(1,2))
+	if SMOOTH:
+		baroclRef = tools.smooth3(baroclRef)
+	Ntref = len(baroclRef)
+	tref = np.linspace(1, Ntref, Ntref)
+	#plt.plot(baroclRef); plt.show(); print(baroclRef.shape); quit()
+
+	#==
+	
+	# Now get time-dep. surface and bottom flows from perturbation experiments.
+	
+	data = [[],[]]
+	barocl = []
+	for path_tmp in paths[1]:
+	
+		print(path_tmp)
+	
+		tmp = readVariable(VAR, path_root+path_tmp+'/run/', file_format='nc', meta=False, tt=tt)
+		
+		# Surface flow
+		surftmp = np.mean(tmp[:,0,:,xx[0]:xx[1]], axis=-1)
+		if SMOOTH:
+			surftmp = tools.smooth3(surftmp)
+		data[0].append(surftmp[:,1:-1])
+		print(surftmp.shape)
+
+		# Bottom flow
+		bottmp = tools.bottom(tmp, grid, 'u', shiftUp=1)
+		bottmp = np.mean(bottmp[...,xx[0]:xx[1]], axis=-1)
+		if SMOOTH:
+			bottmp = tools.smooth3(bottmp)
+		data[1].append(bottmp[:,1:-1])
+
+		barocl.append(np.mean(surftmp[:,ylims[0]:ylims[1]+1] - bottmp[:,ylims[0]:ylims[1]+1], axis=1))
+
+	#==
+	
+	nt = data[0][0].shape[0]; ndays = 30;
+	time = ndays*86400*np.linspace(1, nt, nt)
+	text_data = ptt.getTextData(time, 'month', 0.1, Y[-2], color='k')
+	
+	timeSeriesPlot = False
+	if timeSeriesPlot:
+		y0 = 90; y1 = 100
+		for d in data[1]:
+			plt.plot(time, np.mean(d[:,y0:y1], axis=-1))
+			#plt.plot(d[0,90:100])
+		plt.plot(time, np.ones(time.shape[0])*np.mean(botRef[y0:y1]))
+		plt.show()
+		quit()
+		
+	print('Look at SSH and theta changes, and in fully zonally uniform model')
+	print('using timeSeriesPlot, clear that one has greater variance than other. Why?')
+	print('Why do both lead to faster undercurrents?')
+	
+	#==
+	
+	Nt = len(barocl[1])
+	t = np.linspace(Ntref+1, Ntref+1+Nt, Nt)
+	
+	plt.plot(tref, baroclRef, color='k', label='Default wind spin up')
+	plt.plot(t, barocl[0], label=labels[0])
+	plt.plot(t, barocl[1], label=labels[1])
+	plt.legend()
+	plt.xlabel('Time (months)')
+	plt.title('Surf. - bot. flow (m/s), ' + bathyName)
+	
+	plt.grid()
+	plt.show()
+	quit()
+	
+	#==
+
+	ylabel = 'Y (km)'
+	xlabel = 'Surface flow'
+	constLineLabel = ['Default wind']
+	constLineStyle = ['dashed']
+	
+	pt.animateLine(data[0], X=Y[1:-1], transposeAx=True, vmin=vmin, vmax=vmax, xlabel=xlabel, ylabel=ylabel, labels=labels, text_data=text_data, constLine=[surfRef[1:-1]], constLineLabel=constLineLabel, constLineStyle=constLineStyle, outname='animSurfFlow_'+bathyName+'.mp4')
+	
+	#==
+	
+	xlabel = 'Bottom flow'
+	
+	pt.animateLine(data[1], X=Y[1:-1], transposeAx=True, vmin=-0.1, vmax=vmax, xlabel=xlabel, ylabel=ylabel, labels=labels, text_data=text_data, constLine=[botRef[1:-1]], constLineLabel=constLineLabel, constLineStyle=constLineStyle, outname='animBotFlow_'+bathyName+'.mp4')
+	
 
 #==
 
@@ -196,7 +326,7 @@ if sshAnim:
 	path_root = '/home/michael/Documents/data/'
 	
 	#paths = ['MCS_154', ['MCS_301', 'MCS_302']]; bathyName = 'bathyS'; 	xx = [50,120]
-	paths = ['PISOMIP_001', ['PISOMIP_001', 'PISOMIP_002']]; bathyName = 'bathyS'; xx = [50,120]
+	paths = ['MCS_308', ['MCS_309', 'MCS_310']]; bathyName = 'bathyS'; xx = [50,120]
 	#paths = ['MCS_303', ['MCS_304', 'MCS_305']]; bathyName = 'bathyUniform'; xx = [0,None]
 	labels = ['Southward shift', 'Northward shift']
 	
@@ -207,7 +337,8 @@ if sshAnim:
 	Y = grid.YC[:,0] / 1000.
 	Z = grid.RC.squeeze()
 	
-	VAR = 'oceTAUX'	
+	#VAR = 'oceTAUX'	
+	VAR = 'ETAN'
 	vmin, vmax, cmap, title = getPlottingVars(VAR)	
 	tmp = readVariable(VAR, path, file_format='nc', meta=False,  tt=[-12,None])
 	
@@ -252,7 +383,7 @@ if sshAnim:
 isothermAnim = 0
 if isothermAnim:
 
-	paths = ['MCS_154', ['MCS_308', 'MCS_302']]; bathyName = 'bathyS'; xx = [50,120]
+	paths = ['MCS_308', ['MCS_309', 'MCS_310']]; bathyName = 'bathyS'; xx = [50,120]
 	#paths = ['MCS_154', ['MCS_306', 'MCS_307']]; bathyName = 'bathyS'; xx = [50,120]
 	#paths = ['MCS_303', ['MCS_304', 'MCS_305']]; bathyName = 'bathyUniform'; xx = [0,None]
 
@@ -347,9 +478,9 @@ if isothermPlanAnim:
 heatContentTimeSeries = 0
 if heatContentTimeSeries:
 
-	paths = ['MCS_154', ['MCS_301', 'MCS_307']]; bathyName = 'bathyS'; xx = [50,120]; tt=[0,None]
-	#paths = ['MCS_154', ['PISOMIP_001', 'PISOMIP_002']]; bathyName = 'bathyS'; xx = [50,120]; tt=[0,224]
-	#paths = ['MCS_303', ['MCS_304', 'MCS_305']]; bathyName = 'bathyUniform'; xx = [0,None]; tt=[0,None]
+	paths = ['MCS_308', ['MCS_309', 'MCS_310']]; bathyName = 'bathyS'; tt=[0,None]
+	#paths = ['MCS_154', ['PISOMIP_001', 'PISOMIP_002']]; bathyName = 'bathyS'; tt=[0,224]
+	#paths = ['MCS_303', ['MCS_304', 'MCS_305']]; bathyName = 'bathyUniform'; tt=[0,None]
 	labels = ['Southward wind shift', 'Northward wind shift']
  	
 	y0 = 90; z0 = 25
@@ -376,7 +507,7 @@ if heatContentTimeSeries:
 	t = np.linspace(Ntref+1, Ntref+1+Nt, Nt)
 	
 	plt.plot(tref, HCref, color='k', label='Default wind spin up')
-	plt.plot(tref, HCs[0], label=labels[0])
+	plt.plot(t, HCs[0], label=labels[0])
 	plt.plot(t, HCs[1], label=labels[1])
 	plt.legend()
 	plt.xlabel('Time (months)')
@@ -395,8 +526,8 @@ if barotropicStreamfunction:
 	#path = '/home/michael/Documents/data/PAS_666/run/'
 	#path = '/home/michael/Documents/data/PISOMIP_003/run/'
 	path_root = '/home/michael/Documents/data/'
-	
-	run = 'MCS_301'
+
+	run = 'MCS_309'
 	
 	tt = [0, None]
 	
@@ -409,11 +540,11 @@ if barotropicStreamfunction:
 	xlabel = 'LON (km)'; ylabel = 'LAT (km)'
 	ny, nx = bathy.shape
 	
-	plt.plot(bathy); plt.grid(); plt.show(); quit()
+	#plt.plot(bathy); plt.grid(); plt.show(); quit()
 		
 	#VAR = 'ISOTHERM'
-	#VAR = 'BAROSTR'
-	VAR = 'BOTVEL'
+	VAR = 'BAROSTR'
+	#VAR = 'BOTVEL'
 
 	if VAR == 'ISOTHERM':
 	
@@ -430,9 +561,9 @@ if barotropicStreamfunction:
 		
 	elif VAR == 'BAROSTR':
 			
-		data = readVariable('UVEL', path, file_format='nc', tt=tt)
+		data = readVariable('UVEL', path, file_format='nc', tt=tt)[::4]
 			
-		vmin = -0.4e-5; vmax = 0.4e-5; cmap = 'jet'
+		vmin = -0.8e-5; vmax = 0.8e-5; cmap = 'jet'
 		data = - 1.e-6 * tools.barotropicStreamfunction(data, grid, timeDep=True, norm=False)
 		print(data.shape)
 		
@@ -465,7 +596,7 @@ if barotropicStreamfunction:
 #==
 
 # Cross-shelf heat transport plots.
-heatFluxes_heatRel = 1
+heatFluxes_heatRel = 0
 if heatFluxes_heatRel:
 
 	path_root = '/home/michael/Documents/data/'
@@ -477,7 +608,7 @@ if heatFluxes_heatRel:
 	dt_rel = 1. / (100. * 86400.)
 	
 	# First experiment defined here.
-	exp = 'MCS_308'
+	exp = 'MCS_310'
 	
 	path = path_root + exp + '/run/'#'MCS_158/run/'
 	grid = Grid(path)
@@ -486,9 +617,7 @@ if heatFluxes_heatRel:
 	Y = grid.YC[:,1]/1000.
 	Z = grid.RC.squeeze()
 
-	# Subregions for heat transport.
-
-	lat = 88
+	lat = LAT
 
 	#v1 = np.mean(readVariable('VVEL', path, meta=False, tt=-1), axis=-1)
 	#v2 = np.mean(readVariable('VVEL', path_root + exp3 + '/run/', meta=False, tt=-1), axis=-1)
@@ -500,19 +629,15 @@ if heatFluxes_heatRel:
 	# 1. 
 	# First get heat transport across shelf break
 
-	T = readVariable('THETA', path, meta=False, yy=lat)
-	Tf = -1.8 * np.ones(T.shape)
-	v = np.mean(readVariable('VVEL', path, meta=False, yy=[lat,lat+2]), axis=-2)
+	#T = readVariable('THETA', path, meta=False, yy=lat)
+	#Tf = -1.8 * np.ones(T.shape)
+	#v = np.mean(readVariable('VVEL', path, meta=False, yy=[lat,lat+2]), axis=-2)
+	#T = rho0 * Cp * v * (T - Tf)
 	
-	vT = v[-1]*T[-1]
-	vT2 = readVariable('VVELTH', path, meta=False, yy=lat, tt=-1)
+	T = rho0 * Cp * readVariable('VVELTH', path, meta=False, yy=lat)
 	
-	pt.plot1by2([vT, vT2-vT]); quit()
-
 	area = grid.DXG[lat] * grid.hFacS[:,lat] * grid.DRF[:,0]
 	area = ptt.maskBathyXZ(area, grid, yi=lat, timeDep=False)
-
-	T = rho0 * Cp * v * (T - Tf)
 
 	Tshelf = np.ma.sum(ptt.maskBathyXZ(area*T, grid, yi=lat, timeDep=True), axis=(1,2)) * dt_month
 
@@ -532,11 +657,11 @@ if heatFluxes_heatRel:
 	
 	#==
 
-	Tshelf = np.cumsum(Tshelf); Trel = np.cumsum(Trel)
+	Tshelf = np.ma.cumsum(Tshelf); Trel = np.ma.cumsum(Trel)
 
 	plt.plot(Tshelf, label='Tshelf')
-	plt.plot(Trel, label='Trel')
-	plt.plot(Tshelf-Trel, label='sum')
+	#plt.plot(Trel, label='Trel')
+	#plt.plot(Tshelf-Trel, label='sum')
 	plt.legend()
 	plt.grid()
 	plt.show()
@@ -548,25 +673,25 @@ heatFluxes = 0
 if heatFluxes:
 
 	path_root = '/home/michael/Documents/data/'
-	
 	SMOOTH = True
-	TF = True
-	WARMFLUXES = True
+	TF = False
+	WARMFLUXES = False
 	
 	Cp = 3974.0 # Units J / (kg C) = (kg m2 / s2) / (kg C) = m2 / (s2 C)
 	rho0 = 1030. # Units kg / m3
 	normval = 1.e12
 	
 	# First experiment defined here.
-	exp1 = 'MCS_154'; exp2 = 'MCS_301';	exp3 = 'MCS_302'
-	#exp1 = 'MCS_303'; exp2 = 'MCS_304';	exp3 = 'MCS_305'
+	#exp1 = 'MCS_154'; exp2 = 'MCS_301'; exp3 = 'MCS_302'
+	#exp1 = 'MCS_303'; exp2 = 'MCS_304'; exp3 = 'MCS_305'
+	exp1 = 'MCS_308'; exp2 = 'MCS_309';	exp3 = 'MCS_310'
 	
 	path = path_root + exp1 + '/run/'#'MCS_158/run/'
 	grid = Grid(path)
 
 	# Subregions for heat transport.
 
-	lat = 92
+	lat = LAT
 
 	# troughW
 	lonsW = [100e3, 200e3]; depthW = [-10, -800]
@@ -667,8 +792,6 @@ if heatFluxes:
 	TAll = np.ma.sum(T, axis=(1,2))
 	TU = TAll - TES
 	
-	plt.plot(30*86400.*normval*np.cumsum(TAll)); plt.show(); quit()
-	
 	if SMOOTH:
 		TES = tools.smooth3(TES)
 		TAll = tools.smooth3(TAll)
@@ -742,16 +865,16 @@ if heatFluxes:
 	
 	xlims = [0, 360]
 	if WARMFLUXES:
-		ylims = [-.3, .1]
+		ylims = [-.4, .2]
 	else:
 		#ylims = [-10,10]	
-		ylims = [-3,3]
+		ylims = [-12,12]
 		
 	xticks = np.linspace(0, 360, 10)
 	xticks = [xticks]*3
 	xticksvis = [False, False, True]
 	
-	yticks = np.linspace(ylims[0], ylims[1], 5)
+	yticks = np.linspace(ylims[0], ylims[1], 7)
 	yticks = [yticks]*3
 	yticksvis = [True, True, True]
 	
@@ -764,7 +887,7 @@ if heatFluxes:
 	#==
 
     # NOW PLOT
-	pt.line1byN(Ts, labels, colours, xlims, ylims, titles, xlabels, ylabels, xticks, xticksvis, yticks, yticksvis, text_data=text_data, save=True, outname='heatFluxes.png')
+	pt.line1byN(Ts, labels, colours, xlims, ylims, titles, xlabels, ylabels, xticks, xticksvis, yticks, yticksvis, text_data=text_data, loc=1, save=True, outname='heatFluxes.png')
 
 #==
 

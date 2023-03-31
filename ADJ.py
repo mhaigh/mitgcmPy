@@ -24,43 +24,49 @@ import time
 objTest = 1
 if objTest:
 
-	path = '/home/michael/Documents/data/MCS/run/'
-
-	VAR1 = 'stateTheta.0000000144.data'; norm1 = 1.e9
+	path1 = '/home/michael/Documents/data/MCS/run/'
+	path2 = '/home/michael/Documents/data/MCS_ad2/run/'
+	
+	VAR1 = 'stateTheta.0000008640.data'; norm1 = 1.e9
 	VAR2 = 'm_boxmean_theta.0000000000.data'; norm2 = 1.e0
 
 	ny = 200; nx = 240
 	dims = (ny, nx)
+	LAT = 92
 	
-	grid = Grid(path)
+	grid = Grid(path1)
 	X = grid.XC / 1000.
 	Y = grid.YC / 1000.
 	
-	plt.plot(grid.bathy[:,120]); plt.grid(); plt.show(); quit()
-	
 	vol = grid.hFacC * grid.DRF * grid.RAC
 	
-	data1 = readnp(path+VAR1, dims, rec=-1)# / norm1
+	data1 = readnp(path1+VAR1, dims, rec=-1)# / norm1
 	print(data1.shape)
+	
+	data1[:,LAT:] = 0
+	vol[:,LAT:] = 0
 	
 	# Integrate over volume and normalise.
 	data1 = np.sum(vol * data1, axis=0)	
+	
 	totvol = np.sum(vol)
 	data1 = data1 / totvol	
 	
 	sum1 = np.sum(data1)#*norm1
 
-	data2 = readnp(path+VAR2, dims, rec=-1)
-	#data2 = np.mean(data2[0:30], axis=0)# / norm2
-	data2 = data2[0]
+	data2 = readnp(path2+VAR2, dims, rec=-1)
 	print(data2.shape)
 	
+	# This gives the output in STDOUT (boxmean#horflux) before scaling by time mask.
+	print(np.sum(data2,axis=(1,2)))
+	
+	data2 = np.mean(data2, axis=0)
 	sum2 = np.sum(data2)#*norm2
 	
 	print(sum1)
 	print(sum2)
 	print(sum1/sum2)
-
+	
 	pt.plot1by2([data1, data2])#, vmin=-2.e-5, vmax=0.)
 	
 	quit()
@@ -266,17 +272,26 @@ if animBin:
 	
 	path = '/home/michael/Documents/data/MCS/run/'
 	
-	VAR = 'ADJtaux'; mult_gencost = 1.e9; reverse = True; vmax = 1.e0; vmin = -vmax
-	title=VAR + ' (deg. C/(N m$^{-2}$)), OBJ=on-shelf heat, days 1710-1800'
+	VAR = 'ADJtaux'; mult_gencost = 1.e9; reverse = True; vmax = 0.0002; vmin = -vmax
+	title = VAR + ' (deg. C/(N m$^{-2}$)), OBJ=on-shelf heat, days 290-360'
 	ndays = 5
-		
+	
+	INTEGRATE = True
+	dt = ndays * 86400.
+	
+	NORM = True
+	norm = 1./0.025
+	
 	nx = 240; ny = 200
 	dims = (ny, nx)
 	
 	data = readAllnp(VAR, path, dims, reverse=reverse) / mult_gencost
 	print(data.shape)
 	nt = data.shape[0]
-
+	
+	if NORM:
+		data /= norm
+		title = VAR + ' (nondim), OBJ=on-shelf heat, days 290-360'
 	#==
 	
 	grid = Grid(path)
@@ -290,14 +305,19 @@ if animBin:
 	contour = grid.bathy
 	levels = [-600, -501, -401]
 	
-	var = np.var(data, axis=(1,2))
-	dtvar = np.diff(var)
-	dt2var = np.diff(dtvar)
+	# PLOT VARIANCE
+	#var = np.var(data, axis=(1,2))
+	#dtvar = np.diff(var)
+	#dt2var = np.diff(dtvar)
 	#plt.plot(var); plt.show(); quit()
 		
-	#pt.plot1by1(data[-30,], X, Y, mesh=True, cmap='bwr', vmin=0.4*vmin, vmax=0.4*vmax, title='HC sens. to zonal wind, 60 day lag (deg. C/(N m$^{-2}$))', xlabel='Lon (km)', ylabel='Lat (km)', fontsize=10, contour=contour); quit()
+	if INTEGRATE:
+		data = dt*np.cumsum(data,axis=0)
+		title = VAR + ' int. (nondim), OBJ=on-shelf heat, days 290-360'
+				
+	pt.animate1by1varCbar(data, X, Y, cmap='bwr', title=title, text_data=text_data, fontsize=9, contour=contour, vmin=vmin, vmax=vmax)
 	
-	pt.animate1by1varCbar(data, X, Y, vmin=vmin, vmax=vmax, cmap='bwr', title=title, text_data=text_data, fontsize=9, contour=contour, contourLevels=levels)
+	#pt.animate1by1(data, X, Y, cmap='bwr', title=title, text_data=text_data, fontsize=9, contour=contour, vmin=vmin, vmax=vmax, mesh=True)
 	
 	quit()
 	

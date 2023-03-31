@@ -54,6 +54,9 @@ def readAllnp(fileHandle, path, dims, dtype='>f', reverse=False):
 	fnames = [filename for filename in os.listdir(path) if filename.startswith(fileHandle) and filename.endswith('.data')]
 	fnames.sort(reverse=reverse)
 
+	if len(fnames) == 0:
+		print('Error: readData.realAllnp. No files found for VAR ' + fileHandle)
+		
 	if len(dims) == 2:
 		data = np.zeros((len(fnames), dims[0], dims[1]))
 	elif len(dims) == 3:
