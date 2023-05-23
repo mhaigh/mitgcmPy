@@ -764,7 +764,7 @@ if thetaHeight_timeSeries:
 #==
 
 
-quiver = 0
+quiver = 1
 if quiver:
 	
 	PAS = False
@@ -801,45 +801,80 @@ if quiver:
 	else:
 
 		#path = '/home/michael/Documents/data/PAS_666/run/'
-		path = '/home/michael/Documents/data/PISOMIP_004/run/'
-		ts = -1
+		path = '/home/michael/Documents/data/MCS_123/run/'
 		
 		grid = Grid(path)
 		bathy = grid.bathy
+		bathy = [bathy, bathy]
+		vmin = -1000; vmax = -500
+		vmin = [vmin, vmin]; vmax = [vmax, vmax]
 
-		X = grid.XC[1,:]/1000.
-		Y = grid.YC[:,1]/1000.
-		xlabel = 'LON (km)'; ylabel = 'LAT (km)'
+		X = grid.XC/1000.
+		Y = grid.YC/1000.
+		Z = grid.RC.squeeze()
 
-		VAR = 'ETAN'
-		vmin, vmax, cmap, title = getPlottingVars(VAR)
-
-		contour = readVariable(VAR, path, meta=False)[ts]
-		u = readVariable('UVEL', path, meta=False)[ts]
-		v = readVariable('VVEL', path, meta=False)[ts]
+		u = np.mean(readVariable('UVEL', path, meta=False)[-12:], axis=0)
+		v = np.mean(readVariable('VVEL', path, meta=False)[-12:], axis=0)
 		
 	#==
 
-	# Select level and interpolate to cell centres.
-	u = u[level]; v = v[level]
+	levels = [0,22]	
+	u = u[levels]
+	v = v[levels]
 	u = tools.interp(u, 'u'); v = tools.interp(v, 'v')
-
-	u = ptt.maskBathyXY(u, grid, level, timeDep=False)
-	v = ptt.maskBathyXY(v, grid, level, timeDep=False)
-
-	#contour = np.load(path+'Tmean_PAS851.npy')[level; vmin = -1.; vmax = 1 
-	contour = ptt.maskBathyXY(contour, grid, level, timeDep=False)
+	u = tools.boundData(u, -0.4, 0.4, 0.9999); v = tools.boundData(v, -0.4, 0.4, 0.9999)
 	
-	title = '(u, v) & SSH'
+	for li in range(len(levels)):
+		u[li] = ptt.maskBathyXY(u[li], grid, levels[li], timeDep=False)
+		v[li] = ptt.maskBathyXY(v[li], grid, levels[li], timeDep=False)
+		u[li] = ptt.maskDraftXY(u[li], grid, levels[li], timeDep=False)
+		v[li] = ptt.maskDraftXY(v[li], grid, levels[li], timeDep=False)
+		bathy[li] = ptt.maskBathyXY(bathy[li], grid, levels[li], timeDep=False)
+		
 
-	# Sample rate & level
-	d = 6
+	# Sample rate
+	d = 9
 	u = u[..., ::d, ::d]; v = v[..., ::d, ::d]
-	Xd = X[::d]; Yd = Y[::d]
+	Xd = X[::d, ::d]; Yd = Y[::d, ::d]
+
+	Xd = [Xd, Xd]; Yd = [Yd, Yd]
+	X = [X, X]; Y = [Y, Y]
+
 	
 	#
+	title1 = '(a) Surface flow, Bathy. (m)'
+	title2 = '(b) Deep flow, Pot., Bathy. (m)'
+	title = [title1, title2]
 	
-	pt.quiver1by1(u, v, Xd, Yd, contour=contour, X=X, Y=Y, contourf=False, title=title, vmin=vmin, vmax=vmax, xlabel=xlabel, ylabel=ylabel)
+	lonticks = [0, 200, 400, 600]#[100,200,300,400,500,500]
+	latticks = [0, 100, 200, 300, 400, 500]
+	xticks = [lonticks, lonticks]
+	yticks = [latticks, latticks]
+	xticksvis = [True, True]
+	yticksvis = [True, False]
+	
+	xlabel = 'Lon (km)'
+	xlabels = [xlabel, xlabel]
+	ylabel = 'Lat (km)'
+	ylabels = [ylabel, None]
+
+	scale = [1.8,.9]
+	width_ratios = [0.9,1.1]
+	
+		
+	# Text data	
+	fontdict = {'fontsize':12, 'color':'k'}
+	text0 = {'text':'z = '+str(Z[levels[0]])+' m', 'xloc':X[0][-17,0], 'yloc':Y[0][-17,0], 'fontdict':fontdict}
+	text1 = {'text':'z = '+str(Z[levels[1]])+' m', 'xloc':X[0][-17,0], 'yloc':Y[0][-17,0], 'fontdict':fontdict} 
+	text_data = [text0, text1]
+	
+	cl = [-580, -420]
+	contourLevels = [cl, cl]
+	
+	pt.quiver1by2(u, v, Xd, Yd, qs=[0.2,0.1], contourf=bathy, X=X, Y=Y, mesh=True, vmin=vmin, vmax=vmax, cmap='YlGn', width_ratios=width_ratios, title=title, fontsize=12, figsize=(7., 3), xticks=xticks, yticks=yticks, xticksvis=xticksvis, yticksvis=yticksvis, xlabels=xlabels, ylabels=ylabels, scale=scale, show=True, save=True, outname='Figure_8.png', text_data=text_data, contour=bathy, contourLevels=contourLevels)
+		
+	quit()
+	pt.quiver1by1(u, v, Xd, Yd, contour=bathy, X=X, Y=Y, contourf=False, title=title, cmap='YlGn', vmin=vmin, vmax=vmax, xlabel=xlabel, ylabel=ylabel)
 
 	quit()
 

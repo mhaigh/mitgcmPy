@@ -6,6 +6,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib.gridspec as gridspec
+import matplotlib.patches as patches
+
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from plotting_tools import setText, getContourfLevels, maskBathyXY, maskDraftXY, makeList, doTicks, doTitle, doLabels
@@ -553,7 +555,7 @@ def quiver1by2(u, v, Xd, Yd, qs=[0.1]*2, C=None, ccmap='bwr', contourf=None, con
 			print('1')
 			plt.colorbar(cax, ax=ax)
 	else:
-		cax = plt.quiver(Xd[0], Yd[0], u[0], v[0], scale=scale)
+		cax = plt.quiver(Xd[0], Yd[0], u[0], v[0], scale=scale[0])
 	ax.quiverkey(cax, 0.12, 0.03, qs[0], str(qs[0]) + ' m/s', labelpos='N', coordinates='axes')
 			
 		
@@ -596,7 +598,7 @@ def quiver1by2(u, v, Xd, Yd, qs=[0.1]*2, C=None, ccmap='bwr', contourf=None, con
 		cax = plt.quiver(Xd[1], Yd[1], u[1], v[1], C[1], cmap=ccmap, scale=scale[1], linewidths=2)
 		plt.colorbar(cax, ax=ax)
 	else:
-		cax = ax.quiver(Xd[1], Yd[1], u[1], v[1], scale=scale)
+		cax = ax.quiver(Xd[1], Yd[1], u[1], v[1], scale=scale[1])
 	ax.quiverkey(cax, 0.12, 0.03, qs[1], str(qs[1]) + ' m/s', labelpos='N', coordinates='axes')
 			
 	doLabels(xlabels[1], ylabels[1], fontsize=fontsize)
@@ -1342,7 +1344,6 @@ def animate1by1varCbar(data, X=None, Y=None, figsize=(5,4), title='', fontsize=1
 		Nt = data.shape[0]
 		
 	anim = animation.FuncAnimation(fig, animate, interval=50, frames=Nt)
-	#plt.tight_layout()
 	plt.draw()
 	
 	if save:
@@ -1478,6 +1479,67 @@ def animate1by1quiver(u, v, Xd, Yd, qlim=0.1, C=None, ccmap='coolwarm', contour=
 		
 	if show:
 		plt.show()	
+		
+
+#==
+
+def animate1by1quivers(udata, vdata, X, Y, d=8, qlim=0.1, C=None, ccmap='coolwarm', contour=None, cmap='viridis', vmin=None, vmax=None, contourf=True, grid=True, figsize=(5,4), title='', fontsize=14, xlabel='', ylabel='', save=True, outpath='', outname='animate1by1.mp4', show=False, dpi=300, fps=8, bitrate=-1, text_data=None, colors=['b', 'r'], scale=2, labels=['','']):
+	'''The same as above, but can plot more than one vector field.'''
+
+	# Make animation
+	fig = plt.figure(figsize=figsize, dpi=dpi)
+	ax = fig.add_subplot()
+	plt.gca().patch.set_color('.25')
+
+	if contour is not None:
+		if len(contour.shape) == 2:
+			ctr = None; cb = None
+			if contourf:
+				plt.contourf(X, Y, contour, cmap=cmap)
+			else:
+				plt.pcolormesh(X, Y, contour, vmin=vmin, vmax=vmax, cmap=cmap)		
+		elif len(contour.shape) == 3:
+			ctr = 1
+			if contourf:
+				C = ax.contourf(X, Y, contour[0], cmap=cmap)
+			else:
+				C = ax.pcolormesh(X, Y, contour[0], vmin=vmin, vmax=vmax, cmap=cmap)		
+
+	Qs = []
+	for di, u in enumerate(udata):
+		v = vdata[di]	
+		Qs.append(ax.quiver(X[::d], Y[::d], u[0,::d,::d], v[0,::d,::d], color=colors[di], width=.002, scale=scale))
+		ax.quiverkey(Qs[di], 0.05, 0.1+0.05*di, qlim, str(qlim) + ' m/s; ' + labels[di], labelpos='E', coordinates='axes')
+
+	if text_data is not None:
+		setText(ax, text_data, i=0)
+
+	if grid:
+		plt.grid(linewidth=0.5)
+
+	def animate(i):
+
+		for di, u in enumerate(udata):
+			v = vdata[di]
+			Qs[di].set_UVC(u[i,::d,::d], v[i,::d,::d])
+		if text_data is not None:
+			setText(ax, text_data, i=i, set_invisible=True)
+
+	if title is not None:
+		plt.title(title)
+
+	anim = animation.FuncAnimation(fig, animate, interval=50, frames=u.shape[0])
+	plt.tight_layout()
+	plt.draw()
+
+	#==
+	
+	if save:
+		anim.save(outpath+outname,metadata={'artist':'Guido'},writer='ffmpeg',fps=fps,bitrate=bitrate)
+		
+	if show:
+		plt.show()	
+
 
 #==
 

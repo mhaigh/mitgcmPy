@@ -30,13 +30,21 @@ varDict['VVELTH'] = {'fname':'stateTheta', 'vmin':-1.e-2, 'vmax':1.e-2, 'cmap':'
 varDict['WVELTH'] = {'fname':'stateTheta', 'vmin':-1.e-5, 'vmax':1.e-5, 'cmap':'coolwarm', 'title':'Pot. Temp. W adv'}
 varDict['PHIHYD'] = {'fname':'state2D', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Hydr. pressure pot. anom.'}
 varDict['PHIBOT'] = {'fname':'state2D', 'vmin':-1, 'vmax':1, 'cmap':'coolwarm', 'title':'Bottom hydr. pressure pot. anom.'}
+varDict['oceSflux'] = {'fname':'state2D', 'vmin':-0.0005, 'vmax':0.0005, 'cmap':'coolwarm', 'title':'Surface salt flux'}
 varDict['botTauX'] = {'fname':'state2D', 'vmin':-0.05, 'vmax':0.05, 'cmap':'coolwarm', 'title':'Zonal bottom stress'}
 varDict['botTauY'] = {'fname':'state2D', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Merid. bottom stress'}
-varDict['oceTAUX'] = {'fname':'state2D', 'vmin':-0.025, 'vmax':0.025, 'cmap':'coolwarm', 'title':'Zonal surface stress'}
+varDict['oceTAUX'] = {'fname':'state2D', 'vmin':-0.03, 'vmax':0.03, 'cmap':'coolwarm', 'title':'Zonal surface stress'}
 varDict['oceTAUY'] = {'fname':'state2D', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Merid. surface stress'}
 varDict['Um_dPhiX'] = {'fname':'stateUdpdx', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Zonal PGF'}
 varDict['Vm_dPhiX'] = {'fname':'stateVdpdx', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Merid. PGF'}
 varDict['ADTAUU'] = {'fname':'adxx_tauu', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Merid. PGF'}
+
+#==
+
+
+titleData = {}
+titleData['MCS_313'] = 'IPO pos PH'
+titleData['MCS_314'] = 'IPO neg PH'
 
 #==
 
@@ -51,11 +59,18 @@ def getPlottingVars(var):
 
 #==
 
+def getTitleData(var):
+
+	return titleData[var]
+
+#==
+
 def getTrefSref():
 
 	return varDict['THETA']['TrefN'], varDict['SALT']['SrefN']
 
 #==	
+
 
 #fname = 'stateRho.nc'; var = 'RHOAnoma'; vmin = -2; vmax = - 1
 #fname = 'stateTheta.nc'; var = 'THETA'; vmin = - 2.5; vmax = 2.5; cmap='coolwarm'

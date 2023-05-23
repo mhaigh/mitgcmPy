@@ -5,6 +5,7 @@ from grid_PAS import Grid as Grid_PAS
 
 import matplotlib.pyplot as plt
 import matplotlib.colors as cl
+import matplotlib.patches as patches
 
 import plotting as pt
 import plotting_tools as ptt
@@ -12,23 +13,78 @@ import plotting_tools as ptt
 import tools
 
 from readData import *
-from varDict import getPlottingVars, getTrefSref
+from varDict import getPlottingVars, getTrefSref, getTitleData
 
 import time
 
 #==========================================================
 
 LAT = 88
+path_root = '/home/michael/Documents/data/'
+	
+animateQuivers = False
+if animateQuivers:
 
+	exp = 'MCS_314'
+	
+	path = path_root + exp + '/run/'
+	titleData = getTitleData(exp)
+
+	# Sample rate
+	d = 8
+
+	grid = Grid(path)
+
+	level = grid.getIndexFromDepth(-450)
+
+	X = grid.XC[1,:]/1000.
+	Y = grid.YC[:,1]/1000.
+	Z = grid.RC.squeeze()
+
+	td = 20
+
+	u = readVariable('UVEL', path, file_format='nc', meta=True)
+	TIME = u['TIME'][:]
+	utop = u['UVEL'][::td,0]
+	ubot = tools.bottom(u['UVEL'][::td], grid, 'u')
+
+	vbot = readVariable('VVEL', path, file_format='nc', meta=False)[::td]
+	vtop = vbot[:,0]
+	vbot = tools.bottom(vbot, grid, 'v')
+
+	tscale = 86400. * 30
+	tscale_name = 'month'
+	t = TIME / tscale
+	text = [tscale_name + ' ' + str(int(tt)) for tt in t]
+	text_data = {'text':text, 'xloc':X[1], 'yloc':Y[1], 'fontdict':{'fontsize':14, 'color':'k'}}
+
+	contour = grid.bathy
+	contour = ptt.maskBathyXY(contour, grid, 0, timeDep=False)
+	
+	utop = ptt.maskBathyXY(utop, grid, level, timeDep=True)
+	ubot = ptt.maskBathyXY(ubot, grid, level, timeDep=True)
+	vtop = ptt.maskBathyXY(vtop, grid, level, timeDep=True)
+	vbot = ptt.maskBathyXY(vbot, grid, level, timeDep=True)
+	
+	title = '(u, v) & bathymetry; ' + titleData
+
+	udata = [utop, ubot]
+	vdata = [vtop, vbot]
+
+	pt.animate1by1quivers(udata, vdata, X, Y, d=d, contour=contour, contourf=False, text_data=text_data, title=title, figsize=(5,4), cmap='YlGn', scale=2., labels=['surf', 'bot'])
+	
+	quit()
+
+#==
 animYZ = 0
 if animYZ:
 	
 	#==
 	
-	run = 'MCS_308'; xx = [50,120]; xi = 120#301 and 302
+	run = 'MCS_313'; xx = [50,190]; xi = 120#301 and 302
 	#run = 'MCS_303'; xx = [0,None]; xi=120#304 and 305
 	
-	ylims = [92,118]
+	ylims = [88,118]
 	
 	path = '/home/michael/Documents/data/'+run+'/run/'
 	grid = Grid(path)
@@ -65,59 +121,15 @@ if animYZ:
 	
 #==
 
-surfBotFlow = 0
-if surfBotFlow:
-
-	path_root = '/home/michael/Documents/data/'
-	paths = ['MCS_303', 'MCS_304', 'MCS_305']
-	
-	path = path_root+ paths[0] + '/run/'	
-	grid = Grid(path)
-	X = grid.XC / 1000.
-	Y = grid.YC[:,0] / 1000.
-	Z = grid.RC.squeeze()
-
-	xx = [50,120]
-
-	VAR = 'UVEL'	
-	vmin, vmax, cmap, title = getPlottingVars(VAR)	
-
-	data = [[],[]]
-	for path_tmp in paths:
-	
-		tmp = readVariable(VAR, path_root+path_tmp+'/run/', file_format='nc', meta=False,  tt=[-12,None])
-		
-		# Time mean surface flow
-		data[0].append(np.mean(tmp[:,0,:,xx[0]:xx[1]+1], axis=(0,-1)))
-		
-		# Time mean bottom flow
-		ub = tools.bottom(tmp, grid, 'u', shiftUp=1)
-		data[1].append(np.mean(ub[...,xx[0]:xx[1]+1], axis=(0,-1)))
-	
-	plt.figure()
-	plt.subplot(121)
-	for di, d in enumerate(data[0]):
-		plt.plot(d[1:-1], Y[1:-1], label=paths[di])
-	plt.grid()
-	plt.subplot(122)
-	for di, d in enumerate(data[1]):
-		plt.plot(d[1:-1], Y[1:-1], label=paths[di])
-	plt.grid()
-	plt.legend()
-	plt.show()
-	
-	quit()
-	
-#==
-
 topMinusBotFlow = 0
 if topMinusBotFlow:
 
-	path_root = '/home/michael/Documents/data/'
 
-	#paths = ['MCS_154', ['MCS_306', 'MCS_302']]; bathyName = 'bathyS'; 	xx = [50,120]
-	paths = ['MCS_308', ['MCS_309', 'MCS_310']]; bathyName = 'bathyUniform'; xx = [0,None]
-	labels = ['Southward shift', 'Northward shift']
+	#paths = ['MCS_154', ['MCS_306', 'MCS_302']]; bathyName = 'bathyS'; xx = [50,190]
+	paths = ['MCS_308', ['MCS_312', 'MCS_313']]; bathyName = 'bathyS'; xx = [0,None]
+	
+	#labels = ['Southward shift', 'Northward shift']
+	labels = ['IPO pos', 'IPO neg']
 		
 	ttref = [-120, None]
 	tt = [0, 200]
@@ -128,6 +140,7 @@ if topMinusBotFlow:
 	X = grid.XC / 1000.
 	Y = grid.YC[:,0] / 1000.
 	Z = grid.RC.squeeze()
+	
 	
 	VAR = 'UVEL'	
 	vmin, vmax, cmap, title = getPlottingVars(VAR)	
@@ -200,18 +213,22 @@ if topMinusBotFlow:
 surfBotFlowAnim = 1
 if surfBotFlowAnim:
 
-	path_root = '/home/michael/Documents/data/'
+	#paths = ['MCS_154', ['MCS_306', 'MCS_302']]; bathyName = 'bathyS'; 	xx = [50,190]
+	#paths = ['MCS_154', ['MCS_312', 'MCS_313']]; labels = ['IPO PH neg', 'IPO PH pos']; bathyName = 'bathyS'; xx = [50,190]; tt = [0, None]
+	#paths = ['MCS_154', ['MCS_315', 'MCS_314']]; labels = ['IPO unif neg', 'IPO unif pos']; bathyName = 'bathyS'; xx = [50,190]; tt = [0, 154]
+	#paths = ['MCS_154', ['MCS_319', 'MCS_318']]; labels = ['IPO sin neg, no rel', 'IPO sin pos, no rel']; bathyName = 'bathyS'; xx = [50,190]; tt = [0, 205]
+	paths = ['MCS_154', ['MCS_320', 'MCS_316']]; labels = ['IPO sin exf', 'IPO sin pos']; bathyName = 'bathyS'; xx = [50,190]; tt = [0, 208]
+	#paths = ['MCS_154', ['MCS_321', 'MCS_316']]; labels = ['IPO sin pos sharp', 'IPO sin pos']; bathyName = 'bathyS'; xx = [50,190]; tt = [0, 205]
+	#paths = ['MCS_154', ['PISOMIP_001', 'PISOMIP_002']]; labels = ['IPO sin neg', 'IPO sin pos']; bathyName = 'bathyS'; xx = [50,190];  tt = [0, 154]
+		
+	#labels = ['Southward shift', 'Northward shift']
 
-	#paths = ['MCS_154', ['MCS_306', 'MCS_302']]; bathyName = 'bathyS'; 	xx = [50,120]
-	paths = ['MCS_308', ['MCS_309', 'MCS_310']]; bathyName = 'bathyS'; xx = [50,120]
-	labels = ['Southward shift', 'Northward shift']
 	
 	SMOOTH = False
 	
 	ttref = [0, None]
-	tt = [0, None]
 	
-	ylims = [92,118]
+	ylims = [88,118]
 		
 	# First get reference flow from IC run.
 	path = path_root + paths[0] + '/run/'
@@ -225,36 +242,52 @@ if surfBotFlowAnim:
 	tmp = readVariable(VAR, path, file_format='nc', meta=False,  tt=ttref)
 	
 	# Time mean surface flow
-	surfRef = np.mean(tmp[:,0,:,xx[0]:xx[1]], axis=(0,-1))
+	surfRef = np.mean(tmp[:,0,:,xx[0]:xx[1]+1], axis=(0,-1))
+	surfRefMean = np.mean(tmp[:,0,ylims[0]:ylims[1]+1,xx[0]:xx[1]+1], axis=(1,2))
+	# Area mean surface flow
 	
 	# Time mean bottom flow
 	ub = tools.bottom(tmp, grid, 'u', shiftUp=1)
-	botRef = np.mean(ub[...,xx[0]:xx[1]], axis=(0,-1))
-
+	botRef = np.mean(ub[...,xx[0]:xx[1]+1], axis=(0,-1))
+	
+	# Area mean bottom flow
+	botRefMean = np.mean(ub[:,ylims[0]:ylims[1]+1,xx[0]:xx[1]+1], axis=(-1,-2))
+	
 	baroclRef = np.mean(tmp[:,0,ylims[0]:ylims[1]+1,:] - ub[:,ylims[0]:ylims[1]+1,:], axis=(1,2))
 	if SMOOTH:
 		baroclRef = tools.smooth3(baroclRef)
 	Ntref = len(baroclRef)
-	tref = np.linspace(1, Ntref, Ntref)
+	tref = np.linspace(1, Ntref, Ntref)/12
 	#plt.plot(baroclRef); plt.show(); print(baroclRef.shape); quit()
 
 	#==
 	
 	# Now get time-dep. surface and bottom flows from perturbation experiments.
 	
+	wind = None
 	data = [[],[]]
 	barocl = []
+	surf = []
+	bot = []
 	for path_tmp in paths[1]:
 	
 		print(path_tmp)
+		
+		if path_tmp == 'MCS_320':
+			wind = readVariable('oceTAUX', path_root+path_tmp+'/run/', file_format='nc', meta=False, tt=tt)[:,100,0]
 	
 		tmp = readVariable(VAR, path_root+path_tmp+'/run/', file_format='nc', meta=False, tt=tt)
+		#tmp = readAllnp('stateUvel', path_root+path_tmp+'/run/', (50, 200, 240))[:tt[1]]
+			
+		#tau = readVariable('oceTAUX', path_root+path_tmp+'/run/', file_format='nc', meta=False, tt=-1)
+		#plt.plot(tau[:,0], Y); plt.grid(); plt.show()
 		
 		# Surface flow
 		surftmp = np.mean(tmp[:,0,:,xx[0]:xx[1]], axis=-1)
 		if SMOOTH:
 			surftmp = tools.smooth3(surftmp)
 		data[0].append(surftmp[:,1:-1])
+		surf.append(np.mean(surftmp[:,ylims[0]:ylims[1]+1], axis=1))
 		print(surftmp.shape)
 
 		# Bottom flow
@@ -263,7 +296,8 @@ if surfBotFlowAnim:
 		if SMOOTH:
 			bottmp = tools.smooth3(bottmp)
 		data[1].append(bottmp[:,1:-1])
-
+		bot.append(np.mean(bottmp[:,ylims[0]:ylims[1]+1], axis=1))
+		
 		barocl.append(np.mean(surftmp[:,ylims[0]:ylims[1]+1] - bottmp[:,ylims[0]:ylims[1]+1], axis=1))
 
 	#==
@@ -272,30 +306,32 @@ if surfBotFlowAnim:
 	time = ndays*86400*np.linspace(1, nt, nt)
 	text_data = ptt.getTextData(time, 'month', 0.1, Y[-2], color='k')
 	
-	timeSeriesPlot = False
-	if timeSeriesPlot:
-		y0 = 90; y1 = 100
-		for d in data[1]:
-			plt.plot(time, np.mean(d[:,y0:y1], axis=-1))
-			#plt.plot(d[0,90:100])
-		plt.plot(time, np.ones(time.shape[0])*np.mean(botRef[y0:y1]))
-		plt.show()
-		quit()
-		
-	print('Look at SSH and theta changes, and in fully zonally uniform model')
-	print('using timeSeriesPlot, clear that one has greater variance than other. Why?')
-	print('Why do both lead to faster undercurrents?')
-	
 	#==
 	
 	Nt = len(barocl[1])
-	t = np.linspace(Ntref+1, Ntref+1+Nt, Nt)
+	t = np.linspace(Ntref+1, Ntref+1+Nt, Nt)/12
 	
-	plt.plot(tref, baroclRef, color='k', label='Default wind spin up')
-	plt.plot(t, barocl[0], label=labels[0])
-	plt.plot(t, barocl[1], label=labels[1])
+	plt.figure(figsize=(15,6))
+	plt.subplot(121)
+	plt.plot(tref, surfRefMean, color='k', label='Spin up surf. flow')
+	plt.plot(t, surf[0], label=labels[0] + ', surf. flow', color='b')
+	plt.plot(t, surf[1], label=labels[1] + ', surf. flow', color='r')
+	plt.plot(tref, botRefMean, color='k', label='Spin up bot. flow', alpha=0.6)
+	plt.plot(t, bot[0], label=labels[0] + ', bot. flow', color='b', alpha=0.6)
+	plt.plot(t, bot[1], label=labels[1] + ', bot. flow', color='r', alpha=0.6)
+	if wind is not None:
+		plt.plot(t, wind, linestyle='dashed', color='k', alpha=0.8)
+	plt.grid()
 	plt.legend()
-	plt.xlabel('Time (months)')
+	plt.xlabel('Time (years)')
+	plt.title('Surf. and bot. flow (m/s), ' + bathyName)
+	
+	plt.subplot(122)
+	plt.plot(tref, baroclRef, color='k', label='Default wind spin up')
+	plt.plot(t, barocl[0], label=labels[0], color='b')
+	plt.plot(t, barocl[1], label=labels[1], color='r')
+	plt.legend()
+	plt.xlabel('Time (years)')
 	plt.title('Surf. - bot. flow (m/s), ' + bathyName)
 	
 	plt.grid()
@@ -320,13 +356,123 @@ if surfBotFlowAnim:
 
 #==
 
+
+surfBotFlowPlot = 0
+if surfBotFlowPlot:
+
+	path_root = '/home/michael/Documents/data/'
+
+	#paths = ['MCS_313', 'MCS_154', 'MCS_312']; labels = ['IPO PH pos', 'Ref. wind', 'IPO PH neg']; tt = [-120, None]
+	paths = ['MCS_314', 'MCS_154', 'MCS_315'];  labels = ['IPO unif pos', 'Ref. wind', 'IPO unif neg'];	tt = [40, 160]
+	paths = ['MCS_316', 'MCS_154', 'MCS_317'];  labels = ['IPO sin pos', 'Ref. wind', 'IPO sin neg'];	tt = [-120, None]
+	
+	ttref = [-120,None]
+	
+	xlims = [50, 190]
+	ylims = [88,118]
+
+	surfs = []
+	bots = []
+	stresses = []
+	
+	# For each simulation, get surface, bottom flow and difference.
+	for exp in paths:
+		
+		path = path_root + exp + '/run/'
+		grid = Grid(path)
+		
+		if exp == 'MCS_154':
+			tt0 = ttref
+		else:
+			tt0 = tt
+		
+		# First get surf. and bottom flow		
+		VAR = 'UVEL'	
+		tmp = np.mean(readVariable(VAR, path, file_format='nc', meta=False, tt=tt0), axis=0)
+		tmp_surf = ptt.maskBathyXY(tmp[0], grid, zi=0, timeDep=False)
+		surfs.append(tmp_surf)		
+	
+		# Time mean bottom flow
+		tmp_bot = tools.bottom(tmp, grid, 'u', shiftUp=1, timeDep=False)
+		tmp_bot = ptt.maskBathyXY(tmp_bot, grid, zi=0, timeDep=False)
+		bots.append(tmp_bot)
+		
+		# Second get surface stress.
+		if exp == 'MCS_154':
+			tmp = tools.get05cosWind(grid.Nx, grid.Ny)[:,0]
+			tmp = 200 * tmp / np.max(np.abs(tmp)) + 300.
+			stresses.append(tmp)
+		else:
+			VAR = 'oceTAUX'
+			tmp = readVariable(VAR, path, file_format='nc', meta=False, xx=0, tt=0)
+			tmp = 200 * tmp / np.max(np.abs(tmp)) + 300.
+			stresses.append(tmp)
+			
+	#==
+	
+	# PLOT
+
+	X = grid.XC[0,:] / 1000.
+	Y = grid.YC[:,0] / 1000.
+	Z = grid.RC.squeeze()
+	
+	rect = patches.Rectangle((X[xlims[0]], Y[ylims[0]]), X[xlims[1]]-X[xlims[0]], Y[ylims[1]]-Y[ylims[0]], linewidth=1, edgecolor='k', facecolor='none', linestyle='dashed')
+	rect2 = patches.Rectangle((X[xlims[0]], Y[ylims[0]]), X[xlims[1]]-X[xlims[0]], Y[ylims[1]]-Y[ylims[0]], linewidth=1, edgecolor='k', facecolor='none', linestyle='dashed')
+	rect3 = patches.Rectangle((X[xlims[0]], Y[ylims[0]]), X[xlims[1]]-X[xlims[0]], Y[ylims[1]]-Y[ylims[0]], linewidth=1, edgecolor='k', facecolor='none', linestyle='dashed')
+		
+	xticks = [0,100,200,300,400,500,600]
+	yticks = [0,100,200,300,400,500]
+	vmin = -0.2; vmax = 0.2
+	bathy = ptt.maskBathyXY(grid.bathy, grid, zi=0, timeDep=False)	
+	
+	plt.figure(figsize=(21,15))
+	for pi, path in enumerate(paths):
+		
+		plt.subplot(3,3,pi*3+1)
+		plt.gca().patch.set_color('.5')
+		plt.pcolormesh(X, Y, surfs[pi], cmap='bwr', vmin=vmin, vmax=vmax)
+		plt.grid(); plt.xticks(xticks, labels=''); plt.yticks(yticks, labels='')
+		plt.plot(stresses[pi], Y); plt.axvline(300)
+		plt.ylabel(labels[pi])
+		plt.colorbar()
+		plt.contour(X, Y, bathy, levels=[-501, -401], colors='k', linestyles='solid')
+
+		if pi == 0:
+			plt.title('Surface flow')
+			plt.gca().add_patch(rect)
+			
+		ax=plt.subplot(3,3,pi*3+2)
+		plt.gca().patch.set_color('.5')
+		plt.pcolormesh(X, Y, bots[pi], cmap='bwr', vmin=vmin, vmax=vmax)
+		plt.grid(); plt.xticks(xticks, labels=''); plt.yticks(yticks, labels='')
+		plt.colorbar()
+		plt.contour(X, Y, bathy, levels=[-501, -401], colors='k', linestyles='solid')
+		if pi == 0:
+			plt.title('Bottom flow')
+			ax.add_patch(rect2)
+			
+		plt.subplot(3,3,pi*3+3)
+		plt.gca().patch.set_color('.5')
+		plt.pcolormesh(X, Y, surfs[pi]-bots[pi], cmap='bwr', vmin=vmin, vmax=vmax)
+		plt.grid(); plt.xticks(xticks, labels=''); plt.yticks(yticks, labels='')
+		plt.colorbar()
+		plt.contour(X, Y, bathy, levels=[-501, -401], colors='k', linestyles='solid')
+		if pi == 0:
+			plt.title('Surface flow - bottom flow')		
+			plt.gca().add_patch(rect3)
+				
+	plt.tight_layout()
+	plt.show()
+	
+#==
+
 sshAnim = 0
 if sshAnim:
 
 	path_root = '/home/michael/Documents/data/'
 	
-	#paths = ['MCS_154', ['MCS_301', 'MCS_302']]; bathyName = 'bathyS'; 	xx = [50,120]
-	paths = ['MCS_308', ['MCS_309', 'MCS_310']]; bathyName = 'bathyS'; xx = [50,120]
+	#paths = ['MCS_154', ['MCS_301', 'MCS_302']]; bathyName = 'bathyS'; 	xx = [50,190]
+	paths = ['MCS_308', ['MCS_309', 'MCS_310']]; bathyName = 'bathyS'; xx = [50,190]
 	#paths = ['MCS_303', ['MCS_304', 'MCS_305']]; bathyName = 'bathyUniform'; xx = [0,None]
 	labels = ['Southward shift', 'Northward shift']
 	
@@ -383,11 +529,9 @@ if sshAnim:
 isothermAnim = 0
 if isothermAnim:
 
-	paths = ['MCS_308', ['MCS_309', 'MCS_310']]; bathyName = 'bathyS'; xx = [50,120]
-	#paths = ['MCS_154', ['MCS_306', 'MCS_307']]; bathyName = 'bathyS'; xx = [50,120]
-	#paths = ['MCS_303', ['MCS_304', 'MCS_305']]; bathyName = 'bathyUniform'; xx = [0,None]
-
-	labels = ['Southward shift', 'Northward shift']
+	#paths = ['MCS_154', ['MCS_315', 'MCS_314']]; labels = ['IPO unif neg', 'IPO unif pos']; bathyName = 'bathyS'; xx = [50,190]; tt=160
+	paths = ['MCS_154', ['MCS_318', 'MCS_319']]; labels = ['IPO sin neg', 'IPO sin pos']; bathyName = 'bathyS'; xx = [50,190]; tt=205
+	#paths = ['MCS_154', ['MCS_312', 'MCS_313']]; labels = ['IPO PH neg', 'IPO PH pos']; bathyName = 'bathyS'; xx = [50,190]; tt = 240
 
 	path_root = '/home/michael/Documents/data/'
 	path_ref = paths[0]
@@ -416,7 +560,7 @@ if isothermAnim:
 		print(tmp.shape)
 		tmp = np.mean(tmp[:,1:-1,xx[0]:xx[1]], axis=-1)
 		#tmp = tools.smooth3(tmp)
-		data.append(tmp[0:240])
+		data.append(tmp[0:tt])
 
 	#==
 	
@@ -429,7 +573,7 @@ if isothermAnim:
 	constLineLabel = ['Default wind']
 	constLineStyle = ['dashed']
 	
-	vmin = -600; vmax = -150
+	vmin = -500; vmax = -150
 	
 	mask = grid.hFacC[:,:,120]
 	mask = np.where(mask>0, 0, 1)
@@ -442,7 +586,7 @@ if isothermAnim:
 isothermPlanAnim = 0
 if isothermPlanAnim:
 
-	run = 'MCS_308'
+	run = 'MCS_313'
 
 	path_root = '/home/michael/Documents/data/'
 	VAR = 'ThermZ_m05_' 
@@ -466,10 +610,12 @@ if isothermPlanAnim:
 	ylabel = 'Y (km)'
 	title = '-0.5 deg. C isotherm depth'
 	
-	vmin = -600; vmax = -150
+	vmin = -500; vmax = -200
 	cmap = 'YlOrRd'
 	
-	pt.animate1by1(data, X, Y, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=True, text_data=text_data, outname='isothermPlan_'+run+'.mp4', vmin=vmin, vmax=vmax, contour=grid.bathy)
+	data = tools.boundData(data, vmin, vmax)
+	
+	pt.animate1by1(data, X, Y, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=False, text_data=text_data, outname='isothermPlan_'+run+'.mp4', vmin=vmin, vmax=vmax, contour=grid.bathy)
 	
 	quit()
 
@@ -478,12 +624,14 @@ if isothermPlanAnim:
 heatContentTimeSeries = 0
 if heatContentTimeSeries:
 
-	paths = ['MCS_308', ['MCS_309', 'MCS_310']]; bathyName = 'bathyS'; tt=[0,None]
+	paths = ['MCS_308', ['MCS_312', 'MCS_313']]; bathyName = 'bathyS'; tt=[0,None]
 	#paths = ['MCS_154', ['PISOMIP_001', 'PISOMIP_002']]; bathyName = 'bathyS'; tt=[0,224]
 	#paths = ['MCS_303', ['MCS_304', 'MCS_305']]; bathyName = 'bathyUniform'; tt=[0,None]
-	labels = ['Southward wind shift', 'Northward wind shift']
+
+	#labels = ['Southward wind shift', 'Northward wind shift']
+	labels = ['IPO pos', 'IPO neg']	
  	
-	y0 = 90; z0 = 25
+	y0 = 85; z0 = 25
 	yy = [0, y0]; zz = [0, z0]
  
 	path_root = '/home/michael/Documents/data/'
@@ -494,7 +642,7 @@ if heatContentTimeSeries:
 	HCref = readVariable(VAR, path_root+paths[0]+'/run/', file_format='nc', meta=False, yy=yy, zz=zz)
 	HCref = tools.heatContentShelfFast(HCref)
 	Ntref = len(HCref)
-	tref = np.linspace(1, Ntref, Ntref)
+	tref = np.linspace(1, Ntref, Ntref) / 12
 	
 	HCs = []
 	for path_tmp in paths[1]:
@@ -504,18 +652,75 @@ if heatContentTimeSeries:
 		HCs.append(tools.heatContentShelfFast(tmp))
 		
 	Nt = len(HCs[1])
-	t = np.linspace(Ntref+1, Ntref+1+Nt, Nt)
+	t = np.linspace(Ntref+1, Ntref+1+Nt, Nt) / 12
 	
 	plt.plot(tref, HCref, color='k', label='Default wind spin up')
 	plt.plot(t, HCs[0], label=labels[0])
 	plt.plot(t, HCs[1], label=labels[1])
 	plt.legend()
-	plt.xlabel('Time (months)')
+	plt.xlabel('Time (years)')
 	plt.title('On shelf heat content (J), ' + bathyName)
 	
 	plt.grid()
 	plt.show()
 	
+	quit()
+	
+#==
+
+barostr_timeSeries = 0
+if barostr_timeSeries:
+
+	#paths = ['MCS_154', ['MCS_315', 'MCS_314']]; labels = ['IPO unif neg', 'IPO unif pos']; bathyName = 'bathyS'; xx = [50,190]; tt=[0,160]
+	#paths = ['MCS_154', ['MCS_317', 'MCS_316']]; labels = ['IPO sin neg', 'IPO sin pos']; bathyName = 'bathyS'; xx = [50,190]; tt=[0,205]
+	paths = ['MCS_154', ['MCS_312', 'MCS_313']]; labels = ['IPO PH neg', 'IPO PH pos']; bathyName = 'bathyS'; xx = [50,190]; tt = [0, None]
+	
+	ttRef = [0, None]
+	d = 4
+	
+	path = path_root + paths[0] + '/run/'
+	grid = Grid(path)
+	bathy = grid.bathy
+	
+	X = grid.XC[1,:]/1000.
+	Y = grid.YC[:,1]/1000.
+	xlabel = 'LON (km)'; ylabel = 'LAT (km)'
+	ny, nx = bathy.shape
+	
+	tmp = readVariable('UVEL', path, file_format='nc', tt=ttRef)[::d]
+	tmp = - 1.e-6 * tools.barotropicStreamfunction(tmp, grid, timeDep=True, norm=False)
+	
+	print(tmp.shape)
+	baroRef = np.abs(np.min(tmp[:,0:LAT,:], axis=(1,2)))
+	Ntref = len(baroRef)
+	tref = np.linspace(1, Ntref, Ntref) / 12
+	print(Ntref)
+	
+	#==
+	
+	baros = []
+	for path_tmp in paths[1]:
+		
+		print(path_tmp)
+		tmp = readVariable('UVEL', path_root+path_tmp+'/run/', file_format='nc', meta=False, tt=tt)[::d]
+		tmp = - 1.e-6 * tools.barotropicStreamfunction(tmp, grid, timeDep=True, norm=False)
+		baros.append(np.abs(np.min(tmp[:,0:LAT,:], axis=(1,2))))
+		
+	#==
+	
+	Nt = len(baros[1])
+	t = np.linspace(Ntref+1, Ntref+1+Nt, Nt) / 12
+	
+	plt.plot(tref, baroRef, color='k', label='Default wind spin up')
+	plt.plot(t, baros[0], label=labels[0])
+	plt.plot(t, baros[1], label=labels[1])
+	plt.legend()
+	plt.xlabel('Time (years)')
+	plt.title('Barotropic streamfunction magnitude')
+	
+	plt.grid()
+	plt.show()
+
 	quit()
 	
 #==
@@ -527,9 +732,10 @@ if barotropicStreamfunction:
 	#path = '/home/michael/Documents/data/PISOMIP_003/run/'
 	path_root = '/home/michael/Documents/data/'
 
-	run = 'MCS_309'
+	run = 'MCS_154'
 	
 	tt = [0, None]
+	d = 1
 	
 	path = path_root + run + '/run/'
 	grid = Grid(path)
@@ -549,7 +755,6 @@ if barotropicStreamfunction:
 	if VAR == 'ISOTHERM':
 	
 		data = readVariable('ETAN', path, file_format='nc', tt=tt)
-
 		
 		data = np.load(path+'ThermZ_m05_'+run+'.npy')
 		vmin = -600; vmax=-150;	cmap = 'YlOrRd'
@@ -561,9 +766,10 @@ if barotropicStreamfunction:
 		
 	elif VAR == 'BAROSTR':
 			
-		data = readVariable('UVEL', path, file_format='nc', tt=tt)[::4]
+		d = 4
+		data = readVariable('UVEL', path, file_format='nc', tt=tt)[::d]
 			
-		vmin = -0.8e-5; vmax = 0.8e-5; cmap = 'jet'
+		vmin = -0.6e-5; vmax = 0.6e-5; cmap = 'jet'
 		data = - 1.e-6 * tools.barotropicStreamfunction(data, grid, timeDep=True, norm=False)
 		print(data.shape)
 		
@@ -583,8 +789,9 @@ if barotropicStreamfunction:
 
 	#==
 
-	nt = data.shape[0]
-	time_s = np.linspace(1,nt,nt)*86400.*30.	
+	nt = data.shape[0]*d
+	time_s = np.linspace(d,nt+d,nt)*86400.*30.
+	time_s = time_s[::d]
 	text_data = ptt.getTextData(time_s, 'month', X[1], Y[1], color='k')
 	
 	data = ptt.maskBathyXY(data, grid, 0, timeDep=True)
@@ -595,12 +802,56 @@ if barotropicStreamfunction:
 
 #==
 
+heatTransport = 1
+if heatTransport:
+
+	#paths = ['MCS_154', ['MCS_315', 'MCS_314']]; labels = ['IPO unif neg', 'IPO unif pos']; bathyName = 'bathyS'; xx = [50,190]; tt=[0,160]
+	#paths = ['MCS_154', ['MCS_317', 'MCS_316']]; labels = ['IPO sin neg', 'IPO sin pos']; bathyName = 'bathyS'; xx = [50,190]; tt=[0,205]
+	paths = ['MCS_154', ['MCS_312', 'MCS_313']]; labels = ['IPO PH neg', 'IPO PH pos']; bathyName = 'bathyS'; xx = [50,190]; tt = [0, None]
+	
+	Cp = 3974.0 # Units J / (kg C) = (kg m2 / s2) / (kg C) = m2 / (s2 C)
+	rho0 = 1030. # Units kg / m3
+	
+	lat = 50
+	
+	vRef = readVariable('VVEL', path_root+paths[0]+'/run/', file_format='nc', meta=False, yy=lat)
+	thetaRef = readVariable('THETA', path_root+paths[0]+'/run/', file_format='nc', meta=False, yy=lat)
+	vtRef = np.where(thetaRef>0, vRef*thetaRef, 0)
+	vtRef = np.sum(vtRef[...,120:], axis=(1,2))
+	Ntref = len(vtRef)
+	tref = np.linspace(1, Ntref, Ntref) / 12
+	
+	vts = []
+	for path_tmp in paths[1]:
+		print(path_tmp)
+		
+		v = readVariable('VVEL', path_root+path_tmp+'/run/', file_format='nc', meta=False, yy=lat, tt=tt)
+		theta = readVariable('THETA', path_root+path_tmp+'/run/', file_format='nc', meta=False, yy=lat, tt=tt)
+		vt = np.where(theta>0, v*theta, 0)
+		vts.append(np.sum(vt[...,120:], axis=(1,2)))
+		
+	Nt = len(vts[1])
+	t = np.linspace(Ntref+1, Ntref+1+Nt, Nt) / 12
+	
+	plt.plot(tref, vtRef, color='k', label='Default wind spin up')
+	plt.plot(t, vts[0], label=labels[0])
+	plt.plot(t, vts[1], label=labels[1])
+	plt.legend()
+	plt.xlabel('Time (years)')
+	plt.title('On shelf heat content (J), ' + bathyName)
+	
+	plt.grid()
+	plt.show()
+		
+	
+	
+
+#==
+
 # Cross-shelf heat transport plots.
 heatFluxes_heatRel = 0
 if heatFluxes_heatRel:
 
-	path_root = '/home/michael/Documents/data/'
-	
 	Cp = 3974.0 # Units J / (kg C) = (kg m2 / s2) / (kg C) = m2 / (s2 C)
 	rho0 = 1030. # Units kg / m3
 	

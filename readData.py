@@ -35,8 +35,11 @@ def readnp(inputfilename, dims, dtype='>f', rec=-1):
 	# Read all records
 	if rec == -1:
 		data = np.fromfile(f, dtype=dtype, count=-1)
-		data = data.reshape((int(data.size/(ny*nx)),ny,nx))
-		
+		if len(dims) == 2:
+			data = data.reshape((int(data.size/(ny*nx)),ny,nx))
+		elif len(dims) == 3:
+			data = data.reshape((int(data.size/(nz*ny*nx)),nz,ny,nx))
+			
 	# Read specific record
 	else:
 		f.seek(rec*size*count)

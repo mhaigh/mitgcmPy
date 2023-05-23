@@ -45,34 +45,266 @@ import time
 # SIZE 12x10 tiled grid 480318175/
 # SIZE 24x10 tiled grid 490234079
 
-
-		
 #==
+
+surfaceArea = 0
+if surfaceArea:
+
+	path_root = '/home/michael/Documents/data/'
+	run = 'PISOMIP_002'	
+	path = path_root + run + '/run/'
+	
+	grid = Grid(path)
+	bathy = grid.bathy
+
+	dx = grid.DXG
+	dy = grid.DYG
+	hfac = grid.hFacC[0] * grid.hFacS[0] * grid.hFacW[0]
+	
+	pt.plot1by1(grid.hFacS[0])
+	quit()
+	
+	y2 = 100
+	print('Southern half surface area:')
+	print(np.sum(dx[:y2,:]*dy[:y2,:]*hfac[:y2,:]))
+	print('Northern half surface area:')
+	print(np.sum(dx[y2:,:]*dy[y2:,:]*hfac[y2:,:]))
+	
+	quit()
+
+#==
+
+IBCSOnc = 0
+if IBCSOnc:
+
+	import matplotlib.cm as cmaps
+	from mpl_toolkits.basemap import Basemap
+	from netCDF4 import Dataset
+	import copy
+	
+	my_cmap = copy.copy(plt.cm.get_cmap('Greys')) # get a copy of the gray color map
+	my_cmap.set_bad(alpha=0) # set how the colormap handles 'bad' values
+
+	
+	#==
+	
+	# First get PAS bathymetry.
+	
+	PASpath = '/home/michael/Documents/data/IdealisedAmundsenSea/data/PAS_851/run/'
+	#W = -130; E = -90; S = -76; N = -64;
+	
+			
+	grid = Grid_PAS(PASpath)
+	ice = grid.iceC
+	land_ice = np.where(grid.bathy<0, 1, 0)
+	#land_ice = np.ma.masked_where(land_ice==0, land_ice)
+	land_ice = np.where(grid.iceC>0, 0.5, land_ice)	
+	land_ice = np.where(land_ice==1, np.nan, land_ice)
+	land_ice += 0.5
+	
+	bathy = grid.bathy
+	
+	alpha = np.where(grid.bathy>0, 1, 0)
+
+	X = grid.XC - 360
+	Y = grid.YC
+
+	W = np.min(X[0,:]); E = np.max(X[0,:])
+	S = np.min(Y[:,0]); N = np.max(Y[:,0])
+	
+	
+	labelData = []
+	figsize = (5,4)
+	paras = [-74, -72, -70, -68, -66, -64]
+	merids = [230, 240, 250, 260, 270] 
+	tid_types = [11, 17, 41, 45, 70, 40]
+	cmap = 'gist_rainbow'
+
+	SUBREGION = True
+	if SUBREGION:
+		figsize = (3,2.5)
+		tid_types = [11, 17, 41, 45, 70]
+		W = -115; E = -94.9; S = -75.5; N = -70.5
+		xw = np.argmin(np.abs(X[0,:]-W)); xe = np.argmin(np.abs(X[0,:]-E))
+		ys = np.argmin(np.abs(Y[:,0]-S)); yn = np.argmin(np.abs(Y[:,0]-N))
+		X = X[ys:yn, xw:xe]; Y = Y[ys:yn, xw:xe]; land_ice = land_ice[ys:yn, xw:xe]
+		bathy = bathy[ys:yn, xw:xe]; alpha = alpha[ys:yn, xw:xe]
+		paras = [-74, -72, -70]
+		merids = [245, 250, 255, 260, 265]
+		# Labels for trough
+		ts = 12
+		p1 = {'x':(1.91e5,1.536e6), 't':'PITW', 'tx':(1.915e5,1.536e6), 'tc':'k', 'ts':ts}
+		p2 = {'x':(9.e5, 8.e5), 't':'C', 'tx':(9.002e5, 8.e5), 'tc':'k', 'ts':ts}
+		#p3 = {'x':(1.28e6, 1.52e6), 't':'PITE', 'tx':(.99e6, 1.52e6), 'tc':'k', 'ts':ts}
+		#p4 = {'x':(1.507e6, 1.612e6), 't':'R', 'tx':(1.40e6, 1.620e6), 'tc':'k', 'ts':ts}
+		p3 = {'x':(1.28e6, 1.52e6), 't':'PITE', 'tx':(.91e6, 1.52e6), 'tc':'k', 'ts':ts}
+		p4 = {'x':(1.507e6, 1.612e6), 't':'R', 'tx':(1.375e6, 1.620e6), 'tc':'k', 'ts':ts}
+		labelData = [p1, p2, p3, p4]
+		cmap = 'hsv'
+		#cmap = 'gist_rainbow'
 		
+	Xl = X[0,:]; Yl = Y[:,0]
+	Ny2 = len(Yl)//2; Nx2 = len(Xl)//2
+	lat_0=Yl[Ny2]; lon_0=Xl[Nx2]
+	
+	#==
+	
+	RID = False
+	if RID:
+		fname = '/home/michael/Documents/data/IBCSO_v2_RID_WGS84.nc'
+		data =  Dataset(fname, 'r')	
+		rid = data['rid'][:]
+	else:
+		fname = '/home/michael/Documents/data/IBCSO_v2_TID_WGS84.nc'
+		data =  Dataset(fname, 'r')	
+		rid = data['tid'][:]
+	
+	print(data.variables)
+
+	#rid = data['rid']
+
+	lon = data['lon'][:]
+	lat = data['lat'][:]	
+	xw = np.argmin(np.abs(lon-W)); xe = np.argmin(np.abs(lon-E))
+	ys = np.argmin(np.abs(lat-S)); yn = np.argmin(np.abs(lat-N))
+	
+	lon = lon[xw:xe]
+	lat = lat[ys:yn]
+	rid = rid[ys:yn, xw:xe]
+	
+	#rid = np.ma.masked_where(rid!=70, rid)
+	#plt.contourf(lon, lat, rid)#, cmap=cmap)#, levels=levels)
+	#plt.colorbar()
+	#plt.show(); quit()
+	
+	col = (np.random.random(), np.random.random(), np.random.random())
+
+	if RID:
+		#plt.plot(rid[100,:]);plt.show();quit()
+		rid_min = 10800.; rid_max = np.max(rid)
+		rid = np.ma.masked_where(rid<rid_min, rid)
+		rid = np.ma.masked_where(rid!=11066, rid)
+	
+		print(rid_max)
+		print(np.min(np.where(rid<10000,1.e10,rid)))
+		levels = np.linspace(rid_min, rid_max, 50)
+	else:
+		#rid = np.ma.masked_where(rid!=71,rid)
+		# 11 - multibeam
+		# 17 - combination of direct measurement methods
+		# 41 - Interpolated based on a computer algorithm
+		# 45 - Predicted bathymetry based on flight-derived gravity data
+		# 70 - Depth value is taken from a pre-generated grid that is based on mixed source data types, e.g. single beam, multibeam, interpolation etc.
+		# 40 - Predicted bathymetry based on satellite-derived gravity data
+		# tid_types = [11, 17, 41, 45, 70]
+		
+		# Make all values of interest negative
+		for tid_type in tid_types:
+			rid = np.where(rid==tid_type, -rid, rid)
+		# Then mask all positive values.
+		rid = np.ma.masked_where(rid>0, rid)
+		# Then map each tid_type to 1,2,3,4...
+		for ti, tid_type in enumerate(tid_types):
+			rid = np.where(rid==-tid_type, ti+1, rid)
+				
+		levels = [0.5+ti for ti in range(len(tid_types)+1)]
+		cmap = cmaps.get_cmap(cmap)
+		colours = [cmap((levels[ti]+levels[ti+1]-1)/(2*len(tid_types))) for ti in range(len(tid_types))]
+
+	#==
+	
+
+	
+	#==
+	
+	# PLOT
+	
+	dpi = 300
+	
+	m = Basemap(llcrnrlon=X[0,0],llcrnrlat=Y[0,0],urcrnrlon=X[-1,-1],urcrnrlat=Y[-1,-1], projection='merc',lat_0=lat_0+3,lon_0=lon_0-10)
+	
+	fig = plt.figure(figsize=figsize, dpi=dpi)
+	plt.subplot(111)
+	ax = plt.gca()
+	
+	X0, Y0 = m(X,Y)
+	lon, lat = np.meshgrid(lon, lat)
+	lon0, lat0 = m(lon,lat)
+	
+	d = 1
+
+	for ci, colour in enumerate(colours):
+		m.scatter(lon0[0,0],lat0[0,0],color=colour, s=10, label='Type ' + str(ci+1), marker=',')
+	ax = plt.gca()
+	#plt.legend();plt.show();quit()
+
+	m.contourf(lon0[::d], lat0[::d], rid[::d, ::d], levels=levels, cmap=cmap)
+	#plt.contourf(X, Y, land_ice, cmap=my_cmap, zorder=10)
+	m.contourf(X0, Y0, land_ice, cmap=my_cmap, vmin=0, vmax=1)
+	#plt.imshow(land_ice[::-1], extent=[W, E, S, N], zorder=10, cmap=my_cmap)
+	#plt.gca().set_aspect(3)
+	
+	#plt.scatter(-102, -71.5, s=4, color='r')
+	m.contour(X0, Y0, bathy, levels=[-1000, -600], colors='k', linestyles='solid', linewidths=0.3)
+	m.drawparallels(paras,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[2,1])
+	m.drawmeridians(merids,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[2,1])
+	ax.legend(loc=3, fontsize='x-small')
+	
+	for li in labelData:
+		plt.scatter(li['x'][0], li['x'][1], s=1, color='w')
+		plt.annotate(li['t'], li['tx'], color=li['tc'], fontsize=li['ts'])
+		
+	plt.title('Bedmachine/IBCSO bathymetry data source', fontsize=8)
+	plt.grid()
+	plt.tight_layout()
+	plt.savefig('Figure_2.jpg')
+	plt.show()
+	quit()
+	
+#==
+
+# ['_MutableMapping__marker', '__abstractmethods__', '__class__', '__class_getitem__', '__contains__', '__delattr__', '__delitem__', '__dict__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__geo_interface__', '__getattribute__', '__getitem__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__iter__', '__le__', '__len__', '__lt__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__reversed__', '__setattr__', '__setitem__', '__sizeof__', '__slots__', '__str__', '__subclasshook__', '__weakref__', '_abc_impl', '_data', '_delegate', '_delegated_properties', '_props', 'clear', 'coordinates', 'from_dict', 'geometries', 'get', 'items', 'keys', 'pop', 'popitem', 'setdefault', 'type', 'update', 'values']
+gkpg = 0
+if gkpg:
+
+	import fiona		
+	
+	fname = '/home/michael/Documents/data/IBCSO_v2_coverage.gpkg'
+	
+	with fiona.open(fname, layer='IBCSO_coverage') as layer:
+		print(layer.schema)
+		for feature in layer:
+			print(feature['geometry'].values())
+			
+	quit()
+			
+#==
+
 animBin = 0
 if animBin:
 	
 	#==
 	
-	path = '/home/michael/Documents/data/MCS_ad1/run/'
+	path = '/home/michael/Documents/data/PISOMIP_001/run/'
 	
-	VAR = 'ADJtaux'; mult_gencost = 1.e9; reverse = True; vmax = 1.e-3; vmin = -vmax
-	title=VAR + ' (deg. C/(N m$^{-2}$)), OBJ=on-shelf heat, days 90-120'
+	#VAR = 'ADJtaux'; mult_gencost = 1.e9; reverse = True; vmax = 1.e-3; vmin = -vmax
+	#title=VAR + ' (deg. C/(N m$^{-2}$)), OBJ=on-shelf heat, days 90-120'
 		
-	#VAR = 'stateTheta'; mult_gencost = 1.; reverse = False; vmax = 2; vmin = -vmax
-	#title = VAR
+	VAR = 'stateUvel'; mult_gencost = 1.; reverse = False; vmax = .2; vmin = -vmax
+	title = VAR
 	
 	#VAR = 'm_boxmean_theta.0000000000.data'; mult_gencost = 1; reverse=False
 	#vmax = 0; vmin = -1.e-4; title = VAR
 		
-	nx = 240; ny = 200
-	dims = (ny, nx)
+	nz = 50; ny = 200; nx = 240; dims = (nz, ny, nx)
+	#nx = 240; ny = 200;	dims = (ny, nx)
 	
 	data = readAllnp(VAR, path, dims, reverse=reverse) / mult_gencost
 	#data = readnp(path+VAR, dims, rec=-1)
 	print(data.shape)
 	nt = data.shape[0]
-	#pt.plot1by1(data[0]); quit()
+	
+	
 	#plt.plot(np.mean(np.abs(data),axis=(1,2))); plt.show(); quit()
 
 	#==
@@ -97,7 +329,7 @@ if animBin:
 			
 	#plt.plot(np.sum(data, axis=(1,2))); plt.show(); quit()	
 	
-	pt.plot1by1(data[-30,], X, Y, mesh=True, cmap='bwr', vmin=0.4*vmin, vmax=0.4*vmax, title='HC sens. to zonal wind, 60 day lag (deg. C/(N m$^{-2}$))', xlabel='Lon (km)', ylabel='Lat (km)', fontsize=10, contour=contour); quit()
+	pt.plot1by1(data[0,], X, Y, mesh=True, cmap='bwr', vmin=0.4*vmin, vmax=0.4*vmax, title='HC sens. to zonal wind, 60 day lag (deg. C/(N m$^{-2}$))', xlabel='Lon (km)', ylabel='Lat (km)', fontsize=10, contour=contour); quit()
 	
 	pt.animate1by1(data, X, Y, vmin=vmin, vmax=vmax, cmap='bwr', title=title, text_data=text_data, fontsize=9, contour=contour, contourLevels=levels)
 	
@@ -151,7 +383,7 @@ if binReadTest:
 	
 #==
 
-readWindBin = 1
+readWindBin = 0
 if readWindBin:
 
 	path = '/home/michael/Documents/data/MCSwinds/'
@@ -629,26 +861,25 @@ if TEST_animate:
 
 	#path = '/home/michael/Documents/data/MCS_002/run/'
 
-	path = '/home/michael/Documents/data/MCS_304/run/'
+	path = '/home/michael/Documents/data/PISOMIP_002/run/'
 
 	grid = Grid(path)
-	print(grid.hFac.shape)
-	plt.plot(grid.bathy[:,0]); plt.show(); quit()
-	
-	#grid = Grid_PAS(path)
+
 	X = grid.YC[:,1]/1000.
 	Y = grid.RC.squeeze()
 
 	#VAR = 'ETAN'
-	VAR = 'THETA'
-	#VAR = 'SALT'	
+	#VAR = 'THETA'
+	VAR = 'SALT'	
 	#VAR = 'UVEL'	
 	
 	vmin, vmax, cmap, title = getPlottingVars(VAR)
 	#vmin = 33.32; vmax = 34.5
-	data = readVariable(VAR, path, file_format='nc', meta=False, tt=[-200,None])
+	data = readVariable(VAR, path, file_format='nc', meta=True, tt=[0,None])
+	text_data = ptt.getTextData(data['TIME'][:], 'month', X[1], Y[-2], color='k')
+	data = data[VAR][:]	
 		
-	MEAN = True
+	MEAN = False
 	ASYM = False
 	if not MEAN:
 		for ti in range(data.shape[0]):
@@ -671,15 +902,13 @@ if TEST_animate:
 
 	data = tools.boundData(data, vmin, vmax, scale=0.99999)
 
-	data = grid.hFacC.transpose([2,0,1]); vmin = 0; vmax = 1
-	
 	# PLOT.
 
 	#vmin = None; vmax = None
 	xlabel = 'LATITUDE (km)'; ylabel = 'DEPTH (m)'
 	#pt.plot1by1(data[-1], X, Y, xlabel=xlabel, ylabel=ylabel, title=title, cmap=cmap, vmin=vmin, vmax=vmax, mesh=False); quit()
 
-	pt.animate1by1(data, X, Y, vmin=vmin, vmax=vmax, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=False)
+	pt.animate1by1(data, X, Y, vmin=vmin, vmax=vmax, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=False, text_data=text_data)
 		
 	quit()
 	
@@ -722,13 +951,13 @@ if TEST_animateX:
 	
 #==
 
-animateSurface = False
+animateSurface = True	
 if animateSurface:
 
 	#path = '/home/michael/Documents/data/PAS_666/run/'
 	#path = '/home/michael/Documents/data/PISOMIP_003/run/'
 	path_root = '/home/michael/Documents/data/'
-	run = 'PISOMIP_001'
+	run = 'MCS_320'
 	
 	path = path_root + run + '/run/'
 	grid = Grid(path)
@@ -755,9 +984,11 @@ if animateSurface:
 	#VAR = 'WVEL'
 	#VAR = 'botTauX'
 	#VAR = 'ADTAUU'
-	VAR = 'ISOTHERM'
+	#VAR = 'ISOTHERM'
+	#VAR = 'oceSflux'
+	VAR = 'oceTAUX'
 
-	flatVars = ['ETAN', 'botTauX', 'PHIBOT', 'ISOTHERM']
+	flatVars = ['ETAN', 'botTauX', 'PHIBOT', 'ISOTHERM', 'oceTAUX', 'oceSflux']
 
 	if VAR == 'ISOTHERM':
 	
@@ -767,8 +998,8 @@ if animateSurface:
 		data = np.load(path+'ThermZ_m05_'+run+'.npy')
 		vmin = -600; vmax=-150;	cmap = 'YlOrRd'
 		#vmin = -500; vmax = -350; cmap = 'jet'
+		
 		title = run + ' -0.5 deg. C isotherm depth'
-		print(data.shape)
 		
 	else:
 			
@@ -778,45 +1009,31 @@ if animateSurface:
 		print(data.variables)
 
 		text_data = ptt.getTextData(data.variables['TIME'][:], 'month', X[1], Y[1], color='k')
-		data = data[VAR][-120:]
-		
-	#==
+		data = data[VAR][:]
+		#plt.plot(data[-1,:,1]);plt.grid(); plt.show(); quit()
 
-	PLOT_MEAN = False
-	if PLOT_MEAN:
-		data_mean = np.mean(data[60:,0,], axis=0)
-		data_mean = tools.boundData(data_mean, vmin, vmax, scale=0.99999)
-		data_mean = ptt.maskBathyXY(data_mean, grid, 0, timeDep=False)
-		taux = 300+150*tools.get05cosWind(nx,ny)[:,0]
-		taux = 300+150*tools.getShiftedWind(nx,ny, shift=16)[:,0]
-		pt.plot1by1(data_mean, X=X, Y=Y, title='Time-mean SSH', xlabel=xlabel, ylabel=ylabel, vmin=vmin, vmax=vmax, mesh=False, yline=taux, contour=bathy, contourlevels=[-950,-900, -800,-700, -500])
+	#==
 
 	# DON'T CHANGE THIS. CHANGE ONE IN IF STATEMENT IF YOU WANT.
 	level = 0
 
 	if VAR not in flatVars:
-		level = 18
+		level = 0
 		data = data[:,level]
 		print('Z = ' + str(grid.RC.squeeze()[level]))
 
-	print(data.shape)
-	#vmax = 1.; vmin = -0.4
 	#data = tools.boundData(data, vmin, vmax, scale=0.99999)
 	data = ptt.maskBathyXY(data, grid, level, timeDep=True)
-
-	SUBR = 0
-	if SUBR:
-		lats = [120.e3, 270.e3]; lons = [500.e3, 600.e3]#[230, 270]#
-		latsi = grid.getIndexFromLat(lats); lonsi = grid.getIndexFromLon(lons)
-		data = tools.getSubregionXY(data, latsi, lonsi)
-		X = grid.Xsubr1D(lons); Y = grid.Ysubr1D(lats)
+	hfac=grid.hFacC[0]*grid.hFacW[0]*grid.hFacS[0]
+	print(data.shape)
+	print(np.ma.sum(data[0]))
+	print(np.ma.sum(data[0,:100]*hfac[:100]))
+	print(np.ma.sum(data[0,100:]*hfac[100:]))
 	
-	#data = np.mean(data, axis=3)
-
 	#vmin = None; vmax = None
-	#vmin = 33.375; vmax=33.575 # For SSS
+	#vmin = -0.025; vmax = -vmin # For SSS
 	
-	pt.animate1by1(data, X, Y, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=True, text_data=text_data, outname='animate1by1Surf.mp4', vmin=vmin, vmax=vmax, contour=grid.bathy)
+	pt.animate1by1(data, X, Y, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=False, text_data=text_data, outname='animate1by1Surf.mp4', vmin=vmin, vmax=vmax, contour=grid.bathy)
 
 	quit()
 	
@@ -933,11 +1150,11 @@ animateQuivers = False
 if animateQuivers:
 
 	#path = '/home/michael/Documents/data/PAS_666/run/'
-	path = '/home/michael/Documents/data/MCS_308/run/'
+	path = '/home/michael/Documents/data/MCS_315/run/'
 	#path = '/data/oceans_output/shelf/pahol/mitgcm/PAS_851/run/'
 
 	# Sample rate
-	d = 4
+	d = 8
 
 	grid = Grid(path)
 	#grid = Grid_PAS(path)	
@@ -989,8 +1206,6 @@ if animateQuivers:
 		X = grid.Xsubr1D(lons)
 		Y = grid.Ysubr1D(lats)
 
-
-
 	data1 = tools.interp(data1, 'u'); data2 = tools.interp(data2, 'v')
 
 	data1 = ptt.maskBathyXY(data1, grid, level, timeDep=True)
@@ -1004,7 +1219,7 @@ if animateQuivers:
 	
 	#pt.plot1by2([data1[0], data2[0]]); quit()
 
-	pt.animate1by1quiver(data1, data2, Xd, Yd, C=Td, contour=contour, X=X, Y=Y, contourf=False, text_data=text_data, title=title, figsize=(7,4), cmap='YlGn')
+	pt.animate1by1quiver(data1, data2, Xd, Yd, C=Td, contour=contour, X=X, Y=Y, contourf=False, text_data=text_data, title=title, figsize=(7,6), cmap='YlGn')
 	
 	quit()
 

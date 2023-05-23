@@ -21,11 +21,11 @@ import time
 # Meridional limits of mask:
 # YC>=2.21250e5
 
-objTest = 1
+objTest = 0
 if objTest:
 
 	path1 = '/home/michael/Documents/data/MCS/run/'
-	path2 = '/home/michael/Documents/data/MCS_ad2/run/'
+	path2 = '/home/michael/Documents/data/MCS/run/'
 	
 	VAR1 = 'stateTheta.0000008640.data'; norm1 = 1.e9
 	VAR2 = 'm_boxmean_theta.0000000000.data'; norm2 = 1.e0
@@ -265,16 +265,16 @@ if kinDynSens:
 	
 #==
 
-animBin = 0
+animBin = 1
 if animBin:
 	
 	#==
 	
-	path = '/home/michael/Documents/data/MCS/run/'
+	path = '/home/michael/Documents/data/MCS_ad101/run/'
 	
 	VAR = 'ADJtaux'; mult_gencost = 1.e9; reverse = True; vmax = 0.0002; vmin = -vmax
-	title = VAR + ' (deg. C/(N m$^{-2}$)), OBJ=on-shelf heat, days 290-360'
-	ndays = 5
+	OBJ = 'OBJ=on-shelf heat, days 360-720'
+	ndays = 5; lagTime = 360
 	
 	INTEGRATE = True
 	dt = ndays * 86400.
@@ -291,7 +291,10 @@ if animBin:
 	
 	if NORM:
 		data /= norm
-		title = VAR + ' (nondim), OBJ=on-shelf heat, days 290-360'
+		title = VAR + ' (nondim), ' + OBJ
+	else:
+		title = VAR + ' (deg. C/(N m$^{-2}$)), ' + OBJ
+	
 	#==
 	
 	grid = Grid(path)
@@ -300,7 +303,7 @@ if animBin:
 	data = ptt.maskBathyXY(data, grid, 0, timeDep=True)
 			
 	time = ndays*86400*np.linspace(0, nt-1, nt)
-	text_data = ptt.getTextData(time, 'day', X[-12,1], Y[-12,1], color='k', lag=True, lagTime=90)
+	text_data = ptt.getTextData(time, 'day', X[-12,1], Y[-12,1], color='k', lag=True, lagTime=lagTime)
 		
 	contour = grid.bathy
 	levels = [-600, -501, -401]
@@ -312,10 +315,10 @@ if animBin:
 	#plt.plot(var); plt.show(); quit()
 		
 	if INTEGRATE:
-		data = dt*np.cumsum(data,axis=0)
+		data = 1*np.cumsum(data,axis=0)
 		title = VAR + ' int. (nondim), OBJ=on-shelf heat, days 290-360'
 				
-	pt.animate1by1varCbar(data, X, Y, cmap='bwr', title=title, text_data=text_data, fontsize=9, contour=contour, vmin=vmin, vmax=vmax)
+	pt.animate1by1varCbar(data, X, Y, cmap='bwr', title=title, text_data=text_data, fontsize=9, contour=contour)
 	
 	#pt.animate1by1(data, X, Y, cmap='bwr', title=title, text_data=text_data, fontsize=9, contour=contour, vmin=vmin, vmax=vmax, mesh=True)
 	
