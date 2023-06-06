@@ -298,15 +298,21 @@ if MAIN:
 
 
 
-readSlopeUVfile = False
+readSlopeUVfile = True
 
 if readSlopeUVfile:
 
 
 
-	t_start = 107; t_end = 622
+	#t_start = 107; t_end = 622
 
-	#t_start = 0; t_end = 779
+	t_start = 0; t_end = 779
+
+	
+
+	nl2 = int(5*12); nl = 2*nl2 + 1
+
+	lags = np.linspace(-nl2,nl2,nl)
 
 	
 
@@ -338,10 +344,6 @@ if readSlopeUVfile:
 
 	slope_y = np.load(path+slopeyfile)
 
-	print(slope_uv.shape)
-
-	print(time.shape)
-
 	
 
 	#plt.scatter(slope_x, slope_y); plt.show(); quit()
@@ -350,35 +352,9 @@ if readSlopeUVfile:
 
 	nn = 60
 
-	print(ctime(int(time[502-30])))
+	
 
-	#=============================================================
-
-	def moving_average(a, n=3):
-
-		ret = np.cumsum(a, dtype=float)
-
-		ret[n:] = ret[n:] - ret[:-n]
-
-		return ret[n - 1:] / n
-
-		
-
-	def window_average(a, n):
-
-		b = np.copy(a)
-
-		if n % 2 == 0:
-
-			n += 1
-
-		for i in range((n-1)//2, len(a)-(n-1)//2+1):
-
-			b[i] = np.mean(a[i-(n-1)//2:i+(n-1)//2])
-
-		return b 
-
-		
+	#===
 
 	months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
@@ -388,19 +364,51 @@ if readSlopeUVfile:
 
 		monthDec[months[mi]] = mi/12.
 
-	#=============================================================
-
-    
-
 	year = [float(ctime(int(time_))[-4:])-15+monthDec[ctime(int(time_))[4:7]] for time_ in time[t_start:t_end]]#
+
+	
+
+	start = 24*12 + 5*12
+
+	year = year[start:] 
+
+
+
+	seasonal_cycle = 0
+
+	if seasonal_cycle:
+
+		slope_uv = slope_uv[start:] - slope_uv[start-12:-12]
+
+		surf_uv = surf_uv[start:] - surf_uv[start-12:-12]
+
+	else:
+
+		slope_uv = slope_uv[start:]
+
+		surf_uv = surf_uv[start:]
+
+		
 
 	year_ = year[nn//2:-nn//2+1]
 
 	
 
+	# Silvano years: 1987 - 2017 (+-2.5)
+
+	ysSil = np.argmin(np.abs(np.array(year)-1987.+2.5)); yeSil = np.argmin(np.abs(np.array(year)-2017.-2.5))
+
+	ys_Sil = np.argmin(np.abs(np.array(year_)-1987.+2.5)); ye_Sil = np.argmin(np.abs(np.array(year_)-2017.-2.5))
+
+	
+
+	ys = ysSil; ye = yeSil
+
+	ys_ = ys_Sil; ye_ = ye_Sil
+
+	
+
 	plotSections = ['westGetz', 'westPITW', 'westPITE']
-
-
 
 
 
@@ -424,17 +432,127 @@ if readSlopeUVfile:
 
 			nx += ie-iw
 
+		
+
 		uv_mean = uv_sum / nx
 
 		surf_uv_mean = surf_uv_sum / nx
 
-		uv_mean = window_average(uv_sum, n=nn)[nn//2:-nn//2+1]
+		
 
-		surf_uv_mean = window_average(surf_uv_sum, n=nn)[nn//2:-nn//2+1]
+		#uv_mean = uv_mean[ys:ye]; surf_uv_mean = surf_uv_mean[ys:ye]; year = year[ys:ye]	
 
-		plt.plot(year_, uv_mean, label='Deep along-slope flow')
+		uv_mean = PAS_tools.demean(uv_mean)
 
-		plt.plot(year_, surf_uv_mean, label='Surface along-slope flow')
+		surf_uv_mean = PAS_tools.demean(surf_uv_mean)
+
+		
+
+		corruv = PAS_tools.crossCorr(uv_mean, surf_uv_mean, nl, nl2)
+
+		corruu = PAS_tools.crossCorr(uv_mean, uv_mean, nl, nl2)
+
+		corrvv = PAS_tools.crossCorr(surf_uv_mean, surf_uv_mean, nl, nl2)
+
+		Fcuv, freq, period = PAS_tools.fft(corruv)
+
+		Fcuu, freq, period = PAS_tools.fft(corruu)
+
+		Fcvv, freq, period = PAS_tools.fft(corrvv)
+
+		
+
+		Puv = PAS_tools.fftPower(Fcuv, nl2)
+
+		Puu = PAS_tools.fftPower(Fcuu, nl2)
+
+		Pvv = PAS_tools.fftPower(Fcvv, nl2)
+
+		coh = Puv**2 / (Puu * Pvv)
+
+		
+
+		# Get correlations after a range of running means applied to data.
+
+		nw = 60
+
+		window_lengths = np.linspace(1,nw,nw)
+
+		corrw, tw, uw, vw = PAS_tools.windowCorr(uv_mean, surf_uv_mean, window_lengths, year, return_uv=True)
+
+		
+
+		# Plot correlations for velocities averaged with range of running mean windows.
+
+		wis = [0,12,18,48]
+
+		plt.figure(figsize=(16,17))
+
+		for wi in range(len(wis)):
+
+			plt.subplot(2,2,wi+1)
+
+			plt.plot(tw[wis[wi]], uw[wis[wi]], color='r', label='deep vel')
+
+			plt.plot(tw[wis[wi]], vw[wis[wi]], color='k', label='surf vel')
+
+			plt.xlabel('time (years)'); plt.grid()
+
+			title = str(wis[wi]/12) + '-year running mean, corr = {:.2f}'.format(corrw[wis[wi]])
+
+			plt.title('u, v time series, ' + title)
+
+			plt.legend()
+
+		plt.show()
+
+		
+
+		plt.figure(figsize=(13,6))
+
+		plt.subplot(121); plt.plot(lags/12., corruv)
+
+		plt.grid(); plt.title('corr(surface current, undercurrent)'); plt.xlabel('lag (years)')
+
+		plt.subplot(122); plt.plot(period, np.real(Fcuv), label='Real'); plt.plot(period, np.imag(Fcuv), label='Imag')
+
+		plt.plot(period, np.abs(Fcuv), label='abs'); plt.gca().set_xscale('symlog', base=2)
+
+		plt.grid(); plt.xlabel('Period (months)'); plt.legend(); plt.title('corr Fourier spectrum');
+
+		#plt.xticks([2**n for n in range(len(Fcuv))])
+
+		plt.show()
+
+		
+
+		plt.plot(period[nl2:]/12,Puv)
+
+		plt.gca().set_xscale('log')
+
+		plt.show()	
+
+			
+
+		#== 
+
+		
+
+		uv_mean = PAS_tools.windowAv(uv_mean, n=nn)[nn//2:-nn//2+1]
+
+		surf_uv_mean = PAS_tools.windowAv(surf_uv_mean, n=nn)[nn//2:-nn//2+1]
+
+		year = PAS_tools.windowAv(year, n=nn)[nn//2:-nn//2+1]
+
+
+
+		plt.plot(year, uv_mean, label='Deep along-slope flow', color='r')
+
+		plt.plot(year, surf_uv_mean, label='Surface along-slope flow', color='k')		
+
+		#plt.plot(year_[ys_:ye_], uv_mean[ys_:ye_], label='Deep along-slope flow')
+
+		#plt.plot(year_[ys_:ye_], surf_uv_mean[ys_:ye_], label='Surface along-slope flow')
 
 		plt.title('Along-slope average current speed (m/s)')
 
@@ -450,7 +568,7 @@ if readSlopeUVfile:
 
 	# Plot average for each section.
 
-	if 1:
+	if 0:
 
 		for section in plotSections:
 
@@ -476,7 +594,77 @@ if readSlopeUVfile:
 
 	quit()
 
+	
+
+	nt = 20*12
+
+
+
+	
+
+	t = np.linspace(1,nt,nt)
+
+	lags = np.linspace(-nl2,nl2,nl)
+
+	
+
+	rand1 = np.random.random(nt); rand2 = np.random.random(nt); rand3 = np.random.random(nt); rand4 = np.random.random(nt)
+
+	rand1 = 1; rand2 = 1; rand3 = 1; rand4 = 1
+
+	p1 = 4*12; p2 = 4*12; p3 = 1.5*12
+
+	u = 1*np.sin(2*np.pi*t/p1) + 0*rand1*np.cos(2*np.pi*t/(rand2*p3))
+
+	v = -0*np.sin(2*np.pi*t/p1) - 1*rand3*np.cos(2*np.pi*t/(rand4*p3))
+
+	
+
+	#plt.plot(u); plt.plot(v); plt.show()
+
+	
+
+	#==
+
+	
+
+	# Get correlations
+
+	
+
+	# Compute coherence.
+
+	# 1. Get auto and cross correlations as functions of lag.
+
+	# 2. Fourier transform correlations.
+
+
+
+	corruv = PAS_tools.crossCorr(u, v, nl, nl2)
+
+	corruu = PAS_tools.crossCorr(u, u, nl, nl2)
+
+	corrvv = PAS_tools.crossCorr(v, v, nl, nl2)
+
+	corrvu = PAS_tools.crossCorr(v, u, nl, nl2)
+
 		
+
+	#plt.plot(lags, corruv); plt.plot(lags, corrvu); plt.grid(); plt.show(); quit()
+
+	
+
+	#==
+
+	
+
+	# Get correlations after a range of running means applied to data.
+
+	nw = 60
+
+	window_lengths = np.linspace(1,nw,nw)
+
+	corrw, tw, uw, vw = PAS_tools.windowCorr(u, v, window_lengths, t, return_uv=True)
 
 #==
 
@@ -965,6 +1153,168 @@ if latLonToCartesian2:
 	pt.plot1by2([x, y])
 
 	
+
+#==
+
+
+
+coherence = False
+
+if coherence:
+
+
+
+	nt = 20*12
+
+	nl2 = 10*12
+
+	nl = 2*nl2 + 1
+
+	
+
+	t = np.linspace(1,nt,nt)
+
+	lags = np.linspace(-nl2,nl2,nl)
+
+	
+
+	rand1 = np.random.random(nt); rand2 = np.random.random(nt); rand3 = np.random.random(nt); rand4 = np.random.random(nt)
+
+	rand1 = 1; rand2 = 1; rand3 = 1; rand4 = 1
+
+	p1 = 4*12; p2 = 4*12; p3 = 2.6
+
+	u = .5*np.sin(2*np.pi*t/p1) + 0*rand1*np.cos(2*np.pi*t/(rand2*p3))
+
+	v = -.5*np.cos(2*np.pi*t/p2) + 0*rand3*np.cos(2*np.pi*t/(rand4*p3))
+
+	
+
+	#plt.plot(u); plt.plot(v); plt.show()
+
+
+
+	#==
+
+	
+
+	# Get correlations
+
+	
+
+	# Compute coherence.
+
+	# 1. Get auto and cross correlations as functions of lag.
+
+	# 2. Fourier transform correlations.
+
+
+
+	corruv = PAS_tools.crossCorr(u, v, nl, nl2)
+
+	corruu = PAS_tools.crossCorr(u, u, nl, nl2)
+
+	corrvv = PAS_tools.crossCorr(v, v, nl, nl2)
+
+	corrvu = PAS_tools.crossCorr(v, u, nl, nl2)
+
+	#coh = PAS_tools.coherence(corruv, corruu, corrvv)
+
+	
+
+	#plt.plot(lags, corruv); plt.plot(lags, corrvu); plt.grid(); plt.show(); quit()
+
+	
+
+	#==
+
+	
+
+	# Get correlations after a range of running means applied to data.
+
+	nw = 60
+
+	window_lengths = np.linspace(1,nw,nw)
+
+	corrw, tw, uw, vw = PAS_tools.windowCorr(u, v, window_lengths, t, return_uv=True)
+
+	#==
+
+	
+
+	wis = [0,12,18,48]
+
+	plt.figure(figsize=(16,17))
+
+	for wi in range(len(wis)):
+
+		plt.subplot(2,2,wi+1)
+
+		plt.plot(tw[wis[wi]], uw[wis[wi]])
+
+		plt.plot(tw[wis[wi]], vw[wis[wi]])
+
+		plt.xlabel('time (years)'); plt.grid()
+
+		title = str(wis[wi]/12) + '-year running mean, corr = {:.2f}'.format(corrw[wis[wi]])
+
+		plt.title('u, v time series, ' + title)
+
+	plt.show()
+
+
+
+	#Fv = np.fft.fftshift(np.fft.fft(u)); freqt = 1./np.fft.fftshift(np.fft.fftfreq(nt))
+
+	#plt.plot(freqt, np.real(Fv), label='Real'); plt.plot(freqt, np.imag(Fv), label='Imag'); plt.legend(); plt.show(); quit()
+
+	
+
+	Fcorruv = np.fft.fftshift(np.fft.fft(corruv))
+
+	freq = np.fft.fftshift(np.fft.fftfreq(nl))
+
+	
+
+	plt.figure(figsize=(16,17))
+
+	plt.subplot(221)
+
+	plt.plot(t[:]/12, u[:], label='u = sin'+str(p1/12) + '+ cos'+str(p3/12))
+
+	plt.plot(t[:]/12, v[:], label='v = -sin'+str(p1/12) + '+ cos'+str(p3/12))
+
+	plt.xlabel('time (years)'); plt.title('u, v time series'); plt.legend(); plt.grid()
+
+	plt.subplot(222)
+
+	plt.plot((window_lengths-1)/12, corrw);  plt.xlabel('running mean window size (years)')
+
+	plt.title('corr(u,v) vs running mean window size'); plt.grid()
+
+	
+
+	plt.subplot(223)
+
+	plt.plot(lags/12., corruv); plt.grid(); plt.xlabel('Lag (years)'); plt.title('corr(u,v) vs lag');
+
+	plt.subplot(224)
+
+	plt.plot(1./12./freq, np.real(Fcorruv), label='Real power')
+
+	plt.plot(1./12./freq, np.imag(Fcorruv), label='Imag power'); plt.legend()
+
+	plt.xlabel('Period (years)'); plt.title('corr(u,v) Fourier power spectrum'); plt.grid();
+
+
+
+	plt.show()
+
+	
+
+	
+
+	quit()
 
 	
 
