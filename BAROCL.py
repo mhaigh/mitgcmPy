@@ -536,31 +536,31 @@ if crossCorr:
 
 
 
-surfBotFlowAnim = 1
+BAROCL = 0
 
-if surfBotFlowAnim:
+if BAROCL:
 
 
 
 	#paths = ['MCS_154', ['MCS_306', 'MCS_302']]; bathyName = 'bathyS'; 	xx = [50,190]
 
-	#paths = ['MCS_154', ['MCS_312', 'MCS_313']]; labels = ['IPO PH neg', 'IPO PH pos']; bathyName = 'bathyS'; xx = [50,190]; tt = [0, None]
+	#paths = ['MCS_154', ['MCS_312', 'MCS_313']]; labels = ['IPO PH neg', 'IPO PH pos']; bathyName = 'bathyS'; xx = [50,190]; tt = [0, None]; ylims = [95,110]
 
-	#paths = ['MCS_154', ['MCS_315', 'MCS_314']]; labels = ['IPO unif neg', 'IPO unif pos']; bathyName = 'bathyS'; xx = [50,190]; tt = [0, 154]
+	#paths = ['MCS_154', ['MCS_315', 'MCS_314']]; labels = ['IPO unif neg', 'IPO unif pos']; bathyName = 'bathyS'; xx = [50,190]; tt = [0, 154]; ylims = [95,110]
 
-	#paths = ['MCS_154', ['MCS_319', 'MCS_318']]; labels = ['IPO sin neg, no rel', 'IPO sin pos, no rel']; bathyName = 'bathyS'; xx = [50,190]; tt = [0, 205]
+	#paths = ['MCS_154', ['MCS_319', 'MCS_318']]; labels = ['IPO sin neg, no rel', 'IPO sin pos, no rel']; bathyName = 'bathyS'; xx = [50,190]; tt = [0, 205]; ylims = [95,110]
 
-	#paths = ['MCS_154', ['MCS_320', 'MCS_316']]; labels = ['IPO sin exf', 'IPO sin pos']; bathyName = 'bathyS'; xx = [50,190]; tt = [0, 208]
+	#paths = ['MCS_154', ['MCS_320', 'MCS_316']]; labels = ['IPO sin exf', 'IPO sin pos']; bathyName = 'bathyS'; xx = [50,190]; tt = [0, 208]; ylims = [95,110]
 
-	#paths = ['MCS_154', ['MCS_321', 'MCS_316']]; labels = ['IPO sin pos sharp', 'IPO sin pos']; bathyName = 'bathyS'; xx = [50,190]; tt = [0, 205]
+	#paths = ['MCS_154', ['MCS_321', 'MCS_316']]; labels = ['IPO sin pos sharp', 'IPO sin pos']; bathyName = 'bathyS'; xx = [50,190]; tt = [0, 205]; ylims = [95,110]
 
-	#paths = ['MCS_152', ['MCS_323', 'MCS_322']]; labels = ['IPO sin neg', 'IPO sin pos']; bathyName = 'bathy uniform'; xx = [0,-2];  tt = [0, 240]
+	#paths = ['MCS_152', ['MCS_323', 'MCS_322']]; labels = ['IPO sin neg', 'IPO sin pos']; bathyName = 'bathy uniform'; xx = [0,-2];  tt = [0, 240]; ylims = [95,110]
 
-	#paths = ['MCS_152', ['MCS_334', 'MCS_327']]; labels = ['IPO sin neg sharp', 'IPO sin pos sharp']; bathyName = 'bathy uniform'; xx = [0,-2];  tt = [0, 240]	
+	#paths = ['MCS_152', ['MCS_334', 'MCS_327']]; labels = ['IPO sin neg sharp', 'IPO sin pos sharp']; bathyName = 'bathy uniform'; xx = [0,-2];  tt = [0, 240]; ylims = [95,110]
 
-	#paths = ['MCS_152', ['MCS_326', 'MCS_325']]; labels = ['IPO sin neg sharp (strong)', 'IPO sin pos sharp (strong)']; bathyName = 'bathy uniform'; xx = [0,-2];  tt = [0, 240]	
+	#paths = ['MCS_152', ['MCS_326', 'MCS_325']]; labels = ['IPO sin neg sharp (strong)', 'IPO sin pos sharp (strong)']; bathyName = 'bathy uniform'; xx = [0,-2];  tt = [0, 240]; ylims = [95,110]
 
-	paths = ['MCS_154', ['PISOMIP_001', 'PISOMIP_002']]; labels = ['IPO sin neg sharp (strong)', 'IPO sin pos sharp (strong)']; bathyName = 'bathy uniform'; xx = [0,-2];  tt = [0, 240]	
+	paths = ['MCS_340', ['PISOMIP_003', 'PISOMIP_004']]; labels = ['IPO sin neg sharp', 'IPO sin pos sharp']; bathyName = 'bathy uniform'; xx = [2,-2]; tt = [0, 240]; ylims = [90, 100]
 
 		
 
@@ -574,11 +574,7 @@ if surfBotFlowAnim:
 
 	ttref = [0, None]
 
-	
 
-	ylims = [95,110]
-
-		
 
 	# First get reference flow from IC run.
 
@@ -602,7 +598,7 @@ if surfBotFlowAnim:
 
 	vmin, vmax, cmap, title = getPlottingVars(VAR)	
 
-	tmp = readVariable(VAR, path, file_format='nc', meta=False,  tt=ttref)
+	tmp = readVariable(VAR, path, file_format='nc', meta=False, tt=ttref)
 
 	
 
@@ -834,13 +830,15 @@ if surfBotFlowAnim:
 
 	
 
+	quit()
+
 
 
 #==
 
 
 
-surfBotFlowPlot = 0
+surfBotFlowPlot = 1
 
 if surfBotFlowPlot:
 
@@ -854,19 +852,19 @@ if surfBotFlowPlot:
 
 	#paths = ['MCS_314', 'MCS_154', 'MCS_315'];  labels = ['IPO unif pos', 'Ref. wind', 'IPO unif neg'];	tt = [40, 160]
 
-	paths = ['MCS_316', 'MCS_154', 'MCS_317'];  labels = ['IPO sin pos', 'Ref. wind', 'IPO sin neg'];	tt = [-120, None]
+	#paths = ['MCS_316', 'MCS_154', 'MCS_317'];  labels = ['IPO sin pos', 'Ref. wind', 'IPO sin neg'];	tt = [-120, None]
 
-	paths = ['MCS_322', 'MCS_154', 'MCS_323'];  labels = ['IPO sin pos', 'Ref. wind', 'IPO sin neg'];	tt = [-120, None]
+	#paths = ['MCS_322', 'MCS_154', 'MCS_323'];  labels = ['IPO sin pos', 'Ref. wind', 'IPO sin neg'];	tt = [-120, None]
 
-	
+	paths = ['PISOMIP_001', 'MCS_340', 'PISOMIP_004'];  labels = ['IPO sin pos', 'Ref. wind', 'IPO sin neg'];	tt = [-120, None]
 
 	ttref = [-120,None]
 
 	
 
-	xlims = [1, -2]
+	xlims = [20, -20]
 
-	ylims = [90,112]
+	ylims = [90,100]
 
 
 
