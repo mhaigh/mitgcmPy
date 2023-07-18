@@ -160,7 +160,7 @@ def latlon_to_xy(X, Y, returnGridSpacing=True, deg2rad=np.pi/180., rEarth=6.371e
 
 
 
-def getBearing(lat1, lon1, lat2, lon2, deg2rad=np.pi/180.):
+def getBearing_(lat1, lon1, lat2, lon2, deg2rad=np.pi/180.):
 
 	
 
@@ -193,6 +193,28 @@ def getBearing(lat1, lon1, lat2, lon2, deg2rad=np.pi/180.):
 
 
 	return brng
+
+	
+
+#==
+
+
+
+def getBearing(slope_x, slope_y):
+
+
+
+	bearing = np.zeros(len(slope_x))
+
+	bearing[0] = getBearing_(slope_y[0], slope_x[0], slope_y[1], slope_x[1])
+
+	bearing[-1] = getBearing_(slope_y[-2], slope_x[-2], slope_y[-1], slope_x[-1])
+
+	bearing[1:-1] = getBearing_(slope_y[:-2], slope_x[:-2], slope_y[2:], slope_x[2:])
+
+	
+
+	return bearing
 
 	
 
