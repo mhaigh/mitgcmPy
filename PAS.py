@@ -70,8 +70,6 @@ sections = {'westGetz':westGetz, 'Getz':Getz, 'westPITW':westPITW, 'PITW':PITW, 
 
 	
 
-
-
 MAIN = False
 
 if MAIN:
@@ -346,13 +344,15 @@ if MAIN:
 
 # This block computes and saves the spatial-mean wind stress curl evaluated over the continental shelf.
 
-onShelfWindCurl = True
+onShelfWindCurl = False
 
 if onShelfWindCurl:
 
 
 
 	ustressfile = 'oceTAUX'; vstressfile = 'oceTAUY'
+
+	iw = 0; ie = westPITE[1]
 
 
 
@@ -379,10 +379,6 @@ if onShelfWindCurl:
 		latsi = grid.getIndexFromLat(EASlats); lonsi = grid.getIndexFromLon(EASlons)
 
 		bathy = tools.getSubregionXY(bathy, latsi, lonsi)
-
-		dx = tools.getSubregionXY(dx, latsi, lonsi)
-
-		dy = tools.getSubregionXY(dy, latsi, lonsi)
 
 		X, Y = grid.XYsubr(EASlons, EASlats)
 
@@ -444,39 +440,119 @@ if onShelfWindCurl:
 
 	
 
-	us = bathy.copy()
+	us = np.zeros((2, grid.bathy.shape[0], grid.bathy.shape[1]))
 
-	vs = bathy.copy()
+	us[0] = grid.bathy; us[1] = grid.bathy
 
-	
+	vs = us.copy()
+
+		
 
 	# Get wind stress curl
 
 	curl = tools.ddx(vs, dx) - tools.ddy(us, dy)
 
+	
 
+	if subr:
 
-	# Array demarking shelf region. 1s for shelf, 0s for deep ocean or land.
-
-	shelf = np.where(bathy>=0, 0, 1)
-
-	for xi in range(nX):
-
-		shelf[slope_yi[xi]:, xi] = 0
+		curl = tools.getSubregionXY(curl, latsi, lonsi)
 
 		
 
-	pt.plot1by1(shelf)
+	# Convert into Ekman
+
+	rho0 = 1028.5
+
+	f = PAS_tools.getCoriolis(Y)
+
+	wk = curl / (rho0 * f)
+
+
+
+	# Array demarking shelf region. 0s land or far deep ocean, 1s for shelf, 2s for near deep ocean.
+
+	shelf = np.zeros(bathy.shape)
+
+	for xi in range(nX):
+
+		shelf[slope_yi[xi]-30:slope_yi[xi], xi] = 1
+
+		shelf[slope_yi[xi]:slope_yi[xi]+80, xi] = 2
+
+	shelf = np.where(bathy>=0, 0, shelf)
+
+	
+
+	shelf = shelf[...,iw:ie]
+
+	curl = curl[...,iw:ie]
+
+	wk = wk[...,iw:ie]
+
+
+
+	pt.plot1by2([bathy, shelf])
+
+	np.save('shelf.npy', shelf)
+
+	quit()
+
+	
+
+	# Make mask
+
+	mask = np.zeros((curl.shape))
+
+	for ti in range(curl.shape[0]):
+
+		mask[ti] = shelf
+
+	
+
+	curl_shelf = np.ma.array(curl.copy(), mask=mask!=1)
+
+	curl_deep = np.ma.array(curl.copy(), mask=mask!=2)
+
+	wk_shelf = np.ma.array(wk.copy(), mask=mask!=1)
+
+	wk_deep = np.ma.array(wk.copy(), mask=mask!=2) 
+
+	
+
+	#pt.plot1by2([wk_shelf[0], curl_shelf[0]])
+
+	#quit()
+
+	   	
+
+	curl_shelf = np.ma.mean(curl_shelf, axis=(1,2))
+
+	curl_deep = np.ma.mean(curl_deep, axis=(1,2))	
+
+	wk_shelf = np.ma.mean(wk_shelf, axis=(1,2))
+
+	wk_deep = np.ma.mean(wk_deep, axis=(1,2))
+
+		
+
+	np.save('windStressCurl', np.ma.filled(curl, fill_value=0))
+
+	np.save('curl_shelf', np.ma.filled(curl_shelf, fill_value=0))
+
+	np.save('curl_deep', np.ma.filled(curl_deep, fill_value=0))
+
+	np.save('wk', np.ma.filled(wk, fill_value=0))
+
+	np.save('wk_shelf', np.ma.filled(wk_shelf, fill_value=0))
+
+	np.save('wk_deep', np.ma.filled(wk_deep, fill_value=0))
 
 	
 
 	quit()
 
 	
-
-		
-
-
 
 #==
 
@@ -516,6 +592,10 @@ if readSlopeUVfile:
 
 	slopeyfile = 'slope_y.npy'
 
+	curldeepfile = 'curl_deep.npy'
+
+	curlshelffile = 'curl_shelf.npy'
+
 	
 
 	slope_uv = np.load(path+uvfile)
@@ -528,11 +608,9 @@ if readSlopeUVfile:
 
 	slope_y = np.load(path+slopeyfile)
 
-	print(slope_uv.shape)
+	curl_deep = np.load(path+curldeepfile)
 
-	#plt.scatter(slope_x, slope_y); plt.show(); quit()
-
-
+	curl_shelf = np.load(path+curlshelffile)
 
 	
 
@@ -888,7 +966,17 @@ if readAllSlopeFiles:
 
 	slopexfile = 'slope_x.npy'
 
-	slopeyfile = 'slope_y.npy'
+	slopeyfile = 'slope_y.npy'	
+
+	curldeepfile = 'curl_deep.npy'
+
+	curlshelffile = 'curl_shelf.npy'
+
+	wkdeepfile = 'wk_deep.npy'
+
+	wkshelffile = 'wk_shelf.npy'
+
+	wkfile = 'wk.npy'
 
 	
 
@@ -906,11 +994,17 @@ if readAllSlopeFiles:
 
 	slope_y = np.load(path+slopeyfile)
 
-	print(slope_uv.shape)
+	curl_deep = np.load(path+curldeepfile)
 
-	#plt.scatter(slope_x, slope_y); plt.show(); quit()
+	curl_shelf = np.load(path+curlshelffile)
 
+	wk_deep = np.load(path+wkdeepfile)
 
+	wk_shelf = np.load(path+wkshelffile)
+
+	wk = np.load(path+wkfile)
+
+	
 
 	## This code for test of correlation functions.
 
@@ -949,6 +1043,14 @@ if readAllSlopeFiles:
 	uw = uw[start:end]
 
 	us = us[start:end]
+
+	curl_deep = curl_deep[start:end]
+
+	curl_shelf = curl_shelf[start:end]
+
+	wk_deep = wk_deep[start:end]
+
+	wk_shelf = wk_shelf[start:end]
 
 	
 
@@ -1018,7 +1120,15 @@ if readAllSlopeFiles:
 
 	us_mean = PAS_tools.demean(us_mean)
 
-	
+	curl_deep = PAS_tools.demean(curl_deep)
+
+	curl_shelf = PAS_tools.demean(curl_shelf)
+
+	wk_deep = PAS_tools.demean(wk_deep)
+
+	wk_shelf = PAS_tools.demean(wk_shelf)
+
+			
 
 	# Deseason
 
@@ -1029,6 +1139,14 @@ if readAllSlopeFiles:
 	uw_mean = PAS_tools.deseason(uw_mean)
 
 	us_mean = PAS_tools.deseason(us_mean)
+
+	curl_deep = PAS_tools.deseason(curl_deep)
+
+	curl_shelf = PAS_tools.deseason(curl_shelf)
+
+	wk_deep = PAS_tools.deseason(wk_deep)
+
+	wk_shelf = PAS_tools.deseason(wk_shelf)
 
 	
 
@@ -1041,6 +1159,14 @@ if readAllSlopeFiles:
 	uw_mean = PAS_tools.detrend(uw_mean, year)
 
 	us_mean = PAS_tools.detrend(us_mean, year)
+
+	curl_deep = PAS_tools.detrend(curl_deep, year)
+
+	curl_shelf = PAS_tools.detrend(curl_shelf, year)
+
+	wk_deep = PAS_tools.detrend(wk_deep, year)
+
+	wk_shelf = PAS_tools.detrend(wk_shelf, year)
 
 	
 
@@ -1064,13 +1190,39 @@ if readAllSlopeFiles:
 
 	corr_surfStress, p_value_surfStress = PAS_tools.crossCorrWindowAv(surf_uv_mean, us_mean, window_lengths, nl, nl2)
 
+	corr_deepDeepCurl, p_value_deepDeepCurl = PAS_tools.crossCorrWindowAv(uv_mean, curl_deep, window_lengths, nl, nl2)
+
+	corr_deepShCurl, p_value_deepShCurl = PAS_tools.crossCorrWindowAv(uv_mean, curl_shelf, window_lengths, nl, nl2)
+
+	corr_deepWkDeep, p_value_deepWkDeep = PAS_tools.crossCorrWindowAv(uv_mean, wk_deep, window_lengths, nl, nl2)
+
+	corr_deepWkShelf, p_value_deepWkShelf = PAS_tools.crossCorrWindowAv(uv_mean, wk_shelf, window_lengths, nl, nl2)
+
+
+
+	#corrs = [corr_surfDeep, corr_surfWind, corr_deepWind, corr_deepStress]#, corr_surfStress]
+
+	#pvals = [p_value_surfDeep, p_value_surfWind, p_value_deepWind, p_value_deepStress]#, p_value_surfStress]
+
+	#titles = ['corr(surface current, undercurrent)', 'corr(surface current, surface wind speed)', 'corr(undercurrent, surface wind speed)', 'corr(undercurrent, surface stress)']#, 'corr(surface current, surface stress)']
+
 	
 
-	corrs = [corr_surfDeep, corr_surfWind, corr_deepWind, corr_deepStress]#, corr_surfStress]
+	#corrs = [corr_deepDeepCurl, corr_deepShCurl, corr_deepWind, corr_deepStress]#, corr_surfStress]
 
-	pvals = [p_value_surfDeep, p_value_surfWind, p_value_deepWind, p_value_deepStress]#, p_value_surfStress]
+	#pvals = [p_value_deepDeepCurl, p_value_deepShCurl, p_value_deepWind, p_value_deepStress]#, p_value_surfStress]
 
-	titles = ['corr(surface current, undercurrent)', 'corr(surface current, surface wind speed)', 'corr(undercurrent, surface wind speed)', 'corr(undercurrent, surface stress)']#, 'corr(surface current, surface stress)']
+	#titles = ['corr(undercurrent, deep ocean wind stress curl)', 'corr(undercurrent, shelf wind stress curl)', 'corr(undercurrent, surface wind speed)', 'corr(undercurrent, surface stress)']#, 'corr(surface current, surface stress)']
+
+	
+
+	corrs = [corr_deepDeepCurl, corr_deepShCurl, corr_deepWkDeep, corr_deepWkShelf]#, corr_surfStress]
+
+	pvals = [p_value_deepDeepCurl, p_value_deepShCurl, p_value_deepWkDeep, p_value_deepWkShelf]#, p_value_surfStress]
+
+	titles = ['corr(undercurrent, deep ocean wind stress curl)', 'corr(undercurrent, shelf wind stress curl)', 'corr(undercurrent, wk deep ocean)', 'corr(undercurrent, wk shelf ocean)']#, 'corr(surface current, surface stress)']
+
+	
 
 	xlabels = ['', '', 'Lag (years)', 'Lag (years)']
 
@@ -1132,6 +1284,14 @@ if readAllSlopeFiles:
 
 	us_mean = PAS_tools.windowAv(us_mean, n=nn)[nn//2:-nn//2+1]
 
+	curl_deep = PAS_tools.windowAv(curl_deep, n=nn)[nn//2:-nn//2+1]	
+
+	curl_shelf = PAS_tools.windowAv(curl_shelf, n=nn)[nn//2:-nn//2+1]
+
+	wk_deep = PAS_tools.windowAv(wk_deep, n=nn)[nn//2:-nn//2+1]	
+
+	wk_shelf = PAS_tools.windowAv(wk_shelf, n=nn)[nn//2:-nn//2+1]
+
 	year = PAS_tools.windowAv(year, n=nn)[nn//2:-nn//2+1]
 
 		
@@ -1144,17 +1304,33 @@ if readAllSlopeFiles:
 
 	us_mean /= np.max(np.abs(us_mean))
 
-	
+	curl_deep /= np.max(np.abs(curl_deep))
+
+	curl_shelf /= np.max(np.abs(curl_shelf))
+
+	wk_deep /= np.max(np.abs(wk_deep))
+
+	wk_shelf /= np.max(np.abs(wk_shelf))
+
+		
 
 	plt.plot(year, uv_mean, label='Deep along-slope flow', color='r')
 
-	plt.plot(year, surf_uv_mean, label='Surface along-slope flow', color='k')		
+	#plt.plot(year, surf_uv_mean, label='Surface along-slope flow', color='k')		
 
-	plt.plot(year, uw_mean, label='Along-slope wind')
+	#plt.plot(year, uw_mean, label='Along-slope wind')
 
-	plt.plot(year, us_mean, label='Along-slope stress')
+	#plt.plot(year, us_mean, label='Along-slope stress')
 
-	
+	plt.plot(year, curl_deep, label='Deep ocean wind stress curl')
+
+	plt.plot(year, curl_shelf, label='Shelf wind stress curl')
+
+	plt.plot(year, -wk_deep, label='Deep ocean Ekman')
+
+	plt.plot(year, -wk_shelf, label='Shelf Ekman')	
+
+
 
 	plt.title('Along-slope average current speed (m/s)')
 
