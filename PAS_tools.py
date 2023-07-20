@@ -704,6 +704,46 @@ def detrend(uin, tin):
 
 	
 
+#==
+
+
+
+def getCoriolis(lats, Omega=2*np.pi/86400., nx=None):
+
+	'''Get Coriolis coefficient for spherical polar grid.
+
+	Input lats to be in degrees.'''
+
+	
+
+	if len(lats.shape) == 2 or nx is None:
+
+		f = 2. * Omega * np.sin(lats * np.pi / 180.)	
+
+			
+
+	elif len(lats.shape) == 1:
+
+		f = np.zeros((lats.shape[0],nx))
+
+		for i in range(nx):
+
+			f[:,i] = 2. * Omega * np.sin(lats * np.pi / 180.)
+
+	
+
+	else:
+
+		print('PAS_tools.getCoriolis error: lats must have 1 or 2 dimensions.')
+
+		quit()
+
+			
+
+	return f
+
+
+
 	
 
 	
