@@ -336,8 +336,6 @@ if MAIN:
 
 
 
-
-
 #==
 
 
@@ -978,6 +976,10 @@ if readAllSlopeFiles:
 
 	wkfile = 'wk.npy'
 
+	SIdeepfile = 'SI_deep.npy'
+
+	SIshelffile = 'SI_shelf.npy'
+
 	
 
 	slope_uv = np.load(path+uvfile)
@@ -1003,6 +1005,10 @@ if readAllSlopeFiles:
 	wk_shelf = np.load(path+wkshelffile)
 
 	wk = np.load(path+wkfile)
+
+	SI_deep = np.load(path+SIdeepfile)
+
+	SI_shelf = np.load(path+SIshelffile)
 
 	
 
@@ -1051,6 +1057,10 @@ if readAllSlopeFiles:
 	wk_deep = wk_deep[start:end]
 
 	wk_shelf = wk_shelf[start:end]
+
+	SI_deep = SI_deep[start:end]
+
+	SI_shelf = SI_shelf[start:end]
 
 	
 
@@ -1128,6 +1138,10 @@ if readAllSlopeFiles:
 
 	wk_shelf = PAS_tools.demean(wk_shelf)
 
+	SI_deep = PAS_tools.demean(SI_deep)
+
+	SI_shelf = PAS_tools.demean(SI_shelf)
+
 			
 
 	# Deseason
@@ -1147,6 +1161,10 @@ if readAllSlopeFiles:
 	wk_deep = PAS_tools.deseason(wk_deep)
 
 	wk_shelf = PAS_tools.deseason(wk_shelf)
+
+	SI_deep = PAS_tools.deseason(SI_deep)
+
+	SI_shelf = PAS_tools.deseason(SI_shelf)
 
 	
 
@@ -1168,7 +1186,11 @@ if readAllSlopeFiles:
 
 	wk_shelf = PAS_tools.detrend(wk_shelf, year)
 
-	
+	SI_deep = PAS_tools.detrend(SI_deep, year)
+
+	SI_shelf = PAS_tools.detrend(SI_shelf, year)
+
+		
 
 	#==
 
@@ -1198,7 +1220,19 @@ if readAllSlopeFiles:
 
 	corr_deepWkShelf, p_value_deepWkShelf = PAS_tools.crossCorrWindowAv(uv_mean, wk_shelf, window_lengths, nl, nl2)
 
+	corr_stressWkShelf, p_value_stressWkShelf = PAS_tools.crossCorrWindowAv(us_mean, wk_shelf, window_lengths, nl, nl2)
 
+	corr_stressWkDeep, p_value_stressWkDeep = PAS_tools.crossCorrWindowAv(us_mean, wk_deep, window_lengths, nl, nl2)
+
+	corr_deepSIdeep, p_value_deepSIdeep = PAS_tools.crossCorrWindowAv(uv_mean, SI_deep, window_lengths, nl, nl2)
+
+	corr_deepSIshelf, p_value_deepSIshelf = PAS_tools.crossCorrWindowAv(uv_mean, SI_shelf, window_lengths, nl, nl2)
+
+	corr_surfSIdeep, p_value_surfSIdeep = PAS_tools.crossCorrWindowAv(surf_uv_mean, SI_deep, window_lengths, nl, nl2)
+
+	corr_surfSIshelf, p_value_surfSIshelf = PAS_tools.crossCorrWindowAv(surf_uv_mean, SI_shelf, window_lengths, nl, nl2)
+
+	
 
 	#corrs = [corr_surfDeep, corr_surfWind, corr_deepWind, corr_deepStress]#, corr_surfStress]
 
@@ -1216,11 +1250,27 @@ if readAllSlopeFiles:
 
 	
 
-	corrs = [corr_deepDeepCurl, corr_deepShCurl, corr_deepWkDeep, corr_deepWkShelf]#, corr_surfStress]
+	#corrs = [corr_deepDeepCurl, corr_deepShCurl, corr_deepWkDeep, corr_deepWkShelf]
 
-	pvals = [p_value_deepDeepCurl, p_value_deepShCurl, p_value_deepWkDeep, p_value_deepWkShelf]#, p_value_surfStress]
+	#pvals = [p_value_deepDeepCurl, p_value_deepShCurl, p_value_deepWkDeep, p_value_deepWkShelf]
 
-	titles = ['corr(undercurrent, deep ocean wind stress curl)', 'corr(undercurrent, shelf wind stress curl)', 'corr(undercurrent, wk deep ocean)', 'corr(undercurrent, wk shelf ocean)']#, 'corr(surface current, surface stress)']
+	#titles = ['corr(undercurrent, deep ocean wind stress curl)', 'corr(undercurrent, shelf wind stress curl)', 'corr(undercurrent, wk deep ocean)', 'corr(undercurrent, wk shelf)']
+
+
+
+	corrs = [corr_stressWkDeep, corr_stressWkShelf, corr_deepWkDeep, corr_deepWkShelf]
+
+	pvals = [p_value_stressWkDeep, p_value_stressWkShelf, p_value_deepWkDeep, p_value_deepWkShelf]
+
+	titles = ['corr(surface stress, wk deep ocean)', 'corr(surface stress, wk shelf)', 'corr(undercurrent, wk deep ocean)', 'corr(undercurrent, wk shelf)']
+
+
+
+	#corrs = [corr_surfSIdeep, corr_deepSIdeep, corr_surfSIshelf, corr_deepSIshelf]
+
+	#pvals = [p_value_surfSIdeep, p_value_deepSIdeep, p_value_surfSIshelf, p_value_deepSIshelf]
+
+	#titles = ['corr(surface current, deep ocean SI area)', 'corr(undercurrent, deep ocean SI area)', 'corr(surface current, shelf SI area)', 'corr(undercurrent, shelf SI area)']
 
 	
 
@@ -1276,6 +1326,8 @@ if readAllSlopeFiles:
 
 	nn = 60
 
+	year = PAS_tools.windowAv(year, n=nn)[nn//2:-nn//2+1]
+
 	uv_mean = PAS_tools.windowAv(uv_mean, n=nn)[nn//2:-nn//2+1]
 
 	surf_uv_mean = PAS_tools.windowAv(surf_uv_mean, n=nn)[nn//2:-nn//2+1]
@@ -1292,9 +1344,11 @@ if readAllSlopeFiles:
 
 	wk_shelf = PAS_tools.windowAv(wk_shelf, n=nn)[nn//2:-nn//2+1]
 
-	year = PAS_tools.windowAv(year, n=nn)[nn//2:-nn//2+1]
+	SI_deep = PAS_tools.windowAv(SI_deep, n=nn)[nn//2:-nn//2+1]	
 
-		
+	SI_shelf = PAS_tools.windowAv(SI_shelf, n=nn)[nn//2:-nn//2+1]
+
+	
 
 	uv_mean /= np.max(np.abs(uv_mean))
 
@@ -1312,23 +1366,31 @@ if readAllSlopeFiles:
 
 	wk_shelf /= np.max(np.abs(wk_shelf))
 
-		
+	SI_deep /= np.max(np.abs(SI_deep))
+
+	SI_shelf /= np.max(np.abs(SI_shelf))
+
+	
 
 	plt.plot(year, uv_mean, label='Deep along-slope flow', color='r')
 
-	#plt.plot(year, surf_uv_mean, label='Surface along-slope flow', color='k')		
+	plt.plot(year, surf_uv_mean, label='Surface along-slope flow', color='k')		
 
 	#plt.plot(year, uw_mean, label='Along-slope wind')
 
 	#plt.plot(year, us_mean, label='Along-slope stress')
 
-	plt.plot(year, curl_deep, label='Deep ocean wind stress curl')
+	#plt.plot(year, curl_deep, label='Deep ocean wind stress curl')
 
-	plt.plot(year, curl_shelf, label='Shelf wind stress curl')
+	#plt.plot(year, curl_shelf, label='Shelf wind stress curl')
 
-	plt.plot(year, -wk_deep, label='Deep ocean Ekman')
+	plt.plot(year, wk_deep, label='Deep ocean Ekman')
 
-	plt.plot(year, -wk_shelf, label='Shelf Ekman')	
+	plt.plot(year, wk_shelf, label='Shelf Ekman')	
+
+	#plt.plot(year, SI_deep, label='Deep ocean SI area')
+
+	#plt.plot(year, SI_shelf, label='Shelf SI area')
 
 
 
@@ -1345,6 +1407,94 @@ if readAllSlopeFiles:
 		
 
 	quit()
+
+	
+
+#==
+
+
+
+computeIsotherm = False
+
+if computeIsotherm:
+
+
+
+	VAR = 'THETA'
+
+	THERM = -0.5
+
+	
+
+	grid = Grid_PAS(PASDIR)
+
+	
+
+	T = readVariable(VAR, PASDIR, file_format='nc', meta=False)
+
+	
+
+	ThermZ = tools.getIsothermHeight(T, THERM, grid)
+
+	
+
+	print(ThermZ.shape)
+
+	np.save('ThermZ', ThermZ)
+
+	
+
+	quit()
+
+
+
+#==
+
+
+
+computeIsotherm2 = True
+
+if computeIsotherm2:
+
+
+
+        VAR = 'THETA'
+
+        THERM = -0.5
+
+
+
+        grid = Grid_PAS(PASDIR)
+
+        Z = grid.RC.squeeze()
+
+        ny = grid.Ny; nx = grid.Nx
+
+
+
+        nt = 779
+
+
+
+        ThermZ = np.zeros((nt, ny, nx))
+
+
+
+        for ti in range(nt):
+
+                print(ti)
+
+                T = readVariable(VAR, PASDIR, file_format='nc', meta=False, tt=ti)
+
+                ThermZ[ti] = tools.getIsothermDepth3(T, Z, THERM)
+
+
+
+        np.save('ThermZ', ThermZ)
+
+        quit()
+
+
 
 	
 
