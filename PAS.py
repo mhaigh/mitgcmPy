@@ -76,6 +76,10 @@ if MAIN:
 
 
 
+	OUTPATH = 'slopeCurrent/'
+
+
+
 	grid = Grid_PAS(PASDIR)
 
 	bathy = grid.bathy
@@ -86,9 +90,9 @@ if MAIN:
 
 	Z = grid.RC.squeeze()
 
+	
 
-
-	pathno = 0; xshift = 0; yshift = 0; latsi = []; lonsi = []
+	pathno = 0;	xshift = 0; yshift = 0; latsi = []; lonsi = []
 
 	subr = 1
 
@@ -116,7 +120,7 @@ if MAIN:
 
 	slope_x, slope_y = PAS_tools.getSlopeContour(bathy, X, Y, pathno)
 
-	np.save('slope_x', slope_x); np.save('slope_y', slope_y)
+	np.save(OUTPATH+'slope_x', slope_x); np.save(OUTPATH+'slope_y', slope_y)
 
 
 
@@ -126,7 +130,7 @@ if MAIN:
 
 	bearing = PAS_tools.getBearing(slope_x, slope_y)
 
-
+	
 
 	slope_x_nX = np.zeros(nX); slope_y_nX = np.zeros(nX)
 
@@ -134,9 +138,9 @@ if MAIN:
 
 	bearing_nX = np.zeros(nX)
 
+	
 
-
-    # For each X grid point, get the lat and lon of slope contour's nearest point.
+	# For each X grid point, get the lat and lon of slope contour's nearest point.
 
 	for xi in range(nX):
 
@@ -146,29 +150,29 @@ if MAIN:
 
 		slope_y_nX[xi] = slope_y[slope_xi[xi]]
 
-		bearing_nX[xi] = bearing[slope_xi[xi]]
+		bearing_nX[xi] = bearing[slope_xi[xi]]		
 
 		slope_yi[xi] = int(np.argmin(np.abs(slope_y_nX[xi]-Y[:,xi])))
 
 
 
-    # Plot bathy, check contour points and bearing.
+	# Plot bathy, check contour points and bearing.
 
-    #plt.subplot(121); plt.contourf(X, Y, bathy); plt.scatter(slope_x_nX, slope_y_nX)
+	#plt.subplot(121); plt.contourf(X, Y, bathy); plt.scatter(slope_x_nX, slope_y_nX)
 
-    #plt.subplot(122); plt.plot(X[0], bearing_nX); plt.show(); quit()
+	#plt.subplot(122); plt.plot(X[0], bearing_nX); plt.show(); quit()
 
+	
 
+	# For each timestep, load instances of u, v, rho.
 
-    # For each timestep, load instances of u, v, rho.
+	# Depth average beneath a rho contour. (27.95?)
 
-    # Depth average beneath a rho contour. (27.95?)
+	# Then take dot prodcut with unit vector in direction of slope's bearing.
 
-    # Then take dot prodcut with unit vector in direction of slope's bearing.
+	# Surface flow can be just the flow or estimated from SSH for geostrophic part.
 
-    # Surface flow can be just the flow or estimated from SSH for geostrophic part.
-
-
+	
 
 	zs = [0, -1000]
 
@@ -176,11 +180,11 @@ if MAIN:
 
 
 
-	ufile = 'UVEL'; vfile = 'VVEL'; rhofile = 'RHOAnoma'
+	ufile = 'UVEL'; vfile = 'VVEL';	rhofile = 'RHOAnoma'
 
 	uwindfile = 'EXFuwind'; vwindfile = 'EXFvwind'
 
-	ustressfile = 'oceTAUX'; vstressfile = 'oceTAUY'
+	ustressfile = 'oceTAUX'; vstressfile = 'oceTAUY'	
 
 
 
@@ -196,11 +200,21 @@ if MAIN:
 
 	slope_uv_av = np.zeros((t_end-t_start, nX))
 
-	slope_uv_max = np.zeros((t_end-t_start, nX))
+	slope_uv_max = np.zeros((t_end-t_start, nX))	
 
 	slope_uw_av = np.zeros((t_end-t_start, nX))
 
 	slope_us_av = np.zeros((t_end-t_start, nX))
+
+	surf_uv_maxj = np.zeros((t_end-t_start, nX))
+
+	slope_uv_maxj = np.zeros((t_end-t_start, nX))
+
+	slope_uw_maxj = np.zeros((t_end-t_start, nX))
+
+	slope_us_maxj = np.zeros((t_end-t_start, nX))
+
+	maxj_out = np.zeros((t_end-t_start, nX), dtype=int)
 
 	for ti in range(t_start, t_end):
 
@@ -210,7 +224,7 @@ if MAIN:
 
 		for xi in range(nX):
 
-
+			
 
 			yy = [yshift+slope_yi[xi]-3, yshift+slope_yi[xi]+1]
 
@@ -220,7 +234,7 @@ if MAIN:
 
 			rho = tools.boundData(rho, 1026, 1040)
 
-
+			
 
 			# Load velocities
 
@@ -232,7 +246,7 @@ if MAIN:
 
 			v = ptt.maskBathyYZ(v, grid, xi=xi+xshift, subregion=True, lats=yy, depths=zz, sameIasNC=True)
 
-
+		
 
 			# Load wind and stress
 
@@ -248,19 +262,23 @@ if MAIN:
 
 			#==
 
-
+		
 
 			# Get along-slope surface and undercurrent flow speeds. 
 
-
+		
 
 			slope_uv = u * np.sin(bearing_nX[xi]*np.pi/180.) + v * np.cos(bearing_nX[xi]*np.pi/180.)
 
+			
+
 			# Mask along-slope velocity before computing average.
 
-			surf_uv_av[ti-t_start,xi] = np.ma.mean(slope_uv[0])
+			surf_uv = slope_uv[0]
 
-			surf_uv_max[ti-t_start,xi] = np.ma.max(slope_uv[0])
+			surf_uv_av[ti-t_start,xi] = np.ma.mean(surf_uv)
+
+			surf_uv_max[ti-t_start,xi] = np.ma.max(surf_uv)
 
 			slope_uv = np.ma.masked_where(rho<1028., slope_uv)
 
@@ -268,11 +286,23 @@ if MAIN:
 
 			slope_uv = np.ma.masked_where(ZZZ<-800, slope_uv)
 
-
+	
 
 			slope_uv_av[ti-t_start,xi] = np.ma.mean(slope_uv)
 
-			slope_uv_max[ti-t_start,xi] = np.ma.max(slope_uv)
+			slope_uv_max[ti-t_start,xi] = np.ma.max(slope_uv)		
+
+					
+
+			maxz, maxj = np.unravel_index(slope_uv.argmax(), slope_uv.shape)
+
+			surf_uv_maxj[ti-t_start,xi] = surf_uv[maxj]
+
+			slope_uv_maxj[ti-t_start,xi] = slope_uv[maxz,maxj]
+
+			maxj_out[ti-t_start,xi] = maxj+yshift+slope_yi[xi]	
+
+
 
 			#lim = 0.09; slope_uv = tools.boundData(slope_uv, -lim, lim)
 
@@ -292,49 +322,65 @@ if MAIN:
 
 
 
+			slope_uw_maxj[ti-t_start,xi] = slope_uw[maxj]
+
+			slope_us_maxj[ti-t_start,xi] = slope_us[maxj]
+
+
+
+			#==
+
+		
+
 		#plt.contourf(bathy)
 
 		#plt.plot(3.e3*slope_uv_av[ti]); plt.show()
 
-
+			
 
 	#==
 
+	
+
+	OUTPATH = 'slopeCurrent/'
+
+	np.save(OUTPATH+'surf_uv_max', surf_uv_max)
+
+	np.save(OUTPATH+'surf_uv_av', surf_uv_av)
+
+	np.save(OUTPATH+'surf_uv_maxj', surf_uv_maxj)
+
+	np.save(OUTPATH+'slope_uv_av', slope_uv_av)
+
+	np.save(OUTPATH+'slope_uv_max', slope_uv_max)
+
+	np.save(OUTPATH+'slope_uv_maxj', slope_uv_maxj)
+
+	np.save(OUTPATH+'slope_uw_av', slope_uw_av)
+
+	np.save(OUTPATH+'slope_us_av', slope_us_av)
+
+	np.save(OUTPATH+'slope_uw_maxj', slope_uw_maxj)
+
+	np.save(OUTPATH+'slope_us_maxj', slope_us_maxj)
+
+	np.save(OUTPATH+'maxj', maxj_out)
 
 
-	np.save('surf_uv_max', surf_uv_max)
-
-	np.save('surf_uv_av', surf_uv_av)
-
-	np.save('slope_uv_av', slope_uv_av)
-
-	np.save('slope_uv_max', slope_uv_max)
-
-	np.save('slope_uw_av', slope_uw_av)
-
-	np.save('slope_us_av', slope_us_av)
 
 
 
 	#for ti in [1,3,5,7,9,11]:#range(nT):
 
-	#       plt.plot(slope_uv_av[ti], label=ti)
+	#	plt.plot(slope_uv_av[ti], label=ti)
 
 	#plt.legend()
 
 	#plt.show()
 
-
+			
 
 	quit()
-
-	# Get y-grid point closest to slope_y_nX
-
-	# Read u, v at this point and n grid points north and south.
-
-	# Get component of each in along-slope direction
-
-
 
 #==
 
@@ -349,6 +395,10 @@ if onShelfWindCurl:
 
 
 	ustressfile = 'oceTAUX'; vstressfile = 'oceTAUY'
+
+	SIfile = 'SIarea'; FWflxfile = 'oceFWflx'
+
+
 
 	iw = 0; ie = westPITE[1]
 
@@ -438,13 +488,19 @@ if onShelfWindCurl:
 
 	
 
+	#SI = readVariable(SIfile, PASDIR, file_format='nc', meta=False, var2D=True)
+
+	#FWflx = readVariable(FWflxfile, PASDIR, file_format='nc', meta=False, var2D=True)
+
+
+
 	us = np.zeros((2, grid.bathy.shape[0], grid.bathy.shape[1]))
 
 	us[0] = grid.bathy; us[1] = grid.bathy
 
-	vs = us.copy()
+	vs = us.copy(); SI = us.copy(); FWflx = us.copy()
 
-		
+	
 
 	# Get wind stress curl
 
@@ -452,11 +508,41 @@ if onShelfWindCurl:
 
 	
 
+	# Array demarking shelf region. 0s land or far deep ocean, 1s for shelf, 2s for near deep ocean.
+
+	shelf = np.zeros(bathy.shape)
+
+	shelfSI = np.zeros(bathy.shape)
+
+	for xi in range(nX):
+
+		shelf[slope_yi[xi]-30:slope_yi[xi], xi] = 1
+
+		shelf[slope_yi[xi]:slope_yi[xi]+80, xi] = 2
+
+		shelfSI[:slope_yi[xi], xi] = 1
+
+		shelfSI[slope_yi[xi]:, xi] = 2
+
+	shelf = np.where(bathy>=0, 0, shelf)
+
+	shelfSI = np.where(bathy>=0, 0, shelfSI)
+
+	coast = tools.coastalMask(grid)
+
+	
+
 	if subr:
 
 		curl = tools.getSubregionXY(curl, latsi, lonsi)
 
-		
+		SI = tools.getSubregionXY(SI, latsi, lonsi)
+
+		FWflx = tools.getSubregionXY(FWflx, latsi, lonsi)
+
+		coast = tools.getSubregionXY(coast, latsi, lonsi)
+
+				
 
 	# Convert into Ekman
 
@@ -468,29 +554,23 @@ if onShelfWindCurl:
 
 
 
-	# Array demarking shelf region. 0s land or far deep ocean, 1s for shelf, 2s for near deep ocean.
-
-	shelf = np.zeros(bathy.shape)
-
-	for xi in range(nX):
-
-		shelf[slope_yi[xi]-30:slope_yi[xi], xi] = 1
-
-		shelf[slope_yi[xi]:slope_yi[xi]+80, xi] = 2
-
-	shelf = np.where(bathy>=0, 0, shelf)
-
-	
-
 	shelf = shelf[...,iw:ie]
+
+	shelfSI = shelfSI[...,iw:ie]
+
+	coast = coast[...,iw:ie]
 
 	curl = curl[...,iw:ie]
 
 	wk = wk[...,iw:ie]
 
+	SI = SI[...,iw:ie]
 
+	FWflx = FWflx[...,iw:ie]
 
-	pt.plot1by2([bathy, shelf])
+	
+
+	pt.plot1by2([shelfSI, coast])
 
 	np.save('shelf.npy', shelf)
 
@@ -502,9 +582,21 @@ if onShelfWindCurl:
 
 	mask = np.zeros((curl.shape))
 
+	maskSI = np.zeros((SI.shape))
+
+	maskCoast = np.zeros((wk.shape))
+
 	for ti in range(curl.shape[0]):
 
 		mask[ti] = shelf
+
+		maskSI[ti] = shelfSI
+
+		maskCoast[ti] = coast
+
+	
+
+	#==
 
 	
 
@@ -516,11 +608,19 @@ if onShelfWindCurl:
 
 	wk_deep = np.ma.array(wk.copy(), mask=mask!=2) 
 
-	
+	wk_coast = np.ma.array(wk.copy(), mask=maskCoast!=1)
 
-	#pt.plot1by2([wk_shelf[0], curl_shelf[0]])
+	SI_shelf = np.ma.array(SI.copy(), mask=maskSI!=1)
 
-	#quit()
+	SI_deep = np.ma.array(SI.copy(), mask=maskSI!=2)
+
+	SI_coast = np.ma.array(SI.copy(), mask=maskCoast!=1)
+
+	FWflx_shelf = np.ma.array(FWflx.copy(), mask=maskSI!=1)
+
+	FWflx_deep = np.ma.array(FWflx.copy(), mask=maskSI!=2)
+
+	FWflx_coast = np.ma.array(FWflx.copy(), mask=maskCoast!=1)
 
 	   	
 
@@ -532,7 +632,21 @@ if onShelfWindCurl:
 
 	wk_deep = np.ma.mean(wk_deep, axis=(1,2))
 
-		
+	wk_coast = np.ma.mean(wk_coast, axis=(1,2))
+
+	SI_shelf = np.ma.mean(SI_shelf, axis=(1,2))
+
+	SI_deep = np.ma.mean(SI_deep, axis=(1,2))
+
+	SI_coast = np.ma.mean(SI_coast, axis=(1,2))
+
+	FWflx_shelf = np.ma.mean(FWflx_shelf, axis=(1,2))
+
+	FWflx_deep = np.ma.mean(FWflx_deep, axis=(1,2))
+
+	FWflx_coast = np.ma.mean(FWflx_coast, axis=(1,2))
+
+	
 
 	np.save('windStressCurl', np.ma.filled(curl, fill_value=0))
 
@@ -545,6 +659,20 @@ if onShelfWindCurl:
 	np.save('wk_shelf', np.ma.filled(wk_shelf, fill_value=0))
 
 	np.save('wk_deep', np.ma.filled(wk_deep, fill_value=0))
+
+	np.save('wk_coast', np.ma.filled(wk_coast, fill_value=0))
+
+	np.save('SI_shelf', np.ma.filled(SI_shelf, fill_value=0))
+
+	np.save('SI_deep', np.ma.filled(SI_deep, fill_value=0))
+
+	np.save('SI_coast', np.ma.filled(SI_coast, fill_value=0))
+
+	np.save('FWflx_shelf', np.ma.filled(FWflx_shelf, fill_value=0))
+
+	np.save('FWflx_deep', np.ma.filled(FWflx_deep, fill_value=0))
+
+	np.save('FWflx_coast', np.ma.filled(FWflx_coast, fill_value=0))
 
 	
 
@@ -928,7 +1056,7 @@ if readSlopeUVfile:
 
 
 
-readAllSlopeFiles = True
+readAllSlopeFiles = False
 
 if readAllSlopeFiles:
 
@@ -937,6 +1065,8 @@ if readAllSlopeFiles:
 	#t_start = 107; t_end = 622
 
 	t_start = 0; t_end = 779
+
+	t_start = 0; t_end = 10
 
 	
 
@@ -952,65 +1082,59 @@ if readAllSlopeFiles:
 
 	
 
-	uvfile = 'slope_uv_max.npy'
+	uvfile = 'slope_uv_max.npy'; uvmaxjfile = 'slope_uv_maxj.npy'
 
-	surfuvfile = 'surf_uv_max.npy'
+	surfuvfile = 'surf_uv_av.npy'; surfuvmaxjfile = 'surf_uv_maxj.npy'
 
-	uwfile = 'slope_uw_av.npy'
+	uwfile = 'slope_uw_av.npy'; uwmaxjfile = 'slope_uw_maxj.npy'
 
-	usfile = 'slope_us_av.npy'
+	usfile = 'slope_us_av.npy'; usmaxjfile = 'slope_us_maxj.npy'
 
 	timefile = 'PAS_time.npy'
 
-	slopexfile = 'slope_x.npy'
+	maxjfile = 'maxj.npy'
 
-	slopeyfile = 'slope_y.npy'	
+	slopexfile = 'slope_x.npy';	slopeyfile = 'slope_y.npy'	
 
-	curldeepfile = 'curl_deep.npy'
+	curldeepfile = 'curl_deep.npy';	curlshelffile = 'curl_shelf.npy'
 
-	curlshelffile = 'curl_shelf.npy'
+	wkdeepfile = 'wk_deep.npy';	wkshelffile = 'wk_shelf.npy'; wkcoastfile = 'wk_coast.npy'
 
-	wkdeepfile = 'wk_deep.npy'
+	SIdeepfile = 'SI_deep.npy';	SIshelffile = 'SI_shelf.npy'; SIcoastfile = 'SI_coast.npy'
 
-	wkshelffile = 'wk_shelf.npy'
-
-	wkfile = 'wk.npy'
-
-	SIdeepfile = 'SI_deep.npy'
-
-	SIshelffile = 'SI_shelf.npy'
+	FWflxdeepfile = 'FWflx_deep.npy'; FWflxshelffile = 'FWflx_shelf.npy'; FWflxcoastfile = 'FWflx_coast.npy'
 
 	
 
-	slope_uv = np.load(path+uvfile)
+	slope_uv = np.load(path+uvfile); slope_uv_maxj = np.load(path+uvmaxjfile)
 
-	surf_uv = np.load(path+surfuvfile)
+	surf_uv = np.load(path+surfuvfile); surf_uv_maxj = np.load(path+surfuvmaxjfile)
 
-	uw = np.load(path+uwfile)
+	uw = np.load(path+uwfile); uw_maxj = np.load(path+uwmaxjfile)
 
-	us = np.load(path+usfile)
+	us = np.load(path+usfile); us_maxj = np.load(path+usmaxjfile)
 
 	time = np.load(path+timefile)
+
+	maxj = np.load(path+maxjfile)
 
 	slope_x = np.load(path+slopexfile)
 
 	slope_y = np.load(path+slopeyfile)
 
-	curl_deep = np.load(path+curldeepfile)
+	#curl_deep = np.load(path+curldeepfile)
 
-	curl_shelf = np.load(path+curlshelffile)
+	#curl_shelf = np.load(path+curlshelffile)
 
-	wk_deep = np.load(path+wkdeepfile)
+	#wk_deep = np.load(path+wkdeepfile);	wk_shelf = np.load(path+wkshelffile); wk_coast = np.load(path+wkcoastfile)
 
-	wk_shelf = np.load(path+wkshelffile)
+	#SI_deep = np.load(path+SIdeepfile);	SI_shelf = np.load(path+SIshelffile); SI_coast = np.load(path+SIcoastfile)
 
-	wk = np.load(path+wkfile)
+	#FWflx_deep = np.load(path+FWflxdeepfile); FWflx_shelf = np.load(path+FWflxshelffile)
 
-	SI_deep = np.load(path+SIdeepfile)
+	#FWflx_coast = np.load(path+FWflxcoastfile)
 
-	SI_shelf = np.load(path+SIshelffile)
 
-	
 
 	## This code for test of correlation functions.
 
@@ -1058,9 +1182,25 @@ if readAllSlopeFiles:
 
 	wk_shelf = wk_shelf[start:end]
 
+	wk_coast = wk_coast[start:end]
+
 	SI_deep = SI_deep[start:end]
 
 	SI_shelf = SI_shelf[start:end]
+
+	SI_coast = SI_coast[start:end]
+
+	FWflx_deep = FWflx_deep[start:end]
+
+	FWflx_shelf = FWflx_shelf[start:end]
+
+	FWflx_coast = FWflx_coast[start:end]
+
+	
+
+	print(slope_uv.shape)
+
+	barocl = slope_uv - surf_uv	
 
 	
 
@@ -1086,6 +1226,8 @@ if readAllSlopeFiles:
 
 	us_sum = np.zeros(len(year))
 
+	barocl_sum = np.zeros(len(year))
+
 	nx = 0
 
 	for section in plotSections:
@@ -1100,7 +1242,11 @@ if readAllSlopeFiles:
 
 		us_sum += np.sum(us[:,iw:ie], axis=1)
 
+		barocl_sum += np.sum(barocl[:,iw:ie], axis=1)
+
 		nx += ie-iw
+
+		
 
 	uv_mean = uv_sum / nx
 
@@ -1109,6 +1255,8 @@ if readAllSlopeFiles:
 	uw_mean = uw_sum / nx
 
 	us_mean = us_sum / nx
+
+	barocl_mean = barocl_sum / nx
 
 	
 
@@ -1126,6 +1274,8 @@ if readAllSlopeFiles:
 
 	surf_uv_mean = PAS_tools.demean(surf_uv_mean)
 
+	barocl_mean = PAS_tools.demean(barocl_mean)
+
 	uw_mean = PAS_tools.demean(uw_mean)
 
 	us_mean = PAS_tools.demean(us_mean)
@@ -1138,9 +1288,19 @@ if readAllSlopeFiles:
 
 	wk_shelf = PAS_tools.demean(wk_shelf)
 
+	wk_coast = PAS_tools.demean(wk_coast)
+
 	SI_deep = PAS_tools.demean(SI_deep)
 
 	SI_shelf = PAS_tools.demean(SI_shelf)
+
+	SI_coast = PAS_tools.demean(SI_coast)
+
+	FWflx_deep = PAS_tools.demean(FWflx_deep)
+
+	FWflx_shelf = PAS_tools.demean(FWflx_shelf)
+
+	FWflx_coast = PAS_tools.demean(FWflx_coast)
 
 			
 
@@ -1149,6 +1309,8 @@ if readAllSlopeFiles:
 	uv_mean = PAS_tools.deseason(uv_mean)
 
 	surf_uv_mean = PAS_tools.deseason(surf_uv_mean)
+
+	barocl_mean = PAS_tools.deseason(barocl_mean)
 
 	uw_mean = PAS_tools.deseason(uw_mean)
 
@@ -1162,17 +1324,29 @@ if readAllSlopeFiles:
 
 	wk_shelf = PAS_tools.deseason(wk_shelf)
 
+	wk_coast = PAS_tools.deseason(wk_coast)
+
 	SI_deep = PAS_tools.deseason(SI_deep)
 
 	SI_shelf = PAS_tools.deseason(SI_shelf)
 
-	
+	SI_coast = PAS_tools.deseason(SI_coast)
+
+	FWflx_deep = PAS_tools.deseason(FWflx_deep)
+
+	FWflx_shelf = PAS_tools.deseason(FWflx_shelf)
+
+	FWflx_coast = PAS_tools.deseason(FWflx_coast)
+
+		
 
 	# Detrend
 
 	uv_mean = PAS_tools.detrend(uv_mean, year)
 
 	surf_uv_mean = PAS_tools.detrend(surf_uv_mean, year)
+
+	barocl_mean = PAS_tools.detrend(barocl_mean, year)
 
 	uw_mean = PAS_tools.detrend(uw_mean, year)
 
@@ -1186,9 +1360,19 @@ if readAllSlopeFiles:
 
 	wk_shelf = PAS_tools.detrend(wk_shelf, year)
 
+	wk_coast = PAS_tools.detrend(wk_coast, year)
+
 	SI_deep = PAS_tools.detrend(SI_deep, year)
 
 	SI_shelf = PAS_tools.detrend(SI_shelf, year)
+
+	SI_coast = PAS_tools.detrend(SI_coast, year)
+
+	FWflx_deep = PAS_tools.detrend(FWflx_deep, year)
+
+	FWflx_shelf = PAS_tools.detrend(FWflx_shelf, year)
+
+	FWflx_coast = PAS_tools.detrend(FWflx_coast, year)
 
 		
 
@@ -1326,11 +1510,15 @@ if readAllSlopeFiles:
 
 	nn = 60
 
-	year = PAS_tools.windowAv(year, n=nn)[nn//2:-nn//2+1]
+	#year = PAS_tools.windowAv(year, n=nn)[nn//2:-nn//2+1]
+
+	year = year[nn//2:-nn//2+1]
 
 	uv_mean = PAS_tools.windowAv(uv_mean, n=nn)[nn//2:-nn//2+1]
 
 	surf_uv_mean = PAS_tools.windowAv(surf_uv_mean, n=nn)[nn//2:-nn//2+1]
+
+	barocl_mean = PAS_tools.windowAv(barocl_mean, n=nn)[nn//2:-nn//2+1]
 
 	uw_mean = PAS_tools.windowAv(uw_mean, n=nn)[nn//2:-nn//2+1]
 
@@ -1344,15 +1532,27 @@ if readAllSlopeFiles:
 
 	wk_shelf = PAS_tools.windowAv(wk_shelf, n=nn)[nn//2:-nn//2+1]
 
+	wk_coast = PAS_tools.windowAv(wk_coast, n=nn)[nn//2:-nn//2+1]
+
 	SI_deep = PAS_tools.windowAv(SI_deep, n=nn)[nn//2:-nn//2+1]	
 
 	SI_shelf = PAS_tools.windowAv(SI_shelf, n=nn)[nn//2:-nn//2+1]
+
+	SI_coast = PAS_tools.windowAv(SI_coast, n=nn)[nn//2:-nn//2+1]
+
+	FWflx_deep = PAS_tools.windowAv(FWflx_deep, n=nn)[nn//2:-nn//2+1]	
+
+	FWflx_shelf = PAS_tools.windowAv(FWflx_shelf, n=nn)[nn//2:-nn//2+1]
+
+	FWflx_coast = PAS_tools.windowAv(FWflx_coast, n=nn)[nn//2:-nn//2+1]
 
 	
 
 	uv_mean /= np.max(np.abs(uv_mean))
 
 	surf_uv_mean /= np.max(np.abs(surf_uv_mean))
+
+	barocl_mean /= np.max(np.abs(barocl_mean))
 
 	uw_mean /= np.max(np.abs(uw_mean))
 
@@ -1366,15 +1566,27 @@ if readAllSlopeFiles:
 
 	wk_shelf /= np.max(np.abs(wk_shelf))
 
+	wk_coast /= np.max(np.abs(wk_coast))
+
 	SI_deep /= np.max(np.abs(SI_deep))
 
 	SI_shelf /= np.max(np.abs(SI_shelf))
+
+	SI_coast /= np.max(np.abs(SI_coast))
+
+	FWflx_deep /= np.max(np.abs(FWflx_deep))
+
+	FWflx_shelf /= np.max(np.abs(FWflx_shelf))
+
+	FWflx_coast /= np.max(np.abs(FWflx_coast))
 
 	
 
 	plt.plot(year, uv_mean, label='Deep along-slope flow', color='r')
 
-	plt.plot(year, surf_uv_mean, label='Surface along-slope flow', color='k')		
+	plt.plot(year, surf_uv_mean, label='Surface along-slope flow', color='k')	
+
+	plt.plot(year, barocl_mean, label='Baroclinicity')			
 
 	#plt.plot(year, uw_mean, label='Along-slope wind')
 
@@ -1384,13 +1596,23 @@ if readAllSlopeFiles:
 
 	#plt.plot(year, curl_shelf, label='Shelf wind stress curl')
 
-	plt.plot(year, wk_deep, label='Deep ocean Ekman')
+	#plt.plot(year, wk_deep, label='Deep ocean Ekman')
 
-	plt.plot(year, wk_shelf, label='Shelf Ekman')	
+	#plt.plot(year, wk_shelf, label='Shelf Ekman')
+
+	#plt.plot(year, wk_coast, label='Coastal Ekman')		
 
 	#plt.plot(year, SI_deep, label='Deep ocean SI area')
 
 	#plt.plot(year, SI_shelf, label='Shelf SI area')
+
+	#plt.plot(year, SI_coast, label='Coastal SI area')
+
+	#plt.plot(year, FWflx_deep, label='Deep ocean FW flux')
+
+	#plt.plot(year, FWflx_shelf, label='Shelf FW flux')
+
+	#plt.plot(year, FWflx_coast, label='Coastal FW flux')	
 
 
 
@@ -1409,6 +1631,14 @@ if readAllSlopeFiles:
 	quit()
 
 	
+
+#==
+
+
+
+
+
+
 
 #==
 
@@ -1452,7 +1682,7 @@ if computeIsotherm:
 
 
 
-computeIsotherm2 = True
+computeIsotherm2 = False
 
 if computeIsotherm2:
 
