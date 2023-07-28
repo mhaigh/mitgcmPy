@@ -120,8 +120,6 @@ if MAIN:
 
 	slope_x, slope_y = PAS_tools.getSlopeContour(bathy, X, Y, pathno)
 
-	np.save(OUTPATH+'slope_x', slope_x); np.save(OUTPATH+'slope_y', slope_y)
-
 
 
 	bathy = ptt.maskBathyXY(bathy, grid, zi=0, subregion=True, lats=latsi, lons=lonsi)
@@ -153,6 +151,12 @@ if MAIN:
 		bearing_nX[xi] = bearing[slope_xi[xi]]		
 
 		slope_yi[xi] = int(np.argmin(np.abs(slope_y_nX[xi]-Y[:,xi])))
+
+		
+
+	np.save(OUTPATH+'slope_x', slope_x); np.save(OUTPATH+'slope_y', slope_y)
+
+	np.save(OUTPATH+'slope_xi', slope_xi); np.save(OUTPATH+'slope_yi', slope_yi)
 
 
 
@@ -188,11 +192,19 @@ if MAIN:
 
 
 
+	# How many grid points either side of slope do we search for max in along-slope velocity?
+
+	yslim = 3; ynlim = 1
+
+
+
 	#t_start = 0; t_end = 10
 
 	#t_start = 107; t_end = 622
 
 	t_start = 0; t_end = 779
+
+
 
 	surf_uv_max = np.zeros((t_end-t_start, nX))
 
@@ -226,7 +238,7 @@ if MAIN:
 
 			
 
-			yy = [yshift+slope_yi[xi]-3, yshift+slope_yi[xi]+1]
+			yy = [yshift+slope_yi[xi]-yslim, yshift+slope_yi[xi]+ynlim]
 
 			rho = 1028.5 + readVariable(rhofile, PASDIR, file_format='nc', meta=False, tt=ti, xx=xi+xshift, yy=yy, zz=zz)
 
@@ -300,7 +312,7 @@ if MAIN:
 
 			slope_uv_maxj[ti-t_start,xi] = slope_uv[maxz,maxj]
 
-			maxj_out[ti-t_start,xi] = maxj+yshift+slope_yi[xi]	
+			maxj_out[ti-t_start,xi] = maxj + slope_yi[xi] - yslim
 
 
 
@@ -443,8 +455,6 @@ if onShelfWindCurl:
 	# Get lat, lon lists of continental slope
 
 	slope_x, slope_y = PAS_tools.getSlopeContour(bathy, X, Y, pathno)
-
-	np.save('slope_x', slope_x); np.save('slope_y', slope_y)
 
 
 
@@ -684,6 +694,68 @@ if onShelfWindCurl:
 
 
 
+# Save 2D files such as vertical Ekman, sea ice area, and surface freshwater fluxes. 
+
+save2Dfiles = False
+
+if save2Dfiles:
+
+	
+
+	ustressfile = 'oceTAUX'; vstressfile = 'oceTAUY'
+
+	SIfile = 'SIarea'; FWflxfile = 'oceFWflx'
+
+
+
+	grid = Grid_PAS(PASDIR)
+
+	Y = grid.YC
+
+	dx = grid.DXG; dy = grid.DYG
+
+	
+
+	# Get Ekman
+
+	us = readVariable(ustressfile, PASDIR, file_format='nc', meta=False, var2D=True)
+
+	vs = readVariable(vstressfile, PASDIR, file_format='nc', meta=False, var2D=True)
+
+	curl = tools.ddx(vs, dx) - tools.ddy(us, dy)
+
+	rho0 = 1028.5
+
+	f = PAS_tools.getCoriolis(Y)
+
+	wk = curl / (rho0 * f)
+
+
+
+	# Sea ice area and FW flux.
+
+	SI = readVariable(SIfile, PASDIR, file_format='nc', meta=False, var2D=True)
+
+	FWflx = readVariable(FWflxfile, PASDIR, file_format='nc', meta=False, var2D=True)
+
+	
+
+	np.save('wk', wk, fill_value=np.nan)
+
+	np.save('SI', SI, fill_value=np.nan)
+
+	np.save('FWflx', FWflx, fill_value=np.nan)
+
+	
+
+	quit()
+
+
+
+#==
+
+
+
 readSlopeUVfile = False
 
 if readSlopeUVfile:
@@ -742,15 +814,9 @@ if readSlopeUVfile:
 
 	#===
 
-	months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+	
 
-	monthDec = {}
-
-	for mi in range(len(months)):
-
-		monthDec[months[mi]] = mi/12.
-
-	year = [float(ctime(int(time_))[-4:])-15+monthDec[ctime(int(time_))[4:7]] for time_ in time[t_start:t_end]]#
+	year = PAS_tools.getDecimalTime(time, t_start=t_start, t_end=t_end)
 
 	
 
@@ -1636,7 +1702,161 @@ if readAllSlopeFiles:
 
 
 
+isotherm = False
 
+if isotherm:
+
+	
+
+	grid = Grid_PAS(PASDIR)
+
+
+
+	path = '/home/michael/Documents/data/slopeCurrent/0_779_y1/'
+
+	#fname = 'ThermZ_m05.npy'; vmin = -1000; vmax=0; cmap = 'YlOrRd'; d = 0.1
+
+	fname = 'HalZ_235_N.npy'; vmin = -1000; vmax=0; cmap = 'jet'; d = 0.01
+
+	
+
+	start = 24*12 + 5*12; end=-11
+
+	
+
+	X = grid.XC[1,:]; Y = grid.YC[:,1]
+
+	bathy = grid.bathy; draft = grid.draft
+
+	
+
+	data = np.load(path+fname)
+
+	t = np.load(path+'PAS_time.npy')
+
+	slope_x = np.load(path+'slope_x.npy'); slope_y = np.load(path+'slope_y.npy')
+
+	slope_xi = np.load(path+'slope_xi.npy'); slope_yi = np.load(path+'slope_yi.npy')
+
+	maxj = np.load(path+'maxj.npy')
+
+
+
+	data = data[start:end]
+
+	t = t[start:end]
+
+	year = PAS_tools.getDecimalTime(t)
+
+
+
+	lats = EASlats; lons = EASlons
+
+	lats[1] = - 69.
+
+	latsi = grid.getIndexFromLat(lats); lonsi = grid.getIndexFromLon(lons)
+
+	lonsi[1] = westPITE[1] + lonsi[0]
+
+	
+
+	data = tools.getSubregionXY(data, latsi, lonsi)
+
+	bathy = tools.getSubregionXY(bathy, latsi, lonsi)
+
+	draft = tools.getSubregionXY(draft, latsi, lonsi)
+
+	X = X[lonsi[0]:lonsi[1]+1]; Y = Y[latsi[0]:latsi[1]+1]
+
+	
+
+	nX = len(X); nY = len(Y)
+
+	slope_yi = slope_yi[:nX]
+
+	
+
+	data = ptt.maskBathyXY(data, grid, 0, timeDep=True, subregion=True, lons=lonsi, lats=latsi)
+
+	
+
+	#data = np.where(draft<0, np.nan, data)
+
+	data = np.where(data!=data, vmax-d, data) 
+
+	data = tools.boundData(data, vmin+d, vmax-d)
+
+	
+
+	nn = 60
+
+	year = year[nn//2:-nn//2+1]
+
+	data1 = PAS_tools.movingAv(data.copy(), n=nn)#[nn//2:-nn//2+1]
+
+	
+
+	maskYrange = 20
+
+	buffer_ = 2
+
+	# yref is maxj or slope_yi
+
+	yref = slope_yi
+
+	maskN = np.zeros(data1.shape)
+
+	maskS = np.zeros(data1.shape)
+
+	for i in range(nX):
+
+		maskN[:,1+yref[i]+buffer_:1+yref[i]+buffer_+maskYrange,i] = 1
+
+		maskS[:,yref[i]-buffer_-maskYrange:yref[i]-buffer_,i] = 1	
+
+
+
+	#==
+
+	
+
+	data1N = np.ma.mean(np.ma.masked_where(maskN!=1, data1.copy()), axis=(1,2))
+
+	data1S = np.ma.mean(np.ma.masked_where(maskS!=1, data1.copy()), axis=(1,2))
+
+
+
+	plt.plot(year, data1N, label='north')
+
+	plt.plot(year, data1S, label='south')	
+
+	plt.legend(); plt.grid()
+
+	plt.show()
+
+	quit()
+
+	
+
+	plt.contourf(X, Y, tmp)
+
+	#plt.colorbar()
+
+	plt.contour(X, Y, bathy, levels=[-1000])
+
+	#plt.plot(maxj[0])
+
+	plt.scatter(X, Y[slope_yi], s=1)
+
+	#plt.scatter(slope_xi, slope_yi, s=0.5)
+
+	
+
+	plt.show()
+
+
+
+	quit()
 
 
 
@@ -1725,6 +1945,52 @@ if computeIsotherm2:
         quit()
 
 
+
+#==
+
+
+
+computeIsohaline = False
+
+if computeIsohaline:
+
+
+
+        VAR = 'SALT'
+
+        SAL = 34.3
+
+
+
+        grid = Grid_PAS(PASDIR)
+
+        Z = grid.RC.squeeze()
+
+        ny = grid.Ny; nx = grid.Nx
+
+
+
+        nt = 779
+
+
+
+        HalZ = np.zeros((nt, ny, nx))
+
+
+
+        for ti in range(nt):
+
+                print(ti)
+
+                S = readVariable(VAR, PASDIR, file_format='nc', meta=False, tt=ti)
+
+                HalZ[ti] = tools.getIsohalineDepth3(S, Z, SAL)
+
+
+
+        np.save('HalZ', HalZ)
+
+        quit()
 
 	
 
