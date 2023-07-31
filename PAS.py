@@ -1702,7 +1702,7 @@ if readAllSlopeFiles:
 
 
 
-isotherm = False
+isotherm = True
 
 if isotherm:
 
@@ -1714,15 +1714,15 @@ if isotherm:
 
 	path = '/home/michael/Documents/data/slopeCurrent/0_779_y1/'
 
-	#fname = 'ThermZ_m05.npy'; vmin = -1000; vmax=0; cmap = 'YlOrRd'; d = 0.1
+	#fname = 'ThermZ_m05.npy'; vmin = -1000; vmax=0; cmap = 'YlOrRd'; d = 0.1; ylabel = 'Isotherm depth'
 
-	fname = 'HalZ_235_N.npy'; vmin = -1000; vmax=0; cmap = 'jet'; d = 0.01
+	fname = 'HalZ_345_N.npy'; vmin = -1000; vmax=0; cmap = 'jet'; d = 0.01; ylabel = 'Isohaline depth'
 
 	
 
 	start = 24*12 + 5*12; end=-11
 
-	
+
 
 	X = grid.XC[1,:]; Y = grid.YC[:,1]
 
@@ -1747,6 +1747,10 @@ if isotherm:
 	t = t[start:end]
 
 	year = PAS_tools.getDecimalTime(t)
+
+
+
+	#pt.plot1by1(data[-1], vmin=vmin, vmax=vmax, mesh=True); quit()
 
 
 
@@ -1826,9 +1830,17 @@ if isotherm:
 
 
 
+	
+
 	plt.plot(year, data1N, label='north')
 
 	plt.plot(year, data1S, label='south')	
+
+	plt.plot(year, data1N-data1S, label='north-south')	
+
+	plt.title(fname)
+
+	plt.ylabel(ylabel); plt.xlabel('Time')
 
 	plt.legend(); plt.grid()
 
