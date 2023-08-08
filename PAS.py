@@ -394,6 +394,166 @@ if MAIN:
 
 	quit()
 
+
+
+#==
+
+
+
+slopeSalinity = False
+
+if slopeSalinity:
+
+
+
+	OUTPATH = 'slopeCurrent/'
+
+
+
+	grid = Grid_PAS(PASDIR)
+
+	bathy = grid.bathy
+
+
+
+	X = grid.XC; Y = grid.YC
+
+	Z = grid.RC.squeeze()
+
+	
+
+	pathno = 0;	xshift = 0; yshift = 0; latsi = []; lonsi = []
+
+	subr = 1
+
+	if subr:
+
+		# Get subregion of bathymetry.
+
+		latsi = grid.getIndexFromLat(EASlats); lonsi = grid.getIndexFromLon(EASlons)
+
+		bathy = tools.getSubregionXY(bathy, latsi, lonsi)
+
+		X, Y = grid.XYsubr(EASlons, EASlats)
+
+		pathno = 0
+
+		xshift = lonsi[0]
+
+		yshift = latsi[0]
+
+	nY, nX = X.shape
+
+
+
+	# Get lat, lon lists of continental slope
+
+	slope_x, slope_y = PAS_tools.getSlopeContour(bathy, X, Y, pathno)
+
+
+
+	bathy = ptt.maskBathyXY(bathy, grid, zi=0, subregion=True, lats=latsi, lons=lonsi)
+
+
+
+	slope_x_nX = np.zeros(nX); slope_y_nX = np.zeros(nX)
+
+	slope_xi = np.zeros(nX, dtype=int); slope_yi = np.zeros(nX, dtype=int)
+
+	
+
+	# For each X grid point, get the lat and lon of slope contour's nearest point.
+
+	for xi in range(nX):
+
+		slope_xi[xi] = int(np.argmin(np.abs(slope_x-X[0,xi])))
+
+		slope_x_nX[xi] = slope_x[slope_xi[xi]]
+
+		slope_y_nX[xi] = slope_y[slope_xi[xi]]
+
+		slope_yi[xi] = int(np.argmin(np.abs(slope_y_nX[xi]-Y[:,xi])))
+
+		
+
+	# For each timestep, load instances salinity, S.
+
+	# For each x, load S over given y-range centred on continental slope.
+
+	# Put loaded S into 2-array whose new y axis is centred on slope.
+
+	# Repeat for bathy.
+
+		
+
+	Sfile = 'SALT'	
+
+
+
+	# How many grid points either side of slope?
+
+	yslim = 50; ynlim = 20
+
+	nY = ynlim + yslim
+
+
+
+	zs = [0, -1000]
+
+	zz = grid.getIndexFromDepth(zs)
+
+	nZ = zz[1] - zz[0]
+
+	
+
+	#t_start = 0; t_end = 10
+
+	t_start = 0; t_end = 779
+
+
+
+	slopeSalt = np.zeros((t_end-t_start, nZ, nY, nX))
+
+	for ti in range(t_start, t_end):
+
+		print(ti)
+
+		for xi in range(nX):
+
+			
+
+			yy = [yshift+slope_yi[xi]-yslim, yshift+slope_yi[xi]+ynlim]
+
+			S = readVariable(Sfile, PASDIR, file_format='nc', meta=False, tt=ti, xx=xi+xshift, yy=yy, zz=zz)
+
+			S = ptt.maskBathyYZ(S, grid, xi=xi+xshift, subregion=True, lats=yy, depths=zz, sameIasNC=True)
+
+			slopeSalt[ti, :, :, xi] = S[:, :]
+
+	
+
+	# Now get bathy centred at slope. 
+
+	slopeBathy = np.zeros((nY, nX))
+
+	for xi in range(nX):
+
+		slopeBathy[:, xi] = bathy[slope_yi[xi]-yslim:slope_yi[xi]+ynlim, xi]
+
+		
+
+	# Save
+
+	np.save(OUTPATH+'slopeSalt.npy', slopeSalt)
+
+	np.save(OUTPATH+'slopeBathy.npy', slopeBathy)
+
+
+
+	quit()
+
+
+
 #==
 
 
@@ -706,6 +866,8 @@ if save2Dfiles:
 
 	SIfile = 'SIarea'; FWflxfile = 'oceFWflx'
 
+	SHIfwFlxfile = 'SHIfwFlx'
+
 
 
 	grid = Grid_PAS(PASDIR)
@@ -738,15 +900,19 @@ if save2Dfiles:
 
 	FWflx = readVariable(FWflxfile, PASDIR, file_format='nc', meta=False, var2D=True)
 
-	
+	SHIfwFlx = readVariable(SHIfwFlxfile, PASDIR, file_format='nc', meta=False, var2D=True)
 
-	np.save('wk', wk, fill_value=np.nan)
 
-	np.save('SI', SI, fill_value=np.nan)
 
-	np.save('FWflx', FWflx, fill_value=np.nan)
+	np.save('wk', np.ma.filled(wk, fill_value=np.nan))
 
-	
+	np.save('SI', np.ma.filled(SI, fill_value=np.nan))
+
+	np.save('FWflx', np.ma.filled(FWflx, fill_value=np.nan))
+
+	np.save('SHIfwFlx', np.ma.filled(SHIfwFlx, fill_value=np.nan))
+
+		
 
 	quit()
 
@@ -1132,7 +1298,13 @@ if readAllSlopeFiles:
 
 	t_start = 0; t_end = 779
 
-	t_start = 0; t_end = 10
+	#t_start = 0; t_end = 10
+
+	
+
+	DEMEAN = False;	DESEASON = False; DETREND = False; NORM = False
+
+	#DEMEAN = True; DESEASON = True; DETREND = True; NORM = True
 
 	
 
@@ -1188,17 +1360,17 @@ if readAllSlopeFiles:
 
 	slope_y = np.load(path+slopeyfile)
 
-	#curl_deep = np.load(path+curldeepfile)
+	curl_deep = np.load(path+curldeepfile)
 
-	#curl_shelf = np.load(path+curlshelffile)
+	curl_shelf = np.load(path+curlshelffile)
 
-	#wk_deep = np.load(path+wkdeepfile);	wk_shelf = np.load(path+wkshelffile); wk_coast = np.load(path+wkcoastfile)
+	wk_deep = np.load(path+wkdeepfile);	wk_shelf = np.load(path+wkshelffile); wk_coast = np.load(path+wkcoastfile)
 
-	#SI_deep = np.load(path+SIdeepfile);	SI_shelf = np.load(path+SIshelffile); SI_coast = np.load(path+SIcoastfile)
+	SI_deep = np.load(path+SIdeepfile);	SI_shelf = np.load(path+SIshelffile); SI_coast = np.load(path+SIcoastfile)
 
-	#FWflx_deep = np.load(path+FWflxdeepfile); FWflx_shelf = np.load(path+FWflxshelffile)
+	FWflx_deep = np.load(path+FWflxdeepfile); FWflx_shelf = np.load(path+FWflxshelffile)
 
-	#FWflx_coast = np.load(path+FWflxcoastfile)
+	FWflx_coast = np.load(path+FWflxcoastfile)
 
 
 
@@ -1278,9 +1450,9 @@ if readAllSlopeFiles:
 
 	# Get zonal sums and averages evaluated over sections of interest.
 
-	plotSections = ['westGetz', 'westPITW', 'westPITE']
+	#plotSections = ['westGetz', 'westPITW', 'westPITE']
 
-	#plotSections = ['westGetz']
+	plotSections = ['westGetz']
 
 		
 
@@ -1336,109 +1508,115 @@ if readAllSlopeFiles:
 
 	# Demean
 
-	uv_mean = PAS_tools.demean(uv_mean)
+	if DEMEAN:
 
-	surf_uv_mean = PAS_tools.demean(surf_uv_mean)
+		uv_mean = PAS_tools.demean(uv_mean)
 
-	barocl_mean = PAS_tools.demean(barocl_mean)
+		surf_uv_mean = PAS_tools.demean(surf_uv_mean)
 
-	uw_mean = PAS_tools.demean(uw_mean)
+		barocl_mean = PAS_tools.demean(barocl_mean)
 
-	us_mean = PAS_tools.demean(us_mean)
+		uw_mean = PAS_tools.demean(uw_mean)
 
-	curl_deep = PAS_tools.demean(curl_deep)
+		us_mean = PAS_tools.demean(us_mean)
 
-	curl_shelf = PAS_tools.demean(curl_shelf)
+		curl_deep = PAS_tools.demean(curl_deep)
 
-	wk_deep = PAS_tools.demean(wk_deep)
+		curl_shelf = PAS_tools.demean(curl_shelf)
 
-	wk_shelf = PAS_tools.demean(wk_shelf)
+		wk_deep = PAS_tools.demean(wk_deep)
 
-	wk_coast = PAS_tools.demean(wk_coast)
+		wk_shelf = PAS_tools.demean(wk_shelf)
 
-	SI_deep = PAS_tools.demean(SI_deep)
+		wk_coast = PAS_tools.demean(wk_coast)
 
-	SI_shelf = PAS_tools.demean(SI_shelf)
+		SI_deep = PAS_tools.demean(SI_deep)
 
-	SI_coast = PAS_tools.demean(SI_coast)
+		SI_shelf = PAS_tools.demean(SI_shelf)
 
-	FWflx_deep = PAS_tools.demean(FWflx_deep)
+		SI_coast = PAS_tools.demean(SI_coast)
 
-	FWflx_shelf = PAS_tools.demean(FWflx_shelf)
+		FWflx_deep = PAS_tools.demean(FWflx_deep)
 
-	FWflx_coast = PAS_tools.demean(FWflx_coast)
+		FWflx_shelf = PAS_tools.demean(FWflx_shelf)
+
+		FWflx_coast = PAS_tools.demean(FWflx_coast)
 
 			
 
 	# Deseason
 
-	uv_mean = PAS_tools.deseason(uv_mean)
+	if DESEASON:
 
-	surf_uv_mean = PAS_tools.deseason(surf_uv_mean)
+		uv_mean = PAS_tools.deseason(uv_mean)
 
-	barocl_mean = PAS_tools.deseason(barocl_mean)
+		surf_uv_mean = PAS_tools.deseason(surf_uv_mean)
 
-	uw_mean = PAS_tools.deseason(uw_mean)
+		barocl_mean = PAS_tools.deseason(barocl_mean)
 
-	us_mean = PAS_tools.deseason(us_mean)
+		uw_mean = PAS_tools.deseason(uw_mean)
 
-	curl_deep = PAS_tools.deseason(curl_deep)
+		us_mean = PAS_tools.deseason(us_mean)
 
-	curl_shelf = PAS_tools.deseason(curl_shelf)
+		curl_deep = PAS_tools.deseason(curl_deep)
 
-	wk_deep = PAS_tools.deseason(wk_deep)
+		curl_shelf = PAS_tools.deseason(curl_shelf)
 
-	wk_shelf = PAS_tools.deseason(wk_shelf)
+		wk_deep = PAS_tools.deseason(wk_deep)
 
-	wk_coast = PAS_tools.deseason(wk_coast)
+		wk_shelf = PAS_tools.deseason(wk_shelf)
 
-	SI_deep = PAS_tools.deseason(SI_deep)
+		wk_coast = PAS_tools.deseason(wk_coast)
 
-	SI_shelf = PAS_tools.deseason(SI_shelf)
+		SI_deep = PAS_tools.deseason(SI_deep)
 
-	SI_coast = PAS_tools.deseason(SI_coast)
+		SI_shelf = PAS_tools.deseason(SI_shelf)
 
-	FWflx_deep = PAS_tools.deseason(FWflx_deep)
+		SI_coast = PAS_tools.deseason(SI_coast)
 
-	FWflx_shelf = PAS_tools.deseason(FWflx_shelf)
+		FWflx_deep = PAS_tools.deseason(FWflx_deep)
 
-	FWflx_coast = PAS_tools.deseason(FWflx_coast)
+		FWflx_shelf = PAS_tools.deseason(FWflx_shelf)
+
+		FWflx_coast = PAS_tools.deseason(FWflx_coast)
 
 		
 
 	# Detrend
 
-	uv_mean = PAS_tools.detrend(uv_mean, year)
+	if DETREND:
 
-	surf_uv_mean = PAS_tools.detrend(surf_uv_mean, year)
+		uv_mean = PAS_tools.detrend(uv_mean, year)
 
-	barocl_mean = PAS_tools.detrend(barocl_mean, year)
+		surf_uv_mean = PAS_tools.detrend(surf_uv_mean, year)
 
-	uw_mean = PAS_tools.detrend(uw_mean, year)
+		barocl_mean = PAS_tools.detrend(barocl_mean, year)
 
-	us_mean = PAS_tools.detrend(us_mean, year)
+		uw_mean = PAS_tools.detrend(uw_mean, year)
 
-	curl_deep = PAS_tools.detrend(curl_deep, year)
+		us_mean = PAS_tools.detrend(us_mean, year)
 
-	curl_shelf = PAS_tools.detrend(curl_shelf, year)
+		curl_deep = PAS_tools.detrend(curl_deep, year)
 
-	wk_deep = PAS_tools.detrend(wk_deep, year)
+		curl_shelf = PAS_tools.detrend(curl_shelf, year)
 
-	wk_shelf = PAS_tools.detrend(wk_shelf, year)
+		wk_deep = PAS_tools.detrend(wk_deep, year)
 
-	wk_coast = PAS_tools.detrend(wk_coast, year)
+		wk_shelf = PAS_tools.detrend(wk_shelf, year)
 
-	SI_deep = PAS_tools.detrend(SI_deep, year)
+		wk_coast = PAS_tools.detrend(wk_coast, year)
 
-	SI_shelf = PAS_tools.detrend(SI_shelf, year)
+		SI_deep = PAS_tools.detrend(SI_deep, year)
 
-	SI_coast = PAS_tools.detrend(SI_coast, year)
+		SI_shelf = PAS_tools.detrend(SI_shelf, year)
 
-	FWflx_deep = PAS_tools.detrend(FWflx_deep, year)
+		SI_coast = PAS_tools.detrend(SI_coast, year)
 
-	FWflx_shelf = PAS_tools.detrend(FWflx_shelf, year)
+		FWflx_deep = PAS_tools.detrend(FWflx_deep, year)
 
-	FWflx_coast = PAS_tools.detrend(FWflx_coast, year)
+		FWflx_shelf = PAS_tools.detrend(FWflx_shelf, year)
+
+		FWflx_coast = PAS_tools.detrend(FWflx_coast, year)
 
 		
 
@@ -1614,37 +1792,39 @@ if readAllSlopeFiles:
 
 	
 
-	uv_mean /= np.max(np.abs(uv_mean))
+	if NORM:
 
-	surf_uv_mean /= np.max(np.abs(surf_uv_mean))
+		uv_mean /= np.max(np.abs(uv_mean))
 
-	barocl_mean /= np.max(np.abs(barocl_mean))
+		surf_uv_mean /= np.max(np.abs(surf_uv_mean))
 
-	uw_mean /= np.max(np.abs(uw_mean))
+		barocl_mean /= np.max(np.abs(barocl_mean))
 
-	us_mean /= np.max(np.abs(us_mean))
+		uw_mean /= np.max(np.abs(uw_mean))
 
-	curl_deep /= np.max(np.abs(curl_deep))
+		us_mean /= np.max(np.abs(us_mean))
 
-	curl_shelf /= np.max(np.abs(curl_shelf))
+		curl_deep /= np.max(np.abs(curl_deep))
 
-	wk_deep /= np.max(np.abs(wk_deep))
+		curl_shelf /= np.max(np.abs(curl_shelf))
 
-	wk_shelf /= np.max(np.abs(wk_shelf))
+		wk_deep /= np.max(np.abs(wk_deep))
 
-	wk_coast /= np.max(np.abs(wk_coast))
+		wk_shelf /= np.max(np.abs(wk_shelf))
 
-	SI_deep /= np.max(np.abs(SI_deep))
+		wk_coast /= np.max(np.abs(wk_coast))
 
-	SI_shelf /= np.max(np.abs(SI_shelf))
+		SI_deep /= np.max(np.abs(SI_deep))
 
-	SI_coast /= np.max(np.abs(SI_coast))
+		SI_shelf /= np.max(np.abs(SI_shelf))
 
-	FWflx_deep /= np.max(np.abs(FWflx_deep))
+		SI_coast /= np.max(np.abs(SI_coast))
 
-	FWflx_shelf /= np.max(np.abs(FWflx_shelf))
+		FWflx_deep /= np.max(np.abs(FWflx_deep))
 
-	FWflx_coast /= np.max(np.abs(FWflx_coast))
+		FWflx_shelf /= np.max(np.abs(FWflx_shelf))
+
+		FWflx_coast /= np.max(np.abs(FWflx_coast))
 
 	
 
@@ -1702,7 +1882,419 @@ if readAllSlopeFiles:
 
 
 
-isotherm = True
+plotSlopeSalinity = False
+
+if plotSlopeSalinity:
+
+	
+
+	grid = Grid_PAS(PASDIR)
+
+
+
+	path = '/home/michael/Documents/data/slopeCurrent/0_779_y1/'
+
+		
+
+	start = 24*12 + 5*12; end=-11
+
+	
+
+	t = np.load(path+'PAS_time.npy')
+
+	S = np.load(path + 'slopeSalt.npy')
+
+	bathy = np.load(path + 'slopeBathy.npy')
+
+	
+
+	S = S[start:end]
+
+	t = t[start:end]
+
+		
+
+	X = grid.Xsubr1D(grid.getIndexFromLon(EASlons))
+
+	zs = [0, -1000]; zz = grid.getIndexFromDepth(zs)
+
+	Z = grid.RC.squeeze()[zz[0]:zz[1]]
+
+	yslim = 50; ynlim = 20; nY = ynlim + yslim
+
+	dy = 3.6e0
+
+	Y = np.linspace(-yslim*dy, ynlim*dy, nY)
+
+	
+
+	#==
+
+
+
+	# Get Y,Z slice, mask, take running mean.	
+
+	#xi = 10; S = S[...,xi]
+
+	print(S.shape)
+
+	
+
+	section = westGetz
+
+	
+
+	S = np.ma.mean(S[...,section[0]:section[1]], axis=-1)
+
+	
+
+	nn = 60
+
+	S = PAS_tools.windowAv(S, n=nn)[nn//2:-nn//2+1]
+
+	
+
+	t = t[nn//2:-nn//2+1]
+
+	nT = len(t)
+
+	text_data = ptt.getTextData(t, 'ctime', Y[1], Z[-1], PAS=True, color='w')
+
+
+
+	#==
+
+
+
+	bathyMask = np.zeros((S.shape))
+
+	for yi in range(nY):
+
+		bathyMask[:, :, yi] = np.max(bathy[yi, section[0]:section[1]], axis=-1)
+
+	for zi in range(len(Z)):
+
+		bathyMask[:,zi,:] -= Z[zi]
+
+	
+
+	vmin = 33.8; vmax = 34.8; cmap = 'jet'; d = 1.e-4
+
+	xlabel = 'Dist. from slope (km)'; ylabel = 'Depth (m)'
+
+	title = 'S (60-month running mean)'
+
+	#S = np.ma.masked_where(S<20., S)
+
+	S = np.ma.masked_where(bathyMask>0, S)
+
+	S = tools.boundData(S, vmin, vmax, d=d)
+
+		
+
+	pt.animate1by1(S, Y, Z, vmin=vmin, vmax=vmax, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=False, text_data=text_data, contourfNlevels=17, figsize=(4,4), outname='slopeSalinity.mp4')
+
+	
+
+	quit()
+
+
+
+#==
+
+
+
+regressions = True
+
+if regressions:
+
+
+
+	# Which surface field?
+
+	#fname = 'wk.npy'; title = 'Ekman'
+
+	#fname = 'FWflx.npy'; title = 'FWflx'
+
+	fname = 'SHIfwFlx.npy'; title = 'SHIfwFlx'
+
+		
+
+	# Which undercurrent section?
+
+	#plotSections = ['westGetz', 'westPITW', 'westPITE']; title = title + '& full undercurrent', 
+
+	plotSections = ['westPITE']; title = title = title + ' & westPITE undercurrent'
+
+	#plotSections = ['westPITW']; title = title = title + ' & westPITW undercurrent'
+
+	#plotSections = ['westGetz']; title = title = title + ' & westGetz undercurrent'
+
+		
+
+	#==
+
+	
+
+	path = '/home/michael/Documents/data/slopeCurrent/0_779_y1/'
+
+	grid = Grid_PAS(PASDIR)
+
+	bathy = grid.bathy
+
+	
+
+	data = np.load(path+fname)
+
+	start = 24*12 + 5*12; end=-11
+
+	data = data[start:end]	
+
+	
+
+	latsi = grid.getIndexFromLat(EASlats); lonsi = grid.getIndexFromLon(EASlons)
+
+	bathy = tools.getSubregionXY(bathy, latsi, lonsi)
+
+	X = grid.Xsubr1D(EASlons)
+
+	Y = grid.Ysubr1D(EASlats)
+
+	print(bathy.shape)
+
+	print(data.shape)
+
+			
+
+	try:
+
+		data = tools.getSubregionXY(data, latsi, lonsi)
+
+		data = ptt.maskBathyXY(data, grid, 0, timeDep=True, subregion=True, lons=lonsi, lats=latsi)
+
+	except:
+
+		data = ptt.maskBathyXY(data, grid, 0, timeDep=True, subregion=True, lons=lonsi, lats=latsi)
+
+
+
+	#==
+
+	
+
+	# Get along-slope velocity timeseries
+
+	uvfile = 'slope_uv_max.npy'
+
+	surfuvfile = 'surf_uv_av.npy'
+
+	
+
+	slope_uv = np.load(path+uvfile)
+
+	surf_uv = np.load(path+surfuvfile)
+
+	
+
+	uv = slope_uv - surf_uv	
+
+	uv = slope_uv[start:end]
+
+
+
+	uv_sum = np.zeros(uv.shape[0])	
+
+	nx = 0
+
+	for section in plotSections:
+
+		iw = sections[section][0]; ie = sections[section][1]
+
+		uv_sum += np.sum(uv[:,iw:ie], axis=1)
+
+		nx += ie-iw		
+
+	uv_mean = uv_sum / nx
+
+
+
+	nt = len(uv_mean); t = np.linspace(0,nt,nt)
+
+	uv_mean = PAS_tools.detrend(uv_mean, tin=t)
+
+				
+
+	print(data.shape)
+
+	print(len(X))
+
+	print(len(Y))
+
+	
+
+	slope_y = np.load(path+'slope_y.npy')
+
+	
+
+	#==
+
+	
+
+	nn = 60
+
+	
+
+	#data = PAS_tools.windowAv(data, n=nn)[nn//2:-nn//2+1]
+
+	#uv_mean = PAS_tools.windowAv(uv_mean, n=nn)[nn//2:-nn//2+1]
+
+	
+
+	nl2 = int(6); nl = 2*nl2 + 1
+
+	lags = np.linspace(-nl2,nl2,nl)
+
+	vmin2 = -nl2; vmax2 = nl2
+
+	
+
+	nt, ny, nx = data.shape	
+
+
+
+	
+
+	li = 6
+
+	# Instantaneous correlation
+
+	
+
+	LAG = 1
+
+	if LAG:
+
+		# Correlation for range of lags
+
+		corr = np.zeros((nl, ny, nx))
+
+		for j in range(0,ny//4):
+
+			print(j)
+
+			for i in range(nx):
+
+				tmp = PAS_tools.detrend(data[:,j,i], tin=t)
+
+				corr[:,j,i] = PAS_tools.crossCorr(data[:,j,i], uv_mean, nl, nl2, P_VALUE=False)
+
+				 
+
+		#for li in range(nl):
+
+		#	print(li); print(lags[li])
+
+		#	pt.plot1by1(corr[li])
+
+		
+
+		#corr[:nl2] = 0; vmin2 = 0; vmax2 = nl2
+
+		
+
+		corrmax = np.max(corr, axis=0)
+
+		corrmin = np.min(corr, axis=0)
+
+		data = np.where(corrmax>np.abs(corrmin), corrmax, corrmin)
+
+				
+
+		argmax = np.argmax(corr, axis=0)
+
+		argmin = np.argmin(corr, axis=0)
+
+		arg = lags[np.where(corrmax>np.abs(corrmin), argmax, argmin)]
+
+		
+
+		data = ptt.maskBathyXY(data, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+		#data = ptt.maskDraftXY(data, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+		arg = ptt.maskBathyXY(arg, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+		#arg = ptt.maskDraftXY(arg, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+		
+
+		#vmax = np.max(np.abs(data)); vmin = -vmax
+
+		vmax = 0.5
+
+		vmin = [-vmax, vmin2-.5]; vmax = [vmax, vmax2+.5]
+
+		
+
+		titles = ['Largest corr: ' + title, 'Lag (months)']
+
+		cmaps = ['bwr', 'jet']
+
+		
+
+		ymin = min(Y); ymax = max(Y)
+
+		yscale = ymax - ymin
+
+		vline1 = [X[iw], (slope_y[iw]-0-ymin)/yscale, (slope_y[iw]+1-ymin)/yscale]
+
+		vline2 = [X[ie], (slope_y[ie]-0-ymin)/yscale, (slope_y[ie]+1-ymin)/yscale]
+
+		vlines = [[vline1, vline2], [vline1, vline2]]
+
+		
+
+		pt.plot1by2([data, arg], X=[X,X], Y=[Y,Y], contour=[bathy,bathy], contourlevels=[[-1000],[-1000]], contourfNlevels=[11,14], titles=titles, cmaps=cmaps, vmin=vmin, vmax=vmax, vlines=vlines)
+
+		
+
+	#==
+
+	
+
+	else:
+
+		corr = np.zeros((ny, nx))
+
+		for j in range(ny):
+
+			for i in range(nx):
+
+				#corr[j,i] = np.correlate(data[:,j,i], uv_mean)
+
+				#corr[j,i], tmp = pearsonr(data[:,j,i], uv_mean)
+
+				if data[0,j,i] != 0:
+
+					corr[j,i] = np.corrcoef(data[:,j,i], uv_mean)[0,1]
+
+				#corr[j,i] = np.correlate(data[li:,j,i], uv_mean[:-li])
+
+		#		corr[j,i] = np.correlate(data[:-li,j,i], uv_mean[li:])
+
+		pt.plot1by1(corr)
+
+
+
+	quit()
+
+
+
+#==
+
+
+
+isotherm = False
 
 if isotherm:
 
@@ -1716,7 +2308,7 @@ if isotherm:
 
 	#fname = 'ThermZ_m05.npy'; vmin = -1000; vmax=0; cmap = 'YlOrRd'; d = 0.1; ylabel = 'Isotherm depth'
 
-	fname = 'HalZ_345_N.npy'; vmin = -1000; vmax=0; cmap = 'jet'; d = 0.01; ylabel = 'Isohaline depth'
+	fname = 'HalZ_343_S.npy'; vmin = -1000; vmax=0; cmap = 'jet'; d = 0.01; ylabel = 'Isohaline depth'
 
 	
 
@@ -1828,8 +2420,6 @@ if isotherm:
 
 	data1S = np.ma.mean(np.ma.masked_where(maskS!=1, data1.copy()), axis=(1,2))
 
-
-
 	
 
 	plt.plot(year, data1N, label='north')
@@ -1846,9 +2436,9 @@ if isotherm:
 
 	plt.show()
 
-	quit()
-
 	
+
+	tmp = np.ma.masked_where(maskS[-1]==1, data1[-1].copy())
 
 	plt.contourf(X, Y, tmp)
 
@@ -1863,6 +2453,186 @@ if isotherm:
 	#plt.scatter(slope_xi, slope_yi, s=0.5)
 
 	
+
+	plt.show()
+
+
+
+	quit()
+
+	
+
+#==
+
+
+
+
+
+allIsotherms = False
+
+if allIsotherms:
+
+	
+
+	grid = Grid_PAS(PASDIR)
+
+
+
+	path = '/home/michael/Documents/data/slopeCurrent/0_779_y1/'
+
+
+
+	files = ['ThermZ_p05_S.npy', 'ThermZ_0.npy', 'ThermZ_m05.npy', 'HalZ_343_S.npy', 'HalZ_344_S.npy', 'HalZ_345_S.npy', 'HalZ_346_S.npy']
+
+	
+
+	start = 24*12 + 5*12; end=-11
+
+	
+
+	vmin = -1000; vmax=0; d = 1.e-4
+
+
+
+	X = grid.XC[1,:]; Y = grid.YC[:,1]
+
+	bathy = grid.bathy; draft = grid.draft
+
+	
+
+	t = np.load(path+'PAS_time.npy')
+
+	slope_x = np.load(path+'slope_x.npy'); slope_y = np.load(path+'slope_y.npy')
+
+	slope_xi = np.load(path+'slope_xi.npy'); slope_yi = np.load(path+'slope_yi.npy')
+
+	maxj = np.load(path+'maxj.npy')
+
+	
+
+	t = t[start:end]
+
+	year = PAS_tools.getDecimalTime(t)
+
+
+
+	lats = EASlats; lons = EASlons
+
+	lats[1] = - 69.
+
+	latsi = grid.getIndexFromLat(lats); lonsi = grid.getIndexFromLon(lons)
+
+	lonsi[1] = westPITE[1] + lonsi[0]
+
+	X = X[lonsi[0]:lonsi[1]+1]; Y = Y[latsi[0]:latsi[1]+1]
+
+	bathy = tools.getSubregionXY(bathy, latsi, lonsi)
+
+	draft = tools.getSubregionXY(draft, latsi, lonsi)
+
+	nX = len(X); nY = len(Y)
+
+	slope_yi = slope_yi[:nX]
+
+		
+
+	maskYrange = 10
+
+	buffer_ = 2
+
+	# yref is maxj or slope_yi
+
+	yref = slope_yi
+
+	
+
+	nn = 60
+
+	year = year[nn//2:-nn//2+1]
+
+
+
+	#==
+
+	
+
+	maskN = None
+
+	barocls = {}
+
+			
+
+	for fname in files:
+
+	
+
+		print(fname)
+
+	
+
+		data = np.load(path+fname)
+
+		data = data[start:end]
+
+
+
+		data = tools.getSubregionXY(data, latsi, lonsi)
+
+		data = ptt.maskBathyXY(data, grid, 0, timeDep=True, subregion=True, lons=lonsi, lats=latsi)
+
+	
+
+		#data = np.where(draft<0, np.nan, data)
+
+		data = np.where(data!=data, vmax-d, data) 
+
+		data = tools.boundData(data, vmin+d, vmax-d)
+
+	
+
+		#data1 = PAS_tools.movingAv(data.copy(), n=nn)#[nn//2:-nn//2+1]
+
+		data1 = PAS_tools.windowAv(data, n=nn)[nn//2:-nn//2+1]
+
+		
+
+		if maskN is None:
+
+			maskN = np.zeros(data1.shape)
+
+			maskS = np.zeros(data1.shape)
+
+			for i in range(nX):
+
+				maskN[:,1+yref[i]+buffer_:1+yref[i]+buffer_+maskYrange,i] = 1
+
+				maskS[:,yref[i]-buffer_-maskYrange:yref[i]-buffer_,i] = 1
+
+		
+
+		data1N = np.ma.mean(np.ma.masked_where(maskN!=1, data1.copy()), axis=(1,2))
+
+		data1S = np.ma.mean(np.ma.masked_where(maskS!=1, data1.copy()), axis=(1,2))
+
+	
+
+		barocls[fname] = data1N - data1S
+
+
+
+	#==
+
+
+
+	
+
+	for b in barocls.keys():
+
+		plt.plot(year, barocls[b], label=b)	
+
+	plt.xlabel('Time')
+
+	plt.legend(); plt.grid()
 
 	plt.show()
 
@@ -2673,20 +3443,6 @@ if coherence:
 # For each lon, get latitude of shelf slope and nearest grid point for u, v.
 
 # 
-
-	
-
-	
-
-	
-
-	
-
-	
-
-	
-
-	
 
 	
 
