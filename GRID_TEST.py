@@ -580,21 +580,31 @@ if animBin:
 
 	
 
+	path2 = '/home/michael/Documents/MATLAB/MCS/OUTPUT/'
+
+	
+
 	#VAR = 'ADJtaux'; mult_gencost = 1.e9; reverse = True; vmax = 1.e-3; vmin = -vmax
 
 	#title=VAR + ' (deg. C/(N m$^{-2}$)), OBJ=on-shelf heat, days 90-120'
 
 		
 
+	
+
 		
 
-	VAR = 'stateUvel'; mult_gencost = 1.; reverse = False; vmax = .2; vmin = -vmax
+	#VAR = 'stateUvel'; mult_gencost = 1.; reverse = False; vmax = .2; vmin = -vmax
+
+	#VAR = 'RBCt_100_coldS.bin'
+
+	VAR = 'precip2_t.bin'; mult_gencost = 1.; reverse = False; vmax = -6.e-9; vmin = -vmax
+
+	
 
 	title = VAR
 
-	VAR = 'RBCt_100_coldS.bin'
 
-	
 
 	#VAR = 'm_boxmean_theta.0000000000.data'; mult_gencost = 1; reverse=False
 
@@ -602,7 +612,7 @@ if animBin:
 
 		
 
-	nz = 50; ny = 200; nx = 240; dims = (nz, ny, nx)
+	nz = 120; ny = 200; nx = 240; dims = (nz, ny, nx)
 
 	#nx = 240; ny = 200;	dims = (ny, nx)
 
@@ -636,8 +646,6 @@ if animBin:
 
 			
 
-	pt.plot1by1(data[...,120], X=Y, Y=Z); quit()
-
 	
 
 	data = ptt.maskBathyXY(data, grid, 0, timeDep=True)
@@ -650,7 +658,7 @@ if animBin:
 
 		time = 2*86400*np.linspace(0,nt,nt+1)
 
-	text_data = ptt.getTextData(time, 'day', X[1,1], Y[1,1], color='k')
+	text_data = ptt.getTextData(time, 'day', X[1], Y[1], color='k')
 
 		
 
@@ -670,7 +678,7 @@ if animBin:
 
 	
 
-	pt.plot1by1(data[0,], X, Y, mesh=True, cmap='bwr', vmin=0.4*vmin, vmax=0.4*vmax, title='HC sens. to zonal wind, 60 day lag (deg. C/(N m$^{-2}$))', xlabel='Lon (km)', ylabel='Lat (km)', fontsize=10, contour=contour); quit()
+	#pt.plot1by1(data[0,], X, Y, mesh=True, cmap='bwr', vmin=0.4*vmin, vmax=0.4*vmax, title='HC sens. to zonal wind, 60 day lag (deg. C/(N m$^{-2}$))', xlabel='Lon (km)', ylabel='Lat (km)', fontsize=10, contour=contour); quit()
 
 	
 
@@ -1726,7 +1734,7 @@ if TEST_depthAverage:
 
 
 
-TEST_animate = False
+TEST_animate = True
 
 if TEST_animate:
 
@@ -1736,7 +1744,7 @@ if TEST_animate:
 
 
 
-	path = '/home/michael/Documents/data/MCS_355/run/'
+	path = '/home/michael/Documents/data/PISOMIP_001/run/'
 
 
 
@@ -1754,9 +1762,9 @@ if TEST_animate:
 
 	#VAR = 'THETA'
 
-	#VAR = 'SALT'	
+	VAR = 'SALT'	
 
-	VAR = 'UVEL'	
+	#VAR = 'UVEL'	
 
 	#VAR = 'WVEL'
 
@@ -1766,11 +1774,11 @@ if TEST_animate:
 
 	#vmin = 33.32; vmax = 34.5
 
-	data = readVariable(VAR, path, file_format='nc', meta=True, tt=[0,None])
+	data = readVariable(VAR, path, file_format='nc', meta=True, tt=[-120,None])
 
 	text_data = ptt.getTextData(data['TIME'][:], 'month', X[1], Y[-2], color='k')
 
-	data = data[VAR][:]	
+	data = data[VAR][-240:]	
 
 	print(data.shape)
 
@@ -1828,7 +1836,7 @@ if TEST_animate:
 
 	print(data.shape)
 
-	vmin = -.08; vmax = -vmin
+	#vmin = -.08; vmax = -vmin
 
 	#datam = tools.boundData(np.mean(data[-12:],axis=0), vmin, vmax)
 
@@ -1922,7 +1930,7 @@ if TEST_animateX:
 
 
 
-animateSurface = True	
+animateSurface = False	
 
 if animateSurface:
 
@@ -1933,6 +1941,8 @@ if animateSurface:
 	#path = '/home/michael/Documents/data/PISOMIP_003/run/'
 
 	path_root = '/home/michael/Documents/data/'
+
+	#run = 'PISOMIP_002'
 
 	run = 'PAS_851'
 
@@ -2006,11 +2016,13 @@ if animateSurface:
 
 	#VAR = 'oceTAUX'
 
+	#VAR = 'oceFWflx'
+
 	VAR = 'npy'
 
 
 
-	flatVars = ['ETAN', 'botTauX', 'PHIBOT', 'ISOTHERM', 'oceTAUX', 'oceSflux', 'npy']
+	flatVars = ['ETAN', 'botTauX', 'PHIBOT', 'ISOTHERM', 'oceTAUX', 'oceSflux', 'oceFWflx', 'npy']
 
 
 
@@ -2024,13 +2036,13 @@ if animateSurface:
 
 		#fname = 'ThermZ_0.npy'; vmin = -1000; vmax=0; cmap = 'YlOrRd'; d = 0.1; title = 'Isotherm depth'
 
-		#fname = 'HalZ_235_N.npy'; vmin = -1000; vmax=0; cmap = 'jet'; d = 0.01; title = 'Isohaline depth'
+		#fname = 'HalZ_345_S.npy'; vmin = -1000; vmax=0; cmap = 'jet'; d = 0.01; title = 'Isohaline depth'
 
-		#fname = 'FWflx.npy'; vmin = -1.e-4; vmax=-vmin; cmap = 'bwr'; d = 1.e-6; title = 'FW flux'
+		fname = 'FWflx.npy'; vmin = -.1e-5; vmax=-vmin; cmap = 'bwr'; d = 1.e-9; title = 'FW flux'
 
 		#fname = 'wk.npy'; vmin = -4.e-6; vmax=-vmin; cmap = 'bwr'; d = 1.e-7; title = 'Vertical Ekman (m/s)'
 
-		fname = 'SI.npy'; vmin = 0.5; vmax=.9; cmap = 'jet'; d = 1.e-4; title = 'SI area'
+		#fname = 'SI.npy'; vmin = 0.5; vmax=.9; cmap = 'jet'; d = 1.e-4; title = 'SI area'
 
 						
 
@@ -2088,7 +2100,7 @@ if animateSurface:
 
 		#data = np.where(draft<0, np.nan, data)
 
-		#data = np.where(data!=data, vmax-d, data) 
+		data = np.where(data!=data, vmax-d, data) 
 
 		data = tools.boundData(data, vmin+d, vmax-d)
 
@@ -2110,19 +2122,27 @@ if animateSurface:
 
 		nn = 60
 
-		data = PAS_tools.movingAv(data, n=nn)#[nn//2:-nn//2+1]
+		data = PAS_tools.windowAv(data, n=nn)[nn//2:-nn//2+1]
+
+		#data = PAS_tools.movingAv(data, n=nn)
 
 		#data = PAS_tools.windowAvLoop(data, n=nn)
 
 		#data = data[nn//2:-nn//2+1]
 
-		#data = PAS_tools.demean(data)
+		data = PAS_tools.demean(data)
+
+				
+
+		data = ptt.maskBathyXY(data, grid, 0, timeDep=True, subregion=True, lons=lonsi, lats=latsi)
+
+		data = ptt.maskDraftXY(data, grid, 0, timeDep=True, subregion=True, lons=lonsi, lats=latsi)
+
+
 
 		t = t[nn//2:-nn//2+1]
 
-
-
-		text_data = ptt.getTextData(t, 'ctime', X[1], Y[1], PAS=True, color='w')
+		text_data = ptt.getTextData(t, 'ctime', X[1], Y[1], PAS=True, color='k')
 
 	
 
@@ -2186,13 +2206,11 @@ if animateSurface:
 
 		data = data[VAR][:]
 
-		#plt.plot(data[-1,:,1]);plt.grid(); plt.show(); quit()
-
 		print(data.shape)
 
 		
 
-		#pt.plot1by1(data[0]); quit()
+		pt.plot1by1(data[0]); quit()
 
 	#==
 
