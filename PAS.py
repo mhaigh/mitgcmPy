@@ -128,6 +128,8 @@ if MAIN:
 
 	bearing = PAS_tools.getBearing(slope_x, slope_y)
 
+	plt.plot(bearing); plt.show(); quit()
+
 	
 
 	slope_x_nX = np.zeros(nX); slope_y_nX = np.zeros(nX)
@@ -400,6 +402,296 @@ if MAIN:
 
 
 
+# Computes vertical profiles of fields of interest.
+
+# E.g., cross-slope salinity gradient, temp, velocity.
+
+MAINZ = False
+
+if MAINZ:
+
+
+
+	OUTPATH = 'slopeCurrent/'
+
+
+
+	grid = Grid_PAS(PASDIR)
+
+	bathy = grid.bathy
+
+
+
+	X = grid.XC; Y = grid.YC
+
+	Z = grid.RC.squeeze()
+
+	
+
+	pathno = 0;	xshift = 0; yshift = 0; latsi = []; lonsi = []
+
+	subr = 1
+
+	if subr:
+
+		# Get subregion of bathymetry.
+
+		latsi = grid.getIndexFromLat(EASlats); lonsi = grid.getIndexFromLon(EASlons)
+
+		bathy = tools.getSubregionXY(bathy, latsi, lonsi)
+
+		X, Y, dX, dY = grid.XYsubr(EASlons, EASlats, dxdy=True)
+
+		pathno = 0
+
+		xshift = lonsi[0]
+
+		yshift = latsi[0]
+
+	nY, nX = X.shape
+
+
+
+	# Get lat, lon lists of continental slope
+
+	slope_x, slope_y = PAS_tools.getSlopeContour(bathy, X, Y, pathno)
+
+
+
+	bathy = ptt.maskBathyXY(bathy, grid, zi=0, subregion=True, lats=latsi, lons=lonsi)
+
+
+
+	bearing = PAS_tools.getBearing(slope_x, slope_y)
+
+	
+
+	slope_x_nX = np.zeros(nX); slope_y_nX = np.zeros(nX)
+
+	slope_xi = np.zeros(nX, dtype=int); slope_yi = np.zeros(nX, dtype=int)
+
+	bearing_nX = np.zeros(nX)
+
+	
+
+	# For each X grid point, get the lat and lon of slope contour's nearest point.
+
+	for xi in range(nX):
+
+		slope_xi[xi] = int(np.argmin(np.abs(slope_x-X[0,xi])))
+
+		slope_x_nX[xi] = slope_x[slope_xi[xi]]
+
+		slope_y_nX[xi] = slope_y[slope_xi[xi]]
+
+		bearing_nX[xi] = bearing[slope_xi[xi]]		
+
+		slope_yi[xi] = int(np.argmin(np.abs(slope_y_nX[xi]-Y[:,xi])))
+
+		
+
+	zs = [0, -1000]
+
+	zz = grid.getIndexFromDepth(zs)
+
+	nZ = zz[1] - zz[0]
+
+
+
+	ufile = 'UVEL'; vfile = 'VVEL';	rhofile = 'RHOAnoma'
+
+	Sfile = 'SALT'; Tfile = 'THETA'
+
+	Pxfile = 'Um_dPhiX'; Pyfile = 'Vm_dPhiY'
+
+	
+
+	# How many grid points either side of slope do we search for max in along-slope velocity?
+
+	yslim = 3; ynlim = 1
+
+
+
+	#t_start = 0; t_end = 10
+
+	#t_start = 107; t_end = 622
+
+	t_start = 0; t_end = 779
+
+
+
+	uv_z = np.zeros((t_end-t_start, nZ, nX))
+
+	Sgrad = np.zeros((t_end-t_start, nZ, nX))
+
+	Tgrad = np.zeros((t_end-t_start, nZ, nX))
+
+	Pgrad = np.zeros((t_end-t_start, nZ, nX))
+
+	maxj_out = np.zeros((t_end-t_start, nX))
+
+	maxz_out = np.zeros((t_end-t_start, nX))
+
+	for ti in range(t_start, t_end):
+
+		print(ti)
+
+		print(ctime(readVariable(rhofile, PASDIR, file_format='nc', meta=True)['TIME'][ti]))
+
+		for xi in range(nX):
+
+			
+
+			ys = yshift+slope_yi[xi]-yslim
+
+			yn = yshift+slope_yi[xi]+ynlim
+
+			yy = [ys, yn]
+
+			
+
+			rho = 1028.5 + readVariable(rhofile, PASDIR, file_format='nc', meta=False, tt=ti, xx=xi+xshift, yy=yy, zz=zz)
+
+			rho = ptt.maskBathyYZ(rho, grid, xi=xi+xshift, subregion=True, lats=yy, depths=zz, sameIasNC=True)
+
+			rho = tools.boundData(rho, 1026, 1040)
+
+			
+
+			# Load velocities
+
+			u = readVariable(ufile, PASDIR, file_format='nc', meta=False, tt=ti, xx=xi+xshift, yy=yy, zz=zz)
+
+			u = ptt.maskBathyYZ(u, grid, xi=xi+xshift, subregion=True, lats=yy, depths=zz, sameIasNC=True)
+
+			v = readVariable(vfile, PASDIR, file_format='nc', meta=False, tt=ti, xx=xi+xshift, yy=yy, zz=zz)
+
+			v = ptt.maskBathyYZ(v, grid, xi=xi+xshift, subregion=True, lats=yy, depths=zz, sameIasNC=True)
+
+
+
+			#==
+
+		
+
+			# Get along-slope surface and undercurrent flow speeds. 
+
+			slope_uv = u * np.sin(bearing_nX[xi]*np.pi/180.) + v * np.cos(bearing_nX[xi]*np.pi/180.)
+
+			
+
+			# Mask along-slope velocity before computing average.
+
+			slope_uv = np.ma.masked_where(rho<1028., slope_uv)
+
+			ZZZ = np.tile(grid.RC.squeeze()[zz[0]:zz[1]], (slope_uv.shape[1],1)).T
+
+			slope_uv = np.ma.masked_where(ZZZ<-800, slope_uv)
+
+
+
+			# Find latitude (maxj) where slope_uv is maximised.	
+
+			maxz, maxj = np.unravel_index(slope_uv.argmax(), slope_uv.shape)
+
+			uv_z[ti-t_start,:,xi] = slope_uv[:,maxj]
+
+			
+
+			maxj_out[ti-t_start,xi] = maxj
+
+			maxz_out[ti-t_start,xi] = maxz
+
+						
+
+			# Get centred difference for S, T and P gradients. 
+
+			#Sn = readVariable(Sfile, PASDIR, file_format='nc', meta=False, tt=ti, xx=xi+xshift, yy=ys+maxj+1, zz=zz)
+
+			#Ss = readVariable(Sfile, PASDIR, file_format='nc', meta=False, tt=ti, xx=xi+xshift, yy=ys+maxj-1, zz=zz)
+
+			#Se = readVariable(Sfile, PASDIR, file_format='nc', meta=False, tt=ti, xx=xi+xshift+1, yy=ys+maxj, zz=zz)
+
+			#Sw = readVariable(Sfile, PASDIR, file_format='nc', meta=False, tt=ti, xx=xi+xshift-1, yy=ys+maxj, zz=zz)
+
+			#Sy = 0.5 * (Sn - Ss) / dY[ys-yshift+maxj, xi]
+
+			#Sx = 0.5 * (Se - Sw) / dX[ys-yshift+maxj, xi]
+
+			
+
+			#Tn = readVariable(Tfile, PASDIR, file_format='nc', meta=False, tt=ti, xx=xi+xshift, yy=ys+maxj+1, zz=zz)
+
+			#Ts = readVariable(Tfile, PASDIR, file_format='nc', meta=False, tt=ti, xx=xi+xshift, yy=ys+maxj-1, zz=zz)
+
+			#Te = readVariable(Tfile, PASDIR, file_format='nc', meta=False, tt=ti, xx=xi+xshift+1, yy=ys+maxj, zz=zz)
+
+			#Tw = readVariable(Tfile, PASDIR, file_format='nc', meta=False, tt=ti, xx=xi+xshift-1, yy=ys+maxj, zz=zz)
+
+			#Ty = 0.5 * (Tn - Ts) / dY[ys-yshift+maxj, xi]
+
+			#Tx = 0.5 * (Te - Tw) / dX[ys-yshift+maxj, xi]
+
+			
+
+			Px = readVariable(Pxfile, PASDIR, file_format='nc', meta=False, tt=ti, xx=xi+xshift, yy=ys+maxj, zz=zz)
+
+			Py = readVariable(Pyfile, PASDIR, file_format='nc', meta=False, tt=ti, xx=xi+xshift, yy=ys+maxj, zz=zz)
+
+			
+
+			#lim = 0.09; slope_uv = tools.boundData(slope_uv, -lim, lim)
+
+			#slope_uv[0,0] = -lim; slope_uv[0,1] = lim
+
+			#pt.plot1by2([bathy, slope_uv], contour=[None, rho], X=[X,Y[yy[0]:yy[1],0]], Y=[Y,Z[zz[0]:zz[1]]], vlines=[[X[0,xi]],None])
+
+			
+
+			# Get along-slope wind and wind stress.
+
+			#Sgrad[ti,:,xi] = Sy * np.sin(bearing_nX[xi]*np.pi/180.) - Sx * np.cos(bearing_nX[xi]*np.pi/180.)
+
+			#Tgrad[ti,:,xi] = Ty * np.sin(bearing_nX[xi]*np.pi/180.) - Tx * np.cos(bearing_nX[xi]*np.pi/180.)
+
+			Pgrad[ti,:,xi] = Py * np.sin(bearing_nX[xi]*np.pi/180.) - Px * np.cos(bearing_nX[xi]*np.pi/180.)
+
+
+
+			#==
+
+		
+
+	#==
+
+	
+
+	OUTPATH = 'slopeCurrent/'
+
+	np.save('uv_z', np.ma.filled(uv_z, fill_value=0))
+
+	#np.save('Tgrad', np.ma.filled(Tgrad, fill_value=0))
+
+	#np.save('Sgrad', np.ma.filled(Sgrad, fill_value=0))
+
+	np.save('Pgrad', np.ma.filled(Pgrad, fill_value=0))
+
+
+
+	np.save('maxj', maxj)
+
+	np.save('maxz', maxz)
+
+
+
+	quit()
+
+
+
+#==
+
+
+
 slopeSalinity = False
 
 if slopeSalinity:
@@ -488,7 +780,9 @@ if slopeSalinity:
 
 	Sfile = 'SALT'	
 
+	Tfile = 'THETA'	
 
+	
 
 	# How many grid points either side of slope?
 
@@ -514,6 +808,8 @@ if slopeSalinity:
 
 	slopeSalt = np.zeros((t_end-t_start, nZ, nY, nX))
 
+	slopeTheta = np.zeros((t_end-t_start, nZ, nY, nX))
+
 	for ti in range(t_start, t_end):
 
 		print(ti)
@@ -524,11 +820,25 @@ if slopeSalinity:
 
 			yy = [yshift+slope_yi[xi]-yslim, yshift+slope_yi[xi]+ynlim]
 
+			
+
 			S = readVariable(Sfile, PASDIR, file_format='nc', meta=False, tt=ti, xx=xi+xshift, yy=yy, zz=zz)
 
 			S = ptt.maskBathyYZ(S, grid, xi=xi+xshift, subregion=True, lats=yy, depths=zz, sameIasNC=True)
 
 			slopeSalt[ti, :, :, xi] = S[:, :]
+
+			
+
+			T = readVariable(Tfile, PASDIR, file_format='nc', meta=False, tt=ti, xx=xi+xshift, yy=yy, zz=zz)
+
+			T = ptt.maskBathyYZ(T, grid, xi=xi+xshift, subregion=True, lats=yy, depths=zz, sameIasNC=True)
+
+			slopeTheta[ti, :, :, xi] = T[:, :]
+
+	
+
+	#==
 
 	
 
@@ -545,6 +855,8 @@ if slopeSalinity:
 	# Save
 
 	np.save(OUTPATH+'slopeSalt.npy', slopeSalt)
+
+	np.save(OUTPATH+'slopeTheta.npy', slopeTheta)
 
 	np.save(OUTPATH+'slopeBathy.npy', slopeBathy)
 
@@ -1302,9 +1614,9 @@ if readAllSlopeFiles:
 
 	
 
-	DEMEAN = False;	DESEASON = False; DETREND = False; NORM = False
+	#DEMEAN = False;	DESEASON = False; DETREND = False; NORM = False
 
-	#DEMEAN = True; DESEASON = True; DETREND = True; NORM = True
+	DEMEAN = True; DESEASON = True; DETREND = True; NORM = True
 
 	
 
@@ -1450,9 +1762,9 @@ if readAllSlopeFiles:
 
 	# Get zonal sums and averages evaluated over sections of interest.
 
-	#plotSections = ['westGetz', 'westPITW', 'westPITE']
+	plotSections = ['westGetz', 'westPITW', 'westPITE']
 
-	plotSections = ['westGetz']
+	#plotSections = ['westGetz']
 
 		
 
@@ -1499,6 +1811,10 @@ if readAllSlopeFiles:
 	
 
 	#==
+
+	
+
+	# 135 
 
 	
 
@@ -1622,7 +1938,7 @@ if readAllSlopeFiles:
 
 	#==
 
-	
+
 
 	# Get correlations after a range of running means applied to data.
 
@@ -1882,6 +2198,288 @@ if readAllSlopeFiles:
 
 
 
+
+
+plotZ_ST = False
+
+if plotZ_ST:
+
+
+
+	grid = Grid_PAS(PASDIR)
+
+
+
+	path = '/home/michael/Documents/data/slopeCurrent/0_779_y1/'
+
+		
+
+	start = 24*12 + 5*12; end=-11
+
+	
+
+	t = np.load(path+'PAS_time.npy')
+
+	Sgrad = np.load(path + 'Sgrad.npy')
+
+	bathy = np.load(path + 'slopeBathy.npy')
+
+	
+
+	section = westPITE
+
+		
+
+	Sgrad = Sgrad[start:end]
+
+	t = t[start:end]
+
+		
+
+	X = grid.Xsubr1D(grid.getIndexFromLon(EASlons))
+
+	zs = [0, -400]; zz = grid.getIndexFromDepth(zs)
+
+	Z = grid.RC.squeeze()[zz[0]:zz[1]]
+
+	print(Z)
+
+	dZ = grid.DRF.squeeze()[zz[0]:zz[1]]
+
+	yslim = 50; ynlim = 20; nY = ynlim + yslim
+
+	dy = 3.6e0
+
+	Y = np.linspace(-yslim*dy, ynlim*dy, nY)
+
+	
+
+	#==
+
+
+
+	# Get Y,Z slice, mask, take running mean.	
+
+	#xi = 10; S = S[...,xi]
+
+
+
+	Sgrad = np.ma.mean(Sgrad[...,section[0]:section[1]], axis=-1)
+
+	
+
+	nn = 60
+
+	Sgrad = PAS_tools.windowAv(Sgrad[:,zz[0]:zz[1]], n=nn)[nn//2:-nn//2+1]
+
+	
+
+	Sgrad = PAS_tools.demean(Sgrad)
+
+	
+
+	t = t[nn//2:-nn//2+1]
+
+	year = PAS_tools.getDecimalTime(t)
+
+	nT = len(t)
+
+	text_data = ptt.getTextData(t, 'ctime', Y[1], Z[-1], PAS=True, color='w')
+
+
+
+
+
+	print(Sgrad.shape)
+
+	#Sgrad = PAS_tools.demean(Sgrad)
+
+	
+
+	
+
+	pt.plot1by1(Sgrad.T, X=year, Y=Z)
+
+	plt.plot(year, np.sum(Sgrad*dZ, axis=1)); plt.show()
+
+	
+
+	plt.plot(year, Sgrad[:,9])
+
+	plt.plot(year, Sgrad[:,10])
+
+	plt.show()
+
+	
+
+	
+
+	quit()
+
+	
+
+#==
+
+
+
+plotZ_uv = False
+
+if plotZ_uv:
+
+
+
+	grid = Grid_PAS(PASDIR)
+
+
+
+	path = '/home/michael/Documents/data/slopeCurrent/0_779_y1/'
+
+		
+
+	#section = westPITW; sec = 'westPITW'
+
+	#section = westPITE; sec = 'westPITE'
+
+	section = westGetz; sec = 'westGetz'
+
+	
+
+	start = 24*12 + 5*12; end=-11
+
+	
+
+	hals_labels = ['34.0', '34.1', '34.2', '34.3', '34.4', '34.5', '34.6']
+
+	hals = np.load(path+'depthS_'+sec+'.npy')
+
+	
+
+	t = np.load(path+'PAS_time.npy')
+
+	uv = np.load(path + 'uv_z.npy')
+
+	bathy = np.load(path + 'slopeBathy.npy')
+
+	
+
+	uv = uv[start:end]
+
+	t = t[start:end]
+
+		
+
+	X = grid.Xsubr1D(grid.getIndexFromLon(EASlons))
+
+	zs = [0, -500]; zz = grid.getIndexFromDepth(zs)
+
+	Z = grid.RC.squeeze()[zz[0]:zz[1]]
+
+	dZ = grid.DRF.squeeze()[zz[0]:zz[1]]
+
+	yslim = 50; ynlim = 20; nY = ynlim + yslim
+
+	dy = 3.6e0
+
+	Y = np.linspace(-yslim*dy, ynlim*dy, nY)
+
+	
+
+	#==
+
+
+
+	# Get Y,Z slice, mask, take running mean.	
+
+	#xi = 10; S = S[...,xi]
+
+
+
+	uv = np.ma.mean(uv[...,section[0]:section[1]], axis=-1)
+
+	
+
+	nn = 60
+
+	uv = PAS_tools.windowAv(uv[:,zz[0]:zz[1]], n=nn)[nn//2:-nn//2+1]
+
+	
+
+	t = t[nn//2:-nn//2+1]
+
+	year = PAS_tools.getDecimalTime(t)
+
+	nT = len(t)
+
+	text_data = ptt.getTextData(t, 'ctime', Y[1], Z[-1], PAS=True, color='w')
+
+
+
+	nT, nZ = uv.shape
+
+	uvb = np.zeros((nT, nZ))
+
+	corr = np.zeros(nZ)
+
+	for zi in range(nZ):
+
+		uvb[:,zi] = uv[:,zi] - uv[:,0]
+
+		corr[zi] = PAS_tools.pearson(uv[:,0], uv[:,zi])
+
+	
+
+	#==
+
+	
+
+	from matplotlib.cm import get_cmap
+
+	cmap = get_cmap('jet')
+
+	
+
+	plt.plot(corr, Z, color='k'); plt.grid()
+
+	plt.title('corr[u(Z), u(Z=surface)]; ' + sec)
+
+	nh = len(hals)
+
+	for hi, hal in enumerate(hals):
+
+		plt.axhline(hal, label=hals_labels[hi], color=cmap(hi/nh))
+
+	plt.ylabel('Z (m)')
+
+	plt.legend()
+
+	plt.show()
+
+	quit()
+
+		
+
+	pt.plot1by1(uvb.T, X=year, Y=Z, contourfNlevels=15)
+
+
+
+	pt.plot1by1(np.cumsum(uvb, axis=1).T, X=year, Y=Z, contourfNlevels=15)
+
+
+
+	plt.plot(year, np.max(uvb, axis=1))
+
+	plt.show()	
+
+
+
+	quit()
+
+	
+
+#==
+
+
+
 plotSlopeSalinity = False
 
 if plotSlopeSalinity:
@@ -1902,11 +2500,17 @@ if plotSlopeSalinity:
 
 	t = np.load(path+'PAS_time.npy')
 
-	S = np.load(path + 'slopeSalt.npy')
+	S = np.load(path + 'slopeSalt.npy'); outname = 'slopeSalinity.mp4'; vmin = 33.8; vmax = 34.8;
+
+	#S = np.load(path + 'slopeTheta.npy'); outname = 'slopeTheta.mp4'; vmin = -2.; vmax = 2
 
 	bathy = np.load(path + 'slopeBathy.npy')
 
 	
+
+	section = westGetz
+
+		
 
 	S = S[start:end]
 
@@ -1937,10 +2541,6 @@ if plotSlopeSalinity:
 	#xi = 10; S = S[...,xi]
 
 	print(S.shape)
-
-	
-
-	section = westGetz
 
 	
 
@@ -1978,7 +2578,7 @@ if plotSlopeSalinity:
 
 	
 
-	vmin = 33.8; vmax = 34.8; cmap = 'jet'; d = 1.e-4
+	cmap = 'jet'; d = 1.e-4
 
 	xlabel = 'Dist. from slope (km)'; ylabel = 'Depth (m)'
 
@@ -1992,7 +2592,7 @@ if plotSlopeSalinity:
 
 		
 
-	pt.animate1by1(S, Y, Z, vmin=vmin, vmax=vmax, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=False, text_data=text_data, contourfNlevels=17, figsize=(4,4), outname='slopeSalinity.mp4')
+	pt.animate1by1(S, Y, Z, vmin=vmin, vmax=vmax, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=False, text_data=text_data, contourfNlevels=17, figsize=(4,4), outname=outname)
 
 	
 
@@ -2004,7 +2604,7 @@ if plotSlopeSalinity:
 
 
 
-regressions = True
+regressions = False
 
 if regressions:
 
@@ -2294,7 +2894,7 @@ if regressions:
 
 
 
-isotherm = False
+isotherm = False 
 
 if isotherm:
 
@@ -2306,9 +2906,9 @@ if isotherm:
 
 	path = '/home/michael/Documents/data/slopeCurrent/0_779_y1/'
 
-	#fname = 'ThermZ_m05.npy'; vmin = -1000; vmax=0; cmap = 'YlOrRd'; d = 0.1; ylabel = 'Isotherm depth'
+	#fname = 'ThermZ_0.npy'; vmin = -1000; vmax=0; cmap = 'YlOrRd'; d = 0.1; ylabel = 'Isotherm depth'
 
-	fname = 'HalZ_343_S.npy'; vmin = -1000; vmax=0; cmap = 'jet'; d = 0.01; ylabel = 'Isohaline depth'
+	fname = 'HalZ_342_S.npy'; vmin = -500; vmax=0; cmap = 'jet'; d = 0.01; ylabel = 'Isohaline depth'
 
 	
 
@@ -2438,7 +3038,17 @@ if isotherm:
 
 	
 
+	#==
+
+	
+
 	tmp = np.ma.masked_where(maskS[-1]==1, data1[-1].copy())
+
+	tmp = np.ma.masked_where(maskN[-1]==1, tmp)
+
+	tmp = ptt.maskBathyXY(tmp, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+	
 
 	plt.contourf(X, Y, tmp)
 
@@ -2446,11 +3056,15 @@ if isotherm:
 
 	plt.contour(X, Y, bathy, levels=[-1000])
 
+	plt.gca().patch.set_color('.25')
+
 	#plt.plot(maxj[0])
 
 	plt.scatter(X, Y[slope_yi], s=1)
 
 	#plt.scatter(slope_xi, slope_yi, s=0.5)
+
+	plt.title('Continental slope north/south masks')
 
 	
 
@@ -2468,7 +3082,7 @@ if isotherm:
 
 
 
-allIsotherms = False
+allIsotherms = True
 
 if allIsotherms:
 
@@ -2482,15 +3096,41 @@ if allIsotherms:
 
 
 
-	files = ['ThermZ_p05_S.npy', 'ThermZ_0.npy', 'ThermZ_m05.npy', 'HalZ_343_S.npy', 'HalZ_344_S.npy', 'HalZ_345_S.npy', 'HalZ_346_S.npy']
+	#files = ['ThermZ_p05_S.npy', 'ThermZ_0.npy', 'ThermZ_m05.npy', 'HalZ_343_S.npy', 'HalZ_344_S.npy', 'HalZ_345_S.npy', 'HalZ_346_S.npy']
+
+	#files = ['HalZ_340_S.npy', 'HalZ_341_S.npy', 'HalZ_342_S.npy', 'HalZ_343_S.npy', 'HalZ_344_S.npy', 'HalZ_345_S.npy', 'HalZ_346_S.npy']
+
+	files = ['HalZ_341_S.npy', 'HalZ_343_S.npy', 'HalZ_346_S.npy']
+
+	#files = ['HalZ_340_S.npy']
 
 	
+
+	#section = westPITW; sec = 'westPITW'
+
+	section = westPITE; sec = 'westPITE'
+
+	#section = westGetz; sec = 'westGetz'
+
+	
+
+	maskYrange = 10; buffer_ = 2 # Default vals
+
+	#maskYrange = 2; buffer_ = 1
+
+		
 
 	start = 24*12 + 5*12; end=-11
 
 	
 
 	vmin = -1000; vmax=0; d = 1.e-4
+
+	
+
+	from matplotlib.cm import get_cmap
+
+	cmap = get_cmap('jet')
 
 
 
@@ -2536,10 +3176,6 @@ if allIsotherms:
 
 		
 
-	maskYrange = 10
-
-	buffer_ = 2
-
 	# yref is maxj or slope_yi
 
 	yref = slope_yi
@@ -2550,7 +3186,9 @@ if allIsotherms:
 
 	year = year[nn//2:-nn//2+1]
 
+	nT = len(year)
 
+	
 
 	#==
 
@@ -2560,9 +3198,19 @@ if allIsotherms:
 
 	barocls = {}
 
-			
+	
 
-	for fname in files:
+	nf = len(files)
+
+	depthS = np.zeros(nf)
+
+	depthN = np.zeros(nf)
+
+	mean_depth = np.zeros(nf)
+
+	
+
+	for fi, fname in enumerate(files):
 
 	
 
@@ -2596,13 +3244,17 @@ if allIsotherms:
 
 		
 
+		xw = 0; xe = nX
+
+		xw = section[0]; xe = section[1]
+
 		if maskN is None:
 
 			maskN = np.zeros(data1.shape)
 
 			maskS = np.zeros(data1.shape)
 
-			for i in range(nX):
+			for i in range(xw, xe):
 
 				maskN[:,1+yref[i]+buffer_:1+yref[i]+buffer_+maskYrange,i] = 1
 
@@ -2618,21 +3270,51 @@ if allIsotherms:
 
 		barocls[fname] = data1N - data1S
 
+		
+
+		depthS[fi] = np.mean(data1S)
+
+		depthN[fi] = np.mean(data1N)
+
+		mean_depth[fi] = 0.5 * np.mean(data1N + data1S)
+
 
 
 	#==
 
 
 
+	np.save(path+'depthS_'+sec, depthS)
+
+	np.save(path+'depthN_'+sec, depthN)
+
+	np.save(path+'meanDepth_'+sec, mean_depth)
+
 	
 
-	for b in barocls.keys():
+	tot = np.zeros(nT)
 
-		plt.plot(year, barocls[b], label=b)	
+	nb = len(barocls.keys())
+
+	for bi, b  in enumerate(barocls.keys()):
+
+		tmp = barocls[b]-np.mean(barocls[b])
+
+		tot += tmp
+
+		#tmp += mean_depth[bi]
+
+		plt.plot(year, tmp, label=b, color=cmap(bi/nb))
+
+			
+
+	#plt.plot(year, tot/len(barocls), label='mean', color='k')
 
 	plt.xlabel('Time')
 
 	plt.legend(); plt.grid()
+
+	plt.title('Cross-slope isotherm drop - ' + sec)
 
 	plt.show()
 
@@ -3028,7 +3710,117 @@ if animateX:
 
 	
 
+#==
+
+
+
+animateSI = False
+
+if animateSI:
+
+
+
+	grid = Grid_PAS(PASDIR)
+
+	bathy = grid.bathy
+
+	X = grid.XC; Y = grid.YC
+
+
+
+	path = '/home/michael/Documents/data/slopeCurrent/0_779_y1/'
+
 	
+
+	SIu = np.load(path+'SIu.npy')
+
+	SIv = np.load(path+'SIv.npy')
+
+	t = np.load(path+'PAS_time.npy')
+
+
+
+	start = 24*12 + 5*12; end=-11
+
+	SIu = SIu[start:end]
+
+	SIv = SIv[start:end]
+
+	t = t[start:end]
+
+
+
+	# Subregion and mask		
+
+	lats = [-76, -69]; lons = [225, 260]#[230, 270]#
+
+	latsi = grid.getIndexFromLat(lats); lonsi = grid.getIndexFromLon(lons)
+
+	SIu = tools.getSubregionXY(SIu, latsi, lonsi)
+
+	SIv = tools.getSubregionXY(SIv, latsi, lonsi)
+
+	bathy = tools.getSubregionXY(bathy, latsi, lonsi)
+
+	X = grid.Xsubr1D(lons);	Y = grid.Ysubr1D(lats)
+
+	SIu = ptt.maskBathyXY(SIu, grid, 0, timeDep=True, subregion=True, lons=lonsi, lats=latsi)
+
+	SIv = ptt.maskBathyXY(SIv, grid, 0, timeDep=True, subregion=True, lons=lonsi, lats=latsi)
+
+	SIu = ptt.maskDraftXY(SIu, grid, 0, timeDep=True, subregion=True, lons=lonsi, lats=latsi)
+
+	SIv = ptt.maskDraftXY(SIv, grid, 0, timeDep=True, subregion=True, lons=lonsi, lats=latsi)
+
+	#
+
+		
+
+	nn = 60
+
+	SIu = PAS_tools.windowAv(SIu, n=nn)[nn//2:-nn//2+1]
+
+	SIv = PAS_tools.windowAv(SIv, n=nn)[nn//2:-nn//2+1]
+
+	
+
+	SIu = PAS_tools.demean(SIu)
+
+	SIv = PAS_tools.demean(SIv)
+
+	
+
+	t = t[nn//2:-nn//2+1]
+
+	text_data = ptt.getTextData(t, 'ctime', X[1], Y[1], PAS=True, color='k')
+
+	
+
+	#==
+
+	
+
+	d = 8
+
+	SIu = SIu[:,::d,::d]; SIv = SIv[:,::d,::d]
+
+	Xd = X[::d]; Yd = Y[::d]
+
+	
+
+	bathy = tools.boundData(bathy, -1000, 0)
+
+	bathy = ptt.maskBathyXY(bathy, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+	
+
+	pt.animate1by1quiver(SIu, SIv, Xd, Yd, contour=bathy, X=X, Y=Y, contourf=True, text_data=text_data, title='Sea ice vel.', figsize=(7,6), cmap='jet')
+
+		
+
+	quit()
+
+
 
 #==
 
