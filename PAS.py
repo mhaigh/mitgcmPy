@@ -2200,7 +2200,7 @@ if readAllSlopeFiles:
 
 
 
-plotZ_ST = False
+plotZ_ST = True
 
 if plotZ_ST:
 
@@ -2218,9 +2218,13 @@ if plotZ_ST:
 
 	
 
+	fname = 'Pgrad.npy'
+
+	
+
 	t = np.load(path+'PAS_time.npy')
 
-	Sgrad = np.load(path + 'Sgrad.npy')
+	Sgrad = np.load(path + fname)
 
 	bathy = np.load(path + 'slopeBathy.npy')
 
@@ -2258,12 +2262,6 @@ if plotZ_ST:
 
 
 
-	# Get Y,Z slice, mask, take running mean.	
-
-	#xi = 10; S = S[...,xi]
-
-
-
 	Sgrad = np.ma.mean(Sgrad[...,section[0]:section[1]], axis=-1)
 
 	
@@ -2272,9 +2270,11 @@ if plotZ_ST:
 
 	Sgrad = PAS_tools.windowAv(Sgrad[:,zz[0]:zz[1]], n=nn)[nn//2:-nn//2+1]
 
-	
+
 
 	Sgrad = PAS_tools.demean(Sgrad)
+
+	#Sgrad = PAS_tools.desurf(Sgrad, axis=1)
 
 	
 
@@ -2288,27 +2288,35 @@ if plotZ_ST:
 
 
 
+	#==
 
 
-	print(Sgrad.shape)
-
-	#Sgrad = PAS_tools.demean(Sgrad)
-
-	
-
-	
 
 	pt.plot1by1(Sgrad.T, X=year, Y=Z)
 
-	plt.plot(year, np.sum(Sgrad*dZ, axis=1)); plt.show()
+	
+
+	if fname == 'Sgrad.npy':
+
+		for i in range(1, len(dZ)):
+
+			plt.plot(year, np.sum(Sgrad[:,:i]*dZ[:i], axis=1), label='level = ' + str(i))
+
+	else:
+
+		Sgrad = -Sgrad
+
+		Sgrad = PAS_tools.desurf(Sgrad, axis=1)
+
+		for i in range(12, len(dZ)):
+
+			plt.plot(year, PAS_tools.detrend(Sgrad[:,i],None), label='level=' + str(i) + ', depth=' + str(Z[i]) + 'm')
+
+			plt.legend(); plt.show()
 
 	
 
-	plt.plot(year, Sgrad[:,9])
-
-	plt.plot(year, Sgrad[:,10])
-
-	plt.show()
+	#plt.plot(year, Sgrad[:,9]); plt.plot(year, Sgrad[:,10]); plt.show()
 
 	
 
@@ -2894,6 +2902,250 @@ if regressions:
 
 
 
+regressionsIPO = True
+
+if regressionsIPO:
+
+
+
+	# TPI_unfiltered_PSL, TPI_filtered_PSL
+
+	from TPI import TPI_unfiltered_PSL as IPO
+
+
+
+	path = '/home/michael/Documents/data/slopeCurrent/0_779_y1/'
+
+	grid = Grid_PAS(PASDIR)
+
+	bathy = grid.bathy
+
+	
+
+	# Which surface field?
+
+	#fname = 'wk.npy'; title = 'Ekman'
+
+	#fname = 'FWflx.npy'; title = 'FWflx'
+
+	#fname = 'SHIfwFlx.npy'; title = 'SHIfwFlx'
+
+	fname = 'SIconv';
+
+	
+
+	#==
+
+	
+
+	if fname == 'SIconv':
+
+		# https://mitgcm.readthedocs.io/en/latest/phys_pkgs/seaice.html
+
+		heff = np.load(path+'SIheff.npy'); title = 'SI heff conv' # * grid.RAC
+
+		#hsnow = np.load(path+'SIhsnow.npy'); title = 'SI hsnow conv'
+
+		u = np.load(path+'SIu.npy')
+
+		v = np.load(path+'SIv.npy')
+
+		data = - tools.ddx(u*heff, grid.DXG) - tools.ddy(v*heff, grid.DYG)
+
+		# POS IPO correlates with sea-ice convergence in region of interest.
+
+		# Sea-ice conv. implies larger FW flux.
+
+		# I've linked larger FW fluxes with low baroclinicity.
+
+	else:
+
+		data = np.load(path+fname)
+
+	
+
+	start = 24*12 + 5*12; end=-11
+
+	data = data[start:end]	
+
+	
+
+	# IPO data is 1970-2017. 
+
+	# Default start/end is Feb 1984 - Jan 2019
+
+	IPO_start = 14*12+1; IPO_end = None
+
+	IPO = np.array(IPO[IPO_start:IPO_end])
+
+	
+
+	t = np.load(path+'PAS_time.npy')
+
+	t = t[start:end]
+
+	year = PAS_tools.getDecimalTime(t)
+
+	
+
+	latsi = grid.getIndexFromLat(EASlats); lonsi = grid.getIndexFromLon(EASlons)
+
+	bathy = tools.getSubregionXY(bathy, latsi, lonsi)
+
+	X = grid.Xsubr1D(EASlons)
+
+	Y = grid.Ysubr1D(EASlats)
+
+			
+
+	try:
+
+		data = tools.getSubregionXY(data, latsi, lonsi)
+
+		data = ptt.maskBathyXY(data, grid, 0, timeDep=True, subregion=True, lons=lonsi, lats=latsi)
+
+	except:
+
+		data = ptt.maskBathyXY(data, grid, 0, timeDep=True, subregion=True, lons=lonsi, lats=latsi)
+
+
+
+	nn = 60
+
+	data = PAS_tools.windowAv(data, n=nn)[nn//2:-nn//2+1]
+
+	year = year[nn//2:-nn//2+1]
+
+	IPO = PAS_tools.windowAv(IPO, n=nn)[nn//2:-nn//2+1]
+
+	#IPO = IPO[nn//2:-nn//2+1]
+
+	nt, ny, nx = data.shape	
+
+	
+
+	nl2 = int(0); nl = 2*nl2 + 1
+
+	lags = np.linspace(-nl2,nl2,nl)
+
+	vmin2 = -nl2; vmax2 = nl2
+
+	
+
+	nt = len(IPO); t = np.linspace(0,nt,nt)
+
+	IPO = PAS_tools.detrend(IPO, tin=t)
+
+	#plt.plot(year, IPO); plt.grid(); plt.show(); quit()
+
+	
+
+	if nl2 > 0:
+
+		# Correlation for range of lags
+
+		corr = np.zeros((nl, ny, nx))
+
+		for j in range(0,ny):
+
+			print(j)
+
+			for i in range(nx):
+
+				tmp = PAS_tools.detrend(data[:,j,i], tin=t)
+
+				corr[:,j,i] = PAS_tools.crossCorr(tmp, IPO, nl, nl2, P_VALUE=False)
+
+				 
+
+		corrmax = np.max(corr, axis=0)
+
+		corrmin = np.min(corr, axis=0)
+
+		data = np.where(corrmax>np.abs(corrmin), corrmax, corrmin)
+
+				
+
+		argmax = np.argmax(corr, axis=0)
+
+		argmin = np.argmin(corr, axis=0)
+
+		arg = lags[np.where(corrmax>np.abs(corrmin), argmax, argmin)]
+
+		
+
+		data = ptt.maskBathyXY(data, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+		#data = ptt.maskDraftXY(data, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+		arg = ptt.maskBathyXY(arg, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+		#arg = ptt.maskDraftXY(arg, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+		
+
+		#vmax = np.max(np.abs(data)); vmin = -vmax
+
+		vmax = 1.
+
+		vmin = [-vmax, vmin2-.5]; vmax = [vmax, vmax2+.5]
+
+		
+
+		titles = ['Largest corr: ' + title, 'Lag (months)']
+
+		cmaps = ['bwr', 'jet']
+
+		
+
+		#ymin = min(Y); ymax = max(Y)
+
+		#yscale = ymax - ymin
+
+		#vline1 = [X[iw], (slope_y[iw]-0-ymin)/yscale, (slope_y[iw]+1-ymin)/yscale]
+
+		#vline2 = [X[ie], (slope_y[ie]-0-ymin)/yscale, (slope_y[ie]+1-ymin)/yscale]
+
+		#vlines = [[vline1, vline2], [vline1, vline2]]
+
+		
+
+		pt.plot1by2([data, arg], X=[X,X], Y=[Y,Y], contour=[bathy,bathy], contourlevels=[[-1000],[-1000]], contourfNlevels=[11,14], titles=titles, cmaps=cmaps, vmin=vmin, vmax=vmax)
+
+	
+
+	else:
+
+	
+
+		corr = np.zeros((ny, nx))
+
+		for j in range(0,ny):
+
+			for i in range(nx):
+
+				tmp = PAS_tools.detrend(data[:,j,i], tin=t)
+
+				corr[j,i] = PAS_tools.pearson(tmp, IPO)
+
+			
+
+		title = 'corr[IPO, ' + title + ']'
+
+		pt.plot1by1(corr, X=X, Y=Y, contour=bathy, contourlevels=[-1000], contourfNlevels=11, title=title)
+
+	
+
+	#==
+
+	
+
+
+
+#==
+
+
+
 isotherm = False 
 
 if isotherm:
@@ -3082,7 +3334,7 @@ if isotherm:
 
 
 
-allIsotherms = True
+allIsotherms = False
 
 if allIsotherms:
 
