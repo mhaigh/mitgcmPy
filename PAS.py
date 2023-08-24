@@ -1168,19 +1168,59 @@ if onShelfWindCurl:
 
 # Save 2D files such as vertical Ekman, sea ice area, and surface freshwater fluxes. 
 
-save2Dfiles = False
+save2Dfiles = True
 
 if save2Dfiles:
 
 	
 
+	SIfile = 'SIarea'; SIufile = 'SIuice'; SIvfile = 'SIvice'
+
+	SIhefffile = 'SIheff'; SIhsnowfile = 'SIhsnow'
+
+	FWflxfile = 'oceFWflx'; SHIfwFlxfile = 'SHIfwFlx'
+
+	oceQnetfile = 'oceQnet'
+
+	
+
+	EXFuwindile = 'EXFuwind'; EXFvwindfile = 'EXFvwind'
+
+	EXFpressfile = 'EXFpress'; EXFatempfile = 'EXFatemp'
+
+	EXFprecifile = 'EXFpreci'; EXFrofffile = 'EXFroff'
+
+	EXFswdnfile = 'EXFswdn '; EXFlwdnfile = 'EXFlwdn'; EXFaqhfile = 'EXFaqh'
+
+	
+
+	fnames = [EXFuwindile, EXFvwindfile, EXFpressfile, EXFatempfile, EXFprecifile, EXFrofffile, EXFswdnfile, EXFlwdnfile, EXFaqhfile]
+
+
+
+	for fname in fnames:
+
+		data = readVariable(fname, PASDIR, file_format='nc', meta=False, var2D=True)
+
+		np.save(fname+'.npy', np.ma.filled(SHIfwFlx, fill_value=np.nan))
+
+		
+
+	quit()
+
+	
+
+#==
+
+
+
+saveEkman = False
+
+if saveEkman:
+
+
+
 	ustressfile = 'oceTAUX'; vstressfile = 'oceTAUY'
-
-	SIfile = 'SIarea'; FWflxfile = 'oceFWflx'
-
-	SHIfwFlxfile = 'SHIfwFlx'
-
-
 
 	grid = Grid_PAS(PASDIR)
 
@@ -1204,31 +1244,15 @@ if save2Dfiles:
 
 	wk = curl / (rho0 * f)
 
-
-
-	# Sea ice area and FW flux.
-
-	SI = readVariable(SIfile, PASDIR, file_format='nc', meta=False, var2D=True)
-
-	FWflx = readVariable(FWflxfile, PASDIR, file_format='nc', meta=False, var2D=True)
-
-	SHIfwFlx = readVariable(SHIfwFlxfile, PASDIR, file_format='nc', meta=False, var2D=True)
-
-
+	
 
 	np.save('wk', np.ma.filled(wk, fill_value=np.nan))
 
-	np.save('SI', np.ma.filled(SI, fill_value=np.nan))
-
-	np.save('FWflx', np.ma.filled(FWflx, fill_value=np.nan))
-
-	np.save('SHIfwFlx', np.ma.filled(SHIfwFlx, fill_value=np.nan))
-
-		
+	
 
 	quit()
 
-
+	
 
 #==
 
@@ -2198,13 +2222,19 @@ if readAllSlopeFiles:
 
 
 
-
-
-plotZ_ST = True
+plotZ_ST = False
 
 if plotZ_ST:
 
 
+
+	from TPI import TPI_unfiltered_PSL as IPO
+
+	IPO_start = 14*12+1; IPO_end = None
+
+	IPO = np.array(IPO[IPO_start:IPO_end])
+
+	
 
 	grid = Grid_PAS(PASDIR)
 
@@ -2242,7 +2272,7 @@ if plotZ_ST:
 
 	X = grid.Xsubr1D(grid.getIndexFromLon(EASlons))
 
-	zs = [0, -400]; zz = grid.getIndexFromDepth(zs)
+	zs = [0, -600]; zz = grid.getIndexFromDepth(zs)
 
 	Z = grid.RC.squeeze()[zz[0]:zz[1]]
 
@@ -2270,13 +2300,13 @@ if plotZ_ST:
 
 	Sgrad = PAS_tools.windowAv(Sgrad[:,zz[0]:zz[1]], n=nn)[nn//2:-nn//2+1]
 
-
+	
 
 	Sgrad = PAS_tools.demean(Sgrad)
 
 	#Sgrad = PAS_tools.desurf(Sgrad, axis=1)
 
-	
+
 
 	t = t[nn//2:-nn//2+1]
 
@@ -2288,19 +2318,29 @@ if plotZ_ST:
 
 
 
+	IPO = PAS_tools.windowAv(IPO, n=nn)[nn//2:-nn//2+1]
+
+	IPO = PAS_tools.detrend(IPO, tin=t)
+
+	
+
 	#==
 
 
 
-	pt.plot1by1(Sgrad.T, X=year, Y=Z)
+	pt.plot1by1(Sgrad.T, X=year, Y=Z, title='Cross-slope pressure gradient', xlabel='Time', ylabel='depth')
 
 	
 
 	if fname == 'Sgrad.npy':
 
-		for i in range(1, len(dZ)):
+		for zi in range(1, len(dZ)):
 
-			plt.plot(year, np.sum(Sgrad[:,:i]*dZ[:i], axis=1), label='level = ' + str(i))
+			plt.plot(year, np.sum(Sgrad[:,:zi]*dZ[:zi], axis=1), label='depth=' + str(Z[zi]) + 'm')
+
+			plt.legend()
+
+			plt.show()
 
 	else:
 
@@ -2308,17 +2348,45 @@ if plotZ_ST:
 
 		Sgrad = PAS_tools.desurf(Sgrad, axis=1)
 
-		for i in range(12, len(dZ)):
+		#for i in range(12, len(dZ)):
 
-			plt.plot(year, PAS_tools.detrend(Sgrad[:,i],None), label='level=' + str(i) + ', depth=' + str(Z[i]) + 'm')
+		#	plt.plot(year, PAS_tools.detrend(Sgrad[:,i],None), label='level=' + str(i) + ', depth=' + str(Z[i]) + 'm')
 
-			plt.legend(); plt.show()
+		#	plt.legend(); plt.show()
 
-	
+		
+
+		zs = [0,2,5,9,11,12,13,14,15,16]
+
+		#zs = [9,11,12,13,14,15]
+
+		tmp_max = 0
+
+		for zi in zs:
+
+			tmp = PAS_tools.detrend(Sgrad[:,zi],None); ylabel = 'PGF'
+
+			#tmp = Z[zi]+1.e7*tmp; ylabel = '1.e7 * PGF + depth'
+
+			corr = np.round(PAS_tools.pearson(tmp, IPO), 3)
+
+			label = 'depth=' + str(Z[zi]) + 'm, corr='+str(corr)
+
+			plt.plot(year, tmp, label=label)
+
+			tmp_max = max(tmp_max, np.max(np.abs(tmp)))
+
+		plt.title('Cross-slope pressure gradient')
+
+		plt.ylabel(ylabel)
+
+		plt.plot(year, tmp_max*IPO/np.max(np.abs(IPO)), 'k--', label='IPO')
+
+		plt.grid(); plt.legend()
+
+		plt.show()
 
 	#plt.plot(year, Sgrad[:,9]); plt.plot(year, Sgrad[:,10]); plt.show()
-
-	
 
 	
 
@@ -2902,7 +2970,7 @@ if regressions:
 
 
 
-regressionsIPO = True
+regressionsIPO = False
 
 if regressionsIPO:
 
@@ -3138,7 +3206,225 @@ if regressionsIPO:
 
 	#==
 
+
+
+#==
+
+
+
+compositeIPO = False
+
+if compositeIPO:
+
+
+
+	# TPI_unfiltered_PSL, TPI_filtered_PSL
+
+	from TPI import TPI_unfiltered_PSL as IPO
+
+
+
+	path = '/home/michael/Documents/data/slopeCurrent/0_779_y1/'
+
+	grid = Grid_PAS(PASDIR)
+
+	bathy = grid.bathy
+
 	
+
+	# Which surface field?
+
+	#fname = 'wk.npy'; title = 'Ekman'; vmax1 = 2.e-6; vmax2 = vmax1
+
+	#fname = 'FWflx.npy'; title = 'FWflx'; vmax1 = 1.e-5; vmax2 = 1.e-5#4.e-6
+
+	#fname = 'SHIfwFlx.npy'; title = 'SHIfwFlx'
+
+	fname = 'SIconv'; vmax1 = 2.e-1; vmax2 = vmax1
+
+	
+
+	#==
+
+	
+
+	if fname == 'SIconv':
+
+		# https://mitgcm.readthedocs.io/en/latest/phys_pkgs/seaice.html
+
+		SI = np.load(path+'SIheff.npy') * grid.RAC * np.load(path+'SI.npy'); title = 'SI heff conv' # 
+
+		SI = np.load(path+'SIhsnow.npy') * grid.RAC; title = 'SI hsnow conv'
+
+		u = np.load(path+'SIu.npy')*SI
+
+		v = np.load(path+'SIv.npy')*SI
+
+		del SI
+
+		data = - tools.ddx(u, grid.DXG) - tools.ddy(v, grid.DYG)
+
+		# POS IPO correlates with sea-ice convergence in region of interest.
+
+		# Sea-ice conv. implies larger FW flux.
+
+		# I've linked larger FW fluxes with low baroclinicity.
+
+	else:
+
+		data = np.load(path+fname)
+
+	
+
+	start = 24*12 + 5*12; end = -11
+
+	data = data[start:end]	
+
+	
+
+	# IPO data is 1970-2017. 
+
+	# Default start/end is Feb 1984 - Jan 2019
+
+	IPO_start = 14*12+1; IPO_end = None
+
+	IPO = np.array(IPO[IPO_start:IPO_end])
+
+	
+
+	t = np.load(path+'PAS_time.npy')
+
+	t = t[start:end]
+
+	year = PAS_tools.getDecimalTime(t)
+
+	
+
+	latsi = grid.getIndexFromLat(EASlats); lonsi = grid.getIndexFromLon(EASlons)
+
+	bathy = tools.getSubregionXY(bathy, latsi, lonsi)
+
+	X = grid.Xsubr1D(EASlons)
+
+	Y = grid.Ysubr1D(EASlats)
+
+			
+
+	try:
+
+		data = tools.getSubregionXY(data, latsi, lonsi)
+
+		data = ptt.maskBathyXY(data, grid, 0, timeDep=True, subregion=True, lons=lonsi, lats=latsi)
+
+	except:
+
+		data = ptt.maskBathyXY(data, grid, 0, timeDep=True, subregion=True, lons=lonsi, lats=latsi)
+
+
+
+	nn = 60
+
+	data = PAS_tools.windowAv(data, n=nn)[nn//2:-nn//2+1]
+
+	nt, ny, nx = data.shape
+
+		
+
+	data = PAS_tools.demean(data)
+
+	data = PAS_tools.detrendXY(data, None)
+
+	
+
+	year = year[nn//2:-nn//2+1]
+
+	IPO = PAS_tools.windowAv(IPO, n=nn)[nn//2:-nn//2+1]
+
+	IPO = PAS_tools.detrend(IPO, None)
+
+	IPO = PAS_tools.demean(IPO)
+
+	
+
+	std = np.mean(IPO**2)**0.5
+
+
+
+	plt.plot(year, IPO); plt.grid(); plt.show()
+
+
+
+	compPos = np.zeros((ny, nx)); nPos = 0
+
+	compNeg = np.zeros((ny, nx)); nNeg = 0
+
+	for ti in range(nt):
+
+		if IPO[ti] > std:
+
+			compPos	+= data[ti]
+
+			nPos += 1
+
+		elif IPO[ti] < -std:
+
+			compNeg += data[ti]
+
+			nNeg +=1
+
+			
+
+	compPos /= nPos
+
+	compNeg /= nNeg
+
+	
+
+	#==
+
+	
+
+	d = 1.e-9
+
+	compPos = tools.boundData(compPos, -vmax1, vmax1, d=d)
+
+	compNeg = tools.boundData(compNeg, -vmax2, vmax2, d=d)
+
+	compPos = ptt.maskBathyXY(compPos, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+	compNeg = ptt.maskBathyXY(compNeg, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+	compPos = ptt.maskDraftXY(compPos, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+	compNeg = ptt.maskDraftXY(compNeg, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+	
+
+	contour = [bathy, bathy]
+
+	contourlevels = [[-1000], [-1000]]
+
+	
+
+	vmin = [-vmax1, -vmax2]; vmax = [vmax1, vmax2]
+
+	titles = ['composite(IPO pos, '+title+')', 'composite(IPO neg, '+title+')']
+
+	
+
+	X = [X, X]; Y = [Y, Y]
+
+	
+
+	pt.plot1by2([compPos, compNeg], X=X, Y=Y, vmin=vmin, vmax=vmax, titles=titles, cmaps='bwr', contour=contour, contourlevels=contourlevels)
+
+	
+
+	quit()
+
+	
+
+	#==
 
 
 
