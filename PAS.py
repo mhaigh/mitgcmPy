@@ -1168,7 +1168,7 @@ if onShelfWindCurl:
 
 # Save 2D files such as vertical Ekman, sea ice area, and surface freshwater fluxes. 
 
-save2Dfiles = True
+save2Dfiles = False
 
 if save2Dfiles:
 
@@ -1282,9 +1282,9 @@ if readSlopeUVfile:
 
 	
 
-	uvfile = 'slope_uv_av.npy'
+	uvfile = 'slope_uv_max.npy'
 
-	surfuvfile = 'surf_uv_max.npy'
+	surfuvfile = 'surf_uv_av.npy'
 
 	timefile = 'PAS_time.npy'
 
@@ -1348,9 +1348,9 @@ if readSlopeUVfile:
 
 	
 
-	plotSections = ['westGetz', 'westPITW', 'westPITE']
+	#plotSections = ['westGetz', 'westPITW', 'westPITE']
 
-	#plotSections = ['westPITW']
+	plotSections = ['westPITW', 'westPITE']
 
 
 
@@ -1476,10 +1476,6 @@ if readSlopeUVfile:
 
 		
 
-		quit()
-
-				
-
 		# Plot correlations for velocities averaged with range of running mean windows.
 
 		wis = [0,12,18,60]
@@ -1570,9 +1566,27 @@ if readSlopeUVfile:
 
 		
 
+		from TPI import TPI_unfiltered_PSL as IPO
+
+		IPO_start = 14*12+1; IPO_end = None
+
+		IPO = np.array(IPO[IPO_start:IPO_end])
+
+		IPO = PAS_tools.windowAv(IPO, n=nn)[nn//2:-nn//2+1]
+
+		IPO /= 100*np.max(np.abs(IPO))
+
+		
+
+		plt.figure(figsize=(8,3))
+
+		plt.subplot(121)
+
 		plt.plot(year, uv_mean, label='Deep along-slope flow', color='r')
 
-		plt.plot(year, surf_uv_mean, label='Surface along-slope flow', color='k')		
+		plt.plot(year, surf_uv_mean, label='Surface along-slope flow', color='k')
+
+		plt.plot(year, IPO, '--k', label='IPO')				
 
 		#plt.plot(year_[ys_:ye_], uv_mean[ys_:ye_], label='Deep along-slope flow')
 
@@ -1582,9 +1596,17 @@ if readSlopeUVfile:
 
 		#plt.ylim(0, 0.15)
 
-		plt.grid()
+		plt.grid();	plt.legend()
 
-		plt.legend()
+	
+
+		plt.subplot(122)
+
+		plt.plot((window_lengths-1)/12, corrw);  plt.xlabel('running mean window size (years)')
+
+		plt.title('corr(u,v) vs running mean window size'); plt.grid()
+
+		
 
 		plt.show()
 
@@ -3234,15 +3256,27 @@ if compositeIPO:
 
 	# Which surface field?
 
-	#fname = 'wk.npy'; title = 'Ekman'; vmax1 = 2.e-6; vmax2 = vmax1
+	fname = 'wk.npy'; title = 'Ekman (m/s)'; vmax1 = 2.e-6; vmax2 = vmax1
 
-	#fname = 'FWflx.npy'; title = 'FWflx'; vmax1 = 1.e-5; vmax2 = 1.e-5#4.e-6
+	#fname = 'FWflx.npy'; title = 'FWflx (kg/m^2/s)'; vmax1 = 1.e-5; vmax2 = 1.e-5#4.e-6
 
 	#fname = 'SHIfwFlx.npy'; title = 'SHIfwFlx'
 
-	fname = 'SIconv'; vmax1 = 2.e-1; vmax2 = vmax1
+	#fname = 'SIconv'; vmax1 = 2.e-1; vmax2 = vmax1
 
-	
+	#fname = 'EXFpreci.npy'; title = 'EXFpreci (m/s)'; vmax1 = 8.e-10; vmax2 = vmax1
+
+	#fname = 'EXFatemp.npy'; title = 'EXFatemp (degK)'; vmax1 = 3.e-1; vmax2 = vmax1  
+
+	#fname = 'EXFlwdn.npy'; title = 'EXFlwdn (W/m^2)'; vmax1 = 2.e0; vmax2 = vmax1    
+
+	#fname = 'EXFswdn.npy'; title = 'EXFswdn (W/m^2)'; vmax1 = 2.e0; vmax2 = vmax1
+
+	#fname = 'EXFpress.npy'; title = 'EXFpress (N/m^2)'; vmax1 = 4.e1; vmax2 = 1.5e2    
+
+	#fname = 'EXFroff.npy'; title = 'EXFroff (m/s)'; vmax1 = 1.e-56; vmax2 = vmax1
+
+
 
 	#==
 
@@ -3254,7 +3288,7 @@ if compositeIPO:
 
 		SI = np.load(path+'SIheff.npy') * grid.RAC * np.load(path+'SI.npy'); title = 'SI heff conv' # 
 
-		SI = np.load(path+'SIhsnow.npy') * grid.RAC; title = 'SI hsnow conv'
+		#SI = np.load(path+'SIhsnow.npy') * grid.RAC; title = 'SI hsnow conv'
 
 		u = np.load(path+'SIu.npy')*SI
 
@@ -3273,6 +3307,12 @@ if compositeIPO:
 	else:
 
 		data = np.load(path+fname)
+
+		
+
+	#data = PAS_tools.demean(data)
+
+	#pt.plot1by1(data[400], vmin=-vmax1, vmax=vmax1); quit()
 
 	
 
@@ -3300,6 +3340,10 @@ if compositeIPO:
 
 	
 
+	EASlons[0] = 230.
+
+	
+
 	latsi = grid.getIndexFromLat(EASlats); lonsi = grid.getIndexFromLon(EASlons)
 
 	bathy = tools.getSubregionXY(bathy, latsi, lonsi)
@@ -3324,21 +3368,37 @@ if compositeIPO:
 
 	nn = 60
 
-	data = PAS_tools.windowAv(data, n=nn)[nn//2:-nn//2+1]
+	WINDOWAV = 1
+
+	if WINDOWAV:
+
+		data = PAS_tools.windowAv(data, n=nn)[nn//2:-nn//2+1]
+
+		year = year[nn//2:-nn//2+1]
+
+		IPO = PAS_tools.windowAv(IPO, n=nn)[nn//2:-nn//2+1]
+
+	else:
+
+		data = data[nn//2:-nn//2+1]
+
+		year = year[nn//2:-nn//2+1]
+
+		IPO = IPO[nn//2:-nn//2+1]
+
+		vmax1 *= .5e1; vmax2 *= .2e1	
+
+	
+
+	
 
 	nt, ny, nx = data.shape
-
-		
 
 	data = PAS_tools.demean(data)
 
 	data = PAS_tools.detrendXY(data, None)
 
 	
-
-	year = year[nn//2:-nn//2+1]
-
-	IPO = PAS_tools.windowAv(IPO, n=nn)[nn//2:-nn//2+1]
 
 	IPO = PAS_tools.detrend(IPO, None)
 
@@ -3416,7 +3476,7 @@ if compositeIPO:
 
 	
 
-	pt.plot1by2([compPos, compNeg], X=X, Y=Y, vmin=vmin, vmax=vmax, titles=titles, cmaps='bwr', contour=contour, contourlevels=contourlevels)
+	pt.plot1by2([compPos, compNeg], X=X, Y=Y, vmin=vmin, vmax=vmax, titles=titles, cmaps='bwr', contour=contour, contourlevels=contourlevels, figsize=(9,3))
 
 	
 
@@ -3425,6 +3485,356 @@ if compositeIPO:
 	
 
 	#==
+
+
+
+#==
+
+
+
+compositeIPOuv = True
+
+if compositeIPOuv:
+
+
+
+	# TPI_unfiltered_PSL, TPI_filtered_PSL
+
+	from TPI import TPI_unfiltered_PSL as IPO
+
+
+
+	path = '/home/michael/Documents/data/slopeCurrent/0_779_y1/'
+
+	grid = Grid_PAS(PASDIR)
+
+	bathy = grid.bathy
+
+	
+
+	# Which surface field?
+
+	fname = 'wk.npy'; title1 = 'Ekman (m/s)'; vmax1 = 2.e-6; vmax2 = vmax1
+
+	#fname = 'FWflx.npy'; title1 = 'FWflx (kg/m^2/s)'; vmax1 = 1.e-5; vmax2 = 1.e-5#4.e-6
+
+	#fname = 'SHIfwFlx.npy'; title1 = 'SHIfwFlx'
+
+	#fname = 'SIconv'; vmax1 = 2.e-1; vmax2 = vmax1
+
+	#fname = 'EXFpreci.npy'; title1 = 'EXFpreci (m/s)'; vmax1 = 8.e-10; vmax2 = vmax1
+
+	#fname = 'EXFatemp.npy'; title1 = 'EXFatemp (degK)'; vmax1 = 3.e-1; vmax2 = vmax1  
+
+	#fname = 'EXFlwdn.npy'; title1 = 'EXFlwdn (W/m^2)'; vmax1 = 2.e0; vmax2 = vmax1    
+
+	#fname = 'EXFswdn.npy'; title1 = 'EXFswdn (W/m^2)'; vmax1 = 2.e0; vmax2 = vmax1
+
+	#fname = 'EXFpress.npy'; title1 = 'EXFpress (N/m^2)'; vmax1 = 4.e1; vmax2 = 1.5e2    
+
+	#fname = 'EXFroff.npy'; title1 = 'EXFroff (m/s)'; vmax1 = 1.e-56; vmax2 = vmax1
+
+	
+
+	#==
+
+	
+
+	if fname == 'SIconv':
+
+		# https://mitgcm.readthedocs.io/en/latest/phys_pkgs/seaice.html
+
+		SI = np.load(path+'SIheff.npy'); title = 'SI heff conv' # 
+
+		#SI = np.load(path+'SIhsnow.npy') * grid.RAC; title1 = 'SI hsnow conv'
+
+		u = np.load(path+'SIu.npy')
+
+		v = np.load(path+'SIv.npy')
+
+		del SI
+
+		data = - tools.ddx(u*SI, grid.DXG) - tools.ddy(v*SI, grid.DYG)
+
+		# POS IPO correlates with sea-ice convergence in region of interest.
+
+		# Sea-ice conv. implies larger FW flux.
+
+		# I've linked larger FW fluxes with low baroclinicity.
+
+	else:
+
+		u = np.load(path+'EXFuwind.npy'); v = np.load(path+'EXFvwind.npy'); umax = 6.; title2 = 'EXFwind'; qs = 0.2; scale = 4.
+
+		#u = np.load(path+'SIu.npy'); v = np.load(path+'SIv.npy'); umax = 6.; title2 = 'SI vel.'; qs = 0.1; scale = 1.
+
+		#u = np.load(path+'oceTAUY.npy'); v = np.load(path+'oceTAUY.npy'); umax = 1.e-2; title2 = 'surf. stress'; qs = 1.e-1; scale = 10
+
+		data = np.load(path+fname)
+
+		
+
+	#data = PAS_tools.demean(data)
+
+	#pt.plot1by1(data[400]); quit()
+
+	
+
+	start = 24*12 + 5*12; end = -11
+
+	data = data[start:end]	
+
+	u = u[start:end]
+
+	v = v[start:end]
+
+	
+
+	# IPO data is 1970-2017. 
+
+	# Default start/end is Feb 1984 - Jan 2019
+
+	IPO_start = 14*12+1; IPO_end = None
+
+	IPO = np.array(IPO[IPO_start:IPO_end])
+
+	
+
+	t = np.load(path+'PAS_time.npy')
+
+	t = t[start:end]
+
+	year = PAS_tools.getDecimalTime(t)
+
+	
+
+	EASlons[0] = 230.
+
+	
+
+	latsi = grid.getIndexFromLat(EASlats); lonsi = grid.getIndexFromLon(EASlons)
+
+	bathy = tools.getSubregionXY(bathy, latsi, lonsi)
+
+	#X1D = grid.Xsubr1D(EASlons)
+
+	#Y1D = grid.Ysubr1D(EASlats)
+
+	X, Y = grid.XYsubr(EASlons, EASlats)
+
+			
+
+	try:
+
+		data = tools.getSubregionXY(data, latsi, lonsi)
+
+		u = tools.getSubregionXY(u, latsi, lonsi)
+
+		v = tools.getSubregionXY(v, latsi, lonsi)
+
+		data = ptt.maskBathyXY(data, grid, 0, timeDep=True, subregion=True, lons=lonsi, lats=latsi)
+
+	except:
+
+		data = ptt.maskBathyXY(data, grid, 0, timeDep=True, subregion=True, lons=lonsi, lats=latsi)
+
+	
+
+	nn = 60
+
+	data = PAS_tools.windowAv(data, n=nn)[nn//2:-nn//2+1]
+
+	u = PAS_tools.windowAv(u, n=nn)[nn//2:-nn//2+1]
+
+	v = PAS_tools.windowAv(v, n=nn)[nn//2:-nn//2+1]
+
+	nt, ny, nx = data.shape
+
+	
+
+	data = PAS_tools.demean(data)
+
+	data = PAS_tools.detrendXY(data, None)
+
+	u = PAS_tools.demean(u)
+
+	u = PAS_tools.detrendXY(u, None)
+
+	v = PAS_tools.demean(v)
+
+	v = PAS_tools.detrendXY(v, None)
+
+
+
+	year = year[nn//2:-nn//2+1]
+
+	IPO = PAS_tools.windowAv(IPO, n=nn)[nn//2:-nn//2+1]
+
+	IPO = PAS_tools.detrend(IPO, None)
+
+	IPO = PAS_tools.demean(IPO)
+
+	
+
+	std = np.mean(IPO**2)**0.5
+
+
+
+	plt.plot(year, IPO); plt.grid(); plt.show()
+
+
+
+	compPos = np.zeros((ny, nx)); nPos = 0
+
+	compNeg = np.zeros((ny, nx)); nNeg = 0
+
+	ucompPos = np.zeros((ny, nx)); ucompNeg = np.zeros((ny, nx))
+
+	vcompPos = np.zeros((ny, nx)); vcompNeg = np.zeros((ny, nx))
+
+	
+
+	print(u.shape)
+
+	print(v.shape)
+
+	print(ucompPos.shape)
+
+	for ti in range(nt):
+
+		if IPO[ti] > std:
+
+			compPos	+= data[ti]
+
+			ucompPos += u[ti]
+
+			vcompPos += v[ti]
+
+			nPos += 1
+
+		elif IPO[ti] < -std:
+
+			compNeg += data[ti]
+
+			ucompNeg += u[ti]
+
+			vcompNeg += v[ti]
+
+			nNeg +=1
+
+			
+
+	compPos /= nPos; compNeg /= nNeg
+
+	ucompPos /= nPos; ucompNeg /= nNeg
+
+	vcompPos /= nPos; vcompNeg /= nNeg
+
+	
+
+	#==
+
+	
+
+	d = 1.e-9
+
+	compPos = tools.boundData(compPos, -vmax1, vmax1, d=d)
+
+	compNeg = tools.boundData(compNeg, -vmax2, vmax2, d=d)
+
+	compPos = ptt.maskBathyXY(compPos, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+	compNeg = ptt.maskBathyXY(compNeg, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+	compPos = ptt.maskDraftXY(compPos, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+	compNeg = ptt.maskDraftXY(compNeg, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+	
+
+	ucompPos = tools.boundData(ucompPos, -umax, umax, d=d)
+
+	ucompNeg = tools.boundData(ucompNeg, -umax, umax, d=d)
+
+	ucompPos = ptt.maskBathyXY(ucompPos, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+	ucompNeg = ptt.maskBathyXY(ucompNeg, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+	ucompPos = ptt.maskDraftXY(ucompPos, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+	ucompNeg = ptt.maskDraftXY(ucompNeg, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+	
+
+	vcompPos = tools.boundData(vcompPos, -umax, umax, d=d)
+
+	vcompNeg = tools.boundData(vcompNeg, -umax, umax, d=d)
+
+	vcompPos = ptt.maskBathyXY(vcompPos, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+	vcompNeg = ptt.maskBathyXY(vcompNeg, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+	vcompPos = ptt.maskDraftXY(vcompPos, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+	vcompNeg = ptt.maskDraftXY(vcompNeg, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+	
+
+	#==
+
+	
+
+	contour = [bathy, bathy]
+
+	contourLevels = [[-1000], [-1000]]
+
+	contourf = [compPos, compNeg]
+
+	XX = [X, X]; YY = [Y, Y]
+
+	vmin = [-vmax1, -vmax2]; vmax = [vmax1, vmax2]
+
+	
+
+	vmin = [-vmax1, -vmax2]; vmax = [vmax1, vmax2]
+
+	titles = ['composite(IPO pos, '+title1+'); ' + title2, 'composite(IPO neg, '+title1+'); ' + title2]
+
+	
+
+	d = 12
+
+	ucompPos = ucompPos[::d, ::d]; ucompNeg = ucompNeg[::d, ::d]
+
+	vcompPos = vcompPos[::d, ::d]; vcompNeg = vcompNeg[::d, ::d]
+
+	Xd = X[::d, ::d]; Yd = Y[::d, ::d]
+
+	qs = [qs, qs]
+
+	
+
+	u = [ucompPos, ucompNeg]; v = [vcompPos, vcompNeg]
+
+	Xd = [Xd, Xd]; Yd = [Yd, Yd]
+
+	
+
+	pt.quiver1byN(u, v, Xd, Yd, contourf=contourf, X=XX, Y=YY, vmin=vmin, vmax=vmax, contourfNlevels=13, cmap='bwr', contour=contour, contourLevels=contourLevels, scale=scale, title=titles, fontsize=7, qs=qs)
+
+	
+
+	Ny2 = len(Y[:,0])//2; Nx2 = len(X[0,:])//2
+
+	lat_0=Y[Ny2,0]; lon_0=X[0,Nx2]
+
+	
+
+	pt.quiver1by2Basemap(u, v, Xd, Yd, lat_0, lon_0, X=XX, Y=YY, contourf=contourf, vmin=vmin, vmax=vmax, contourfNlevels=13, scale=scale, contour=contour, contourLevels=contourLevels, title=titles, fontsize=7, qs=qs)
+
+	
+
+	quit()
 
 
 
