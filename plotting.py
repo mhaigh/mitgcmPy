@@ -592,7 +592,7 @@ def quiver1by1(u, v, Xd, Yd, scale=1, C=None, ccmap='bwr', contour=None, X=None,
 
 
 
-def quiver1byN(u, v, Xd, Yd, C=None, ccmap='bwr', contourf=None, contourfNlevels=9, X=None, Y=None, mesh=False, contour=None, contourLevels=None, figsize=None, title=None, fontsize=14, cmap='jet', vmin=None, vmax=None, xlabel=None, ylabel=None, save=False, outpath='', outname='quiver1byN.png', show=True, dpi=200, text_data=None, width_ratios=None, labelData=None, cbar=True, grid=True, xticks=None, xticksvis=True, yticks=None, yticksvis=True, scale=2):
+def quiver1byN(u, v, Xd, Yd, C=None, ccmap='bwr', contourf=None, contourfNlevels=9, X=None, Y=None, mesh=False, contour=None, contourLevels=None, figsize=None, title=None, fontsize=14, cmap='jet', vmin=None, vmax=None, xlabel=None, ylabel=None, save=False, outpath='', outname='quiver1byN.png', show=True, dpi=200, text_data=None, width_ratios=None, labelData=None, cbar=True, grid=True, xticks=None, xticksvis=True, yticks=None, yticksvis=True, scale=2, qs=0.1, qunits='m/s'):
 
 
 
@@ -644,7 +644,13 @@ def quiver1byN(u, v, Xd, Yd, C=None, ccmap='bwr', contourf=None, contourfNlevels
 
 	ylabel = makeList(ylabel, N)
 
+	
 
+	qs = makeList(qs, N)
+
+	scale = makeList(scale, N)
+
+	
 
 	if figsize is None:
 
@@ -724,7 +730,7 @@ def quiver1byN(u, v, Xd, Yd, C=None, ccmap='bwr', contourf=None, contourfNlevels
 
 		if C is not None:
 
-			cax = ax.quiver(Xd[pi], Yd[pi], u[pi], v[pi], C[pi], cmap=ccmap, scale=scale)
+			cax = ax.quiver(Xd[pi], Yd[pi], u[pi], v[pi], C[pi], cmap=ccmap, scale=scale[pi])
 
 			if width_ratios is None:
 
@@ -732,9 +738,9 @@ def quiver1byN(u, v, Xd, Yd, C=None, ccmap='bwr', contourf=None, contourfNlevels
 
 		else:
 
-			cax = plt.quiver(Xd[pi], Yd[pi], u[pi], v[pi], scale=scale)
+			cax = plt.quiver(Xd[pi], Yd[pi], u[pi], v[pi], scale=scale[pi])
 
-		ax.quiverkey(cax, 0.12, 0.03, .1, '0.1 m/s', labelpos='N', coordinates='axes')
+		ax.quiverkey(cax, 0.15, 0.03, qs[pi], str(qs[pi]) + ' ' + qunits, labelpos='N', coordinates='axes')
 
 				
 
@@ -796,7 +802,7 @@ def quiver1byN(u, v, Xd, Yd, C=None, ccmap='bwr', contourf=None, contourfNlevels
 
 	if save:
 
-		plt.savefig(outpath + outname)
+		plt.savefig(outpath + outname, bbox_inches="tight")
 
 
 
@@ -1266,7 +1272,7 @@ def quiver1by2(u, v, Xd, Yd, qs=[0.1]*2, C=None, ccmap='bwr', contourf=None, con
 
 
 
-def quiver1by2Basemap(u, v, Xd, Yd, lat_0, lon_0, C=None, ccmap='bwr', contourf=None, contourfNlevels=9, X=None, Y=None, mesh=False, contour=None, contourLevels=None, figsize=(8,3), title=None, fontsize=14, cmap='jet', vmin=None, vmax=None, xlabel=None, ylabel=None, save=False, outpath='', outname='quiver1by2.mp4', show=True, dpi=200, text_data=None, parallels=None, meridians=None, width_ratios=None, labelData=None, isf=[None, None], extend=['neither', 'neither']):
+def quiver1by2Basemap(u, v, Xd, Yd, lat_0, lon_0, C=None, ccmap='bwr', contourf=None, contourfNlevels=9, X=None, Y=None, mesh=False, contour=None, contourLevels=None, figsize=(8,3), title=None, fontsize=14, cmap='bwr', vmin=None, vmax=None, xlabel=None, ylabel=None, save=False, outpath='', outname='quiver1by2.mp4', show=True, dpi=200, text_data=[None]*2, parallels=None, meridians=None, width_ratios=None, labelData=None, isf=[None]*2, extend=['neither', 'neither'], qs=[0.2]*2, scale=1., qunits='m/s'):
 
 	
 
@@ -1340,7 +1346,7 @@ def quiver1by2Basemap(u, v, Xd, Yd, lat_0, lon_0, C=None, ccmap='bwr', contourf=
 
 	if C is not None:
 
-		cax = ax.quiver(Xd0, Yd0, u[0], v[0], C[0], cmap=ccmap, scale=2)
+		cax = ax.quiver(Xd0, Yd0, u[0], v[0], C[0], cmap=ccmap, scale=scale)
 
 		if width_ratios is None:
 
@@ -1348,9 +1354,9 @@ def quiver1by2Basemap(u, v, Xd, Yd, lat_0, lon_0, C=None, ccmap='bwr', contourf=
 
 	else:
 
-		cax = m.quiver(Xd0, Yd0, u[0], v[0], scale=2.5)
+		cax = m.quiver(Xd0, Yd0, u[0], v[0], scale=scale)
 
-	ax.quiverkey(cax, 0.12, 0.03, .2, '0.2 m/s', labelpos='E', coordinates='axes')
+	ax.quiverkey(cax, 0.12, 0.03, qs[0], str(qs[0]) + ' ' + qunits, labelpos='E', coordinates='axes')
 
 			
 
@@ -1442,6 +1448,18 @@ def quiver1by2Basemap(u, v, Xd, Yd, lat_0, lon_0, C=None, ccmap='bwr', contourf=
 
 		plt.colorbar()
 
+		
+
+	if contour is not None:
+
+		if contourLevels is not None:
+
+			m.contour(X0, Y0, contour[1], levels=contourLevels[1], colors='k', linestyles='solid', linewidths=0.4)
+
+		else:
+
+			m.contour(X0, Y0, contour[1], levels=contourLevels[1], colors='k', linestyles='solid', linewidths=0.4)
+
 
 
 	if C is not None:
@@ -1452,9 +1470,9 @@ def quiver1by2Basemap(u, v, Xd, Yd, lat_0, lon_0, C=None, ccmap='bwr', contourf=
 
 	else:
 
-		cax = ax.quiver(Xd0, Yd0, u[1], v[1], scale=2)
+		cax = ax.quiver(Xd0, Yd0, u[1], v[1], scale=scale)
 
-	ax.quiverkey(cax, 0.22, 0.03, .2, '0.2 m/s', labelpos='E', coordinates='axes')
+	ax.quiverkey(cax, 0.22, 0.03, qs[0], str(qs[0]) + ' ' + qunits, labelpos='E', coordinates='axes')
 
 			
 
@@ -1720,7 +1738,7 @@ def PAS_2by2_uvs(u, v, Xd, Yd, C=None, ccmap='bwr', contour=None, X=None, Y=None
 
 
 
-def plot1by2(data, X=[None]*2, Y=[None]*2, contour=[None]*2, contourlevels=[None]*2, figsize=(9,4), titles=[None]*2, fontsize=14, titlefontsize=None, mesh=False, cmaps=['jet']*2, vmin=[None]*2, vmax=[None]*2, text_data=[None]*2, xlabels=[None]*2, ylabels=[None]*2, grid=True, contourfNlevels=9, save=False, outpath='', outname='plot1by2.png', show=True, dpi=200, width_ratios=None, cbar=[True]*2, cbarLabel=[None]*2, xticks=[None]*2, yticks=[None]*2, xticksvis=[True]*2, yticksvis=[True]*2, vlines=[None]*2, patches=[None]*2):
+def plot1by2(data, X=[None]*2, Y=[None]*2, contour=[None]*2, contourlevels=[None]*2, figsize=(9,4), titles=[None]*2, fontsize=14, titlefontsize=None, mesh=False, cmaps=['jet']*2, vmin=[None]*2, vmax=[None]*2, text_data=[None]*2, xlabels=[None]*2, ylabels=[None]*2, grid=True, contourfNlevels=[9]*2, save=False, outpath='', outname='plot1by2.png', show=True, dpi=200, width_ratios=None, cbar=[True]*2, cbarLabel=[None]*2, xticks=[None]*2, yticks=[None]*2, xticksvis=[True]*2, yticksvis=[True]*2, vlines=[None]*2, patches=[None]*2):
 
 	
 
@@ -1730,7 +1748,9 @@ def plot1by2(data, X=[None]*2, Y=[None]*2, contour=[None]*2, contourlevels=[None
 
 	cmaps = makeList(cmaps, 2)
 
-	
+	contourfNlevels = makeList(contourfNlevels, 2)
+
+		
 
 	if titlefontsize is None:
 
@@ -1786,7 +1806,7 @@ def plot1by2(data, X=[None]*2, Y=[None]*2, contour=[None]*2, contourlevels=[None
 
 		else:
 
-			levels = getContourfLevels(vmin[pi], vmax[pi], contourfNlevels)
+			levels = getContourfLevels(vmin[pi], vmax[pi], contourfNlevels[pi])
 
 			if X[pi] is not None and Y[pi] is not None:
 
@@ -1824,9 +1844,23 @@ def plot1by2(data, X=[None]*2, Y=[None]*2, contour=[None]*2, contourlevels=[None
 
 			for vl in vlines[pi]:
 
-				plt.axvline(x=vl, color='k', linewidth=1.0, linestyle='--')
+				try:
 
+					plt.axvline(x=vl[0], ymin=vl[1], ymax=vl[2], linewidth=1.0, linestyle='--', color='k')
 
+				except:
+
+					try:
+
+						plt.axvline(x=vl, color='k', linewidth=1.0, linestyle='--')
+
+					except:
+
+						print('Error: plotting.plo1tby2. Entries of vlines must be list with 3 elements or float.')
+
+						quit()
+
+					
 
 		doLabels(xlabels[pi], ylabels[pi], fontsize=fontsize)
 
@@ -2018,7 +2052,7 @@ def plot1by3(data, X=[None]*3, Y=[None]*3, contour=[None]*3, contourlevels=[None
 
 
 
-	#plt.tight_layout()
+	plt.tight_layout()
 
 	
 
@@ -2051,6 +2085,20 @@ def plotMbyN(data, X=None, Y=None, figsize=(8,4), titles=None, fontsize=14, mesh
 	N = len(data)
 
 	M = len(data[0])
+
+	
+
+	if X is None:
+
+		nX = data[0][0].shape[1]
+
+		X = np.linspace(1, nX, nX)
+
+	if Y is None:
+
+		nY = data[0][0].shape[0]
+
+		Y = np.linspace(1, nY, nY)	
 
 	
 
@@ -2100,7 +2148,7 @@ def plotMbyN(data, X=None, Y=None, figsize=(8,4), titles=None, fontsize=14, mesh
 
 	contour = makeList(contour, M, N)
 
-	contourLevels = makeList(contourLevels, M, N, forceList=True)
+	contourLevels = makeList(contourLevels, M, N)
 
 	
 
@@ -2112,7 +2160,7 @@ def plotMbyN(data, X=None, Y=None, figsize=(8,4), titles=None, fontsize=14, mesh
 
 	#==
 
-	
+
 
 	fig = plt.figure(figsize=figsize, dpi=dpi)
 
@@ -2442,7 +2490,7 @@ def quiver2plot1(u, v, Xd, Yd, data, X, Y, C=[None]*2, ccmap='bwr', contourf=[No
 
 
 
-def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh=True, cmap='jet', vmin=None, vmax=None, xlabel='', ylabel='', save=True, outpath='', outname='animate1by1.mp4', show=False, dpi=200, fps=8, bitrate=-1, text_data=None, contour=None, hlines=[]):
+def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh=True, cmap='jet', vmin=None, vmax=None, xlabel='', ylabel='', save=True, outpath='', outname='animate1by1.mp4', show=False, dpi=200, fps=8, bitrate=-1, text_data=None, contour=None, hlines=[], contourfNlevels=9, contourLevels=[-1000]):
 
 
 
@@ -2454,7 +2502,9 @@ def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh
 
 	plt.gca().patch.set_color('.25')
 
+	plt.title(title, fontsize=fontsize)
 
+		
 
 	if mesh:
 
@@ -2488,9 +2538,23 @@ def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh
 
 		
 
+		fig.colorbar(cax, ax=ax)
+
+		plt.xlabel(xlabel, fontsize=fontsize)
+
+		plt.ylabel(ylabel, fontsize=fontsize)
+
+
+
+		plt.grid() 
+
+	
+
 		def animate(i):
 
 			cax.set_array(data[i].flatten())
+
+			plt.gca().set_title(title)
 
 			if text_data is not None:
 
@@ -2508,7 +2572,7 @@ def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh
 
 	else:
 
-		nlevels = 9
+		nlevels = contourfNlevels
 
 		if X is not None and Y is not None:
 
@@ -2526,7 +2590,7 @@ def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh
 
 		if contour is not None:
 
-			plt.contour(X, Y, contour, colors='k', linestyles='solid', linewidths=0.4)
+			plt.contour(X, Y, contour, colors='k', linestyles='solid', linewidths=0.4, levels=contourLevels)
 
 			
 
@@ -2536,19 +2600,39 @@ def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh
 
 
 
+		fig.colorbar(cax, ax=ax)
+
+		plt.xlabel(xlabel, fontsize=fontsize)
+
+		plt.ylabel(ylabel, fontsize=fontsize)
+
+		plt.title(title, fontsize=fontsize)
+
+		plt.grid() 
+
+
+
 		def animate(i):
 
 			ax.clear()
 
 			#plt.grid()
 
-			#cax.set_data(data[i].flatten())			
+			#cax.set_data(data[i].flatten())
+
+			plt.gca().set_title(title)	
+
+			plt.gca().patch.set_color('.25')		
 
 			if text_data is not None:
 
 				setText(ax, text_data, i=i, set_invisible=True)
 
 			ax.contourf(X, Y, data[i], cmap=cmap, levels=np.linspace(vmin, vmax, nlevels))	
+
+			if contour is not None:
+
+				ax.contour(X, Y, contour, colors='k', linestyles='solid', linewidths=0.4, levels=contourLevels)
 
 			for hline in hlines:
 
@@ -2558,15 +2642,7 @@ def animate1by1(data, X=None, Y=None, figsize=(5,4), title='', fontsize=14, mesh
 
 	
 
-	fig.colorbar(cax, ax=ax)
 
-	plt.xlabel(xlabel, fontsize=fontsize)
-
-	plt.ylabel(ylabel, fontsize=fontsize)
-
-	plt.title(title, fontsize=fontsize)
-
-	plt.grid() 
 
 	
 
@@ -2846,7 +2922,7 @@ def animateLine(data, X=None, figsize=(5,4), title='', labels=None, fontsize=14,
 
 
 
-def animate1by1quiver(u, v, Xd, Yd, qlim=0.1, C=None, ccmap='coolwarm', contour=None, X=None, Y=None, cmap='viridis', vmin=None, vmax=None, contourf=True, grid=True, figsize=(5,4), title='', fontsize=14, xlabel='', ylabel='', save=True, outpath='', outname='animate1by1.mp4', show=False, dpi=200, fps=8, bitrate=-1, text_data=None):
+def animate1by1quiver(u, v, Xd, Yd, qlim=0.1, C=None, ccmap='coolwarm', contour=None, X=None, Y=None, cmap='viridis', vmin=None, vmax=None, contourf=True, grid=True, figsize=(5,4), title='', fontsize=14, xlabel='', ylabel='', save=True, outpath='', outname='animate1by1.mp4', show=False, dpi=200, fps=8, bitrate=-1, text_data=None, scale=None):
 
 
 
@@ -2894,7 +2970,7 @@ def animate1by1quiver(u, v, Xd, Yd, qlim=0.1, C=None, ccmap='coolwarm', contour=
 
 	if C is not None:
 
-		Q = ax.quiver(Xd, Yd, u[0], v[0], C[0], cmap=ccmap)
+		Q = ax.quiver(Xd, Yd, u[0], v[0], C[0], cmap=ccmap, scale=scale)
 
 		plt.colorbar(Q, ax=ax)
 
