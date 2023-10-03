@@ -6192,7 +6192,9 @@ if SIrad_all:
 
 	bathy = grid.bathy
 
-	
+	draft = grid.draft
+
+		
 
 	if SUBREGION:
 
@@ -6201,6 +6203,8 @@ if SIrad_all:
 		latsi = grid.getIndexFromLat(EASlats); lonsi = grid.getIndexFromLon(EASlons)
 
 		bathy = tools.getSubregionXY(bathy, latsi, lonsi)
+
+		draft = tools.getSubregionXY(draft, latsi, lonsi)
 
 		X, Y = grid.XYsubr(EASlons, EASlats)
 
@@ -6270,7 +6274,7 @@ if SIrad_all:
 
 		# Get 
 
-		dataSeas, seasons = PAS_tools.seasonalDataIPO(data, year, IPO, )
+		dataSeas, seasons = PAS_tools.seasonalDataIPO(data, year, IPO)
 
 		data = dataSeas[si]; #print(seasons[si])
 
@@ -6300,65 +6304,81 @@ if SIrad_all:
 
 	# Compute surface radation balance for average winter. Involves solving for TiS.
 
-	# Recompute (solve for TiS) given new LS, SW, qsat...
+	# Recompute (solve for TiS) given new LW, SW, qsat, ua, atemp, SW,...
 
-	# What info can we tell from plots of just radiative fluxes.
+	# Then we have to FCs. One for average winter, one for pos (or neg) IPO winter with sea-ice data of average winter.
+
+	# Then can compute how much sea-ice has to melt for FC to return to old value (to rebalances fluxes from ocean).
 
 	
 
-	IPO_index = 0 # 0 for season mean, 1 for positive IPO mean, 2 for negative IPO mean.
+	# What info can we tell from plots of just radiative fluxes?
+
+	
+
+	winterIndex = 0 # 0 for season mean, 1 for positive IPO mean, 2 for negative IPO mean.
+
+	posIPOindex = 1
+
+	negIPOindex = 2
 
 	
 
 	# Reload all data from dataDict for season mean in given IPO phase.
 
-	qa = dataDict['EXFaqh'][IPO_index]; Ua = dataDict['ua'][IPO_index]; Ta = dataDict['EXFatemp'][IPO_index]
+	qa = dataDict['EXFaqh'][winterIndex]; Ua = dataDict['ua'][winterIndex]; Ta = dataDict['EXFatemp'][winterIndex]
 
-	LW = dataDict['EXFlwdn'][IPO_index]; SW = dataDict['EXFswdn'][IPO_index]
+	LW = dataDict['EXFlwdn'][winterIndex]; SW = dataDict['EXFswdn'][winterIndex]; SSS = dataDict['SSS'][winterIndex]
 
-	hi = dataDict['SIheff'][IPO_index]; hs = dataDict['SIhsnow'][IPO_index]; SSS = dataDict['SSS'][IPO_index]
+	hi = dataDict['SIheff'][winterIndex]; hs = dataDict['SIhsnow'][winterIndex]
+
+	
+
+	# Get upward conductive flux FC and other radiation terms for average winter.
+
+	RADS_meanWinter = PAS_tools.surfaceRadiation(qa, Ua, Ta, LW, SW, SSS, hi, hs, bathy, draft, nTiS=500)
+
+
+
+	
+
+	# Repeat for pos IPO radiative terms, but keeps sea-ice data the same.
+
+	qa = dataDict['EXFaqh'][posIPOindex]; Ua = dataDict['ua'][posIPOindex]; Ta = dataDict['EXFatemp'][posIPOindex]
+
+	LW = dataDict['EXFlwdn'][posIPOindex]; SW = dataDict['EXFswdn'][posIPOindex]; SSS = dataDict['SSS'][posIPOindex]
+
+	#hi = dataDict['SIheff'][posIPOindex]; hs = dataDict['SIhsnow'][posIPOindex]
+
+		
+
+	RADS_posIPOwinter = PAS_tools.surfaceRadiation(qa, Ua, Ta, LW, SW, SSS, hi, hs, bathy, draft, nTiS=500)
 
 	
 
 	#==
 
-	 
-
-	aa1 = 2663.5
-
-	aa2 = 12.537
-
-	bb1 = 0.622
-
-	bb2 = 1.0 - bb1
-
-	Ppascals = 100000.0
-
-	lnTEN = np.log(10)
+	
 
 	
 
-	SEAICE_lhEvap = 2.5e6
+	FC_meanWinter = RADS_meanWinter['FC']
 
-	SEAICE_lhFusion = 3.34e5
+	FC_posIPOwinter = RADS_posIPOwinter['FC']
 
-	Ls = SEAICE_lhEvap + SEAICE_lhFusion # lhSublim
+	pt.plot1by1(RADS_meanWinter['FC']-RADS_posIPOwinter['FC'], vmin=-5, vmax=5, mesh=True)
 
-	
-
-	rhoa = 1.2 # SEAICE_rhoAir
-
-	rhos = 3.3e2 # SEAICE_rhoSnow
-
-	ca = 1.005e3 # SEAICE_cpAir
-
-	CDi = 1.75e-3 # SEAICE_dalton
+	pt.plot1by1(RADS_meanWinter['TiS']-RADS_posIPOwinter['TiS'], vmin=-5, vmax=5, mesh=True)
 
 	
 
-	eps_s = 9.5e-1 # Sea-ice/snow emissivity. (Same val. for snow/ice.)
+	#==
 
-	sigma = 5.67e-8 # SEAICE_boltzmann
+	
+
+	FCold = RADS_meanWinter['FC']
+
+	TiSnew = RADS_posIPOwinter['TiS']
 
 	
 
@@ -6368,109 +6388,7 @@ if SIrad_all:
 
 	celsius2K = 273.15
 
-
-
-	Tf = SEAICE_dTempFrz_dS* SSS + SEAICE_tempFrz0 + celsius2K
-
-	TiS = np.linspace(250, 280, 100)
-
-	
-
-	#==
-
-	
-
-	# LATENT
-
-	mm_log10pi = -aa1 / TiS + aa2
-
-	mm_pi = np.exp(mm_log10pi * lnTEN)
-
-	qsat = bb1 * mm_pi / ( Ppascals - (1.0 - bb1) * mm_pi ) # qhice
-
-	# qhice=qsat: saturation vapor pressure of snow/ice surface
-
-	
-
-	LATENT = rhoa * Ls * CDi * Ua * (qsat - qa)
-
-
-
-	#==
-
-	
-
-	# SENS
-
-
-
-	SENS = rhoa * ca * CDi * Ua * (TiS - Ta)
-
-
-
-	#==
-
-	
-
-	# BLACKBODY
-
-	
-
-	BB = eps_s * sigma * TiS**4
-
-	
-
-	#==
-
-	
-
-	# LONGWAVE
-
-	
-
-	LW = - eps_s * LW
-
-	
-
-	#==
-
-	
-
-	# SHORTWAVE
-
-	
-
-	# DESIGNED TO WORK FOR WINTER ONLY, WHEN SEA ICE IS SNOW-COVERED.
-
-	penetSWFrac = 0.0
-
-	
-
-	# These are values for DRY snow/ice, suitable for winter when Ta < surface melt temp.
-
-	ALB_ICE = 7.5e-1
-
-	ALB_SNOW = 8.4e-1
-
-	
-
-	# For albedo should compute a linear transition between ALB_SNOW and ALB_ICE where hsnow>HCUT=0.15.
-
-	# But just using ALB_SNOW for now.
-
-	ALB = ALB_SNOW
-
-     
-
-	SW =  (1.0 - ALB) * (1.0 - penetSWFrac) * SW    
-
-	
-
-	#==
-
-	
-
-	# CONDUCTIVE HEAT FLUX
+	Tf = SEAICE_dTempFrz_dS * SSS + SEAICE_tempFrz0 + celsius2K
 
 	
 
@@ -6478,45 +6396,43 @@ if SIrad_all:
 
 	ks = 3.10000e-1
 
-	
+		
 
-	FC = ki * ks * (Tf - TiS) / (ki * hs + ks * hi)
-
-	
-
-	#==
+	hinew = ki * (Tf - TiSnew) / (FCold) - ki * hs / ks
 
 	
 
-	poly = LATENT + SENS + LW + BB + SW - FC
+	threeMonths = 86400 * 90
+
+	FWflx = 1.e3 * (hi - hinew) / threeMonths
 
 	
 
-	plt.plot(TiS, poly, label='poly')
-
-	plt.plot(TiS, FC, label='FC')
-
-	plt.plot(TiS, SENS, label='SENS')
-
-	plt.plot(TiS, LW*np.ones(len(TiS)), label='LW')
-
-	plt.plot(TiS, SW*np.ones(len(TiS)), label='SW')
-
-	plt.plot(TiS, BB, label='BB')
-
-	plt.plot(TiS, LATENT, label='LATENT')
-
-	plt.grid()
-
-	plt.legend()
-
-	plt.show()
+	pt.plot1by1(FWflx, mesh=True, vmin=-6.e-5, vmax=6.e-5)
 
 	
 
 	quit()
 
+		
 
+	#==
+
+	 
+
+	for key in RADS.keys():
+
+		rad = RADS[key]
+
+		rad = ptt.maskBathyXY(rad, grid, zi=0, subregion=True, lats=latsi, lons=lonsi)
+
+		rad = ptt.maskDraftXY(rad, grid, zi=0, subregion=True, lats=latsi, lons=lonsi)
+
+		pt.plot1by1(rad, title=key)	
+
+
+
+	quit()
 
 
 
