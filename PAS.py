@@ -2446,7 +2446,7 @@ if seasonalData:
 
 
 
-	#SEASONAL = False; ns = 12 # If False, computes monthly instead.
+	SEASONAL = False; ns = 12 # If False, computes monthly instead.
 
 	#SUBREGION = False
 
@@ -2512,7 +2512,7 @@ if seasonalData:
 
 	#fname = 'FWflx.npy'; title = 'FWflx (kg/m^2/s)'; vmax1 = 2.e-4; vmax2 = 5.e-5; c0 = 0#4.e-6
 
-	#fname = 'SST.npy'; title = 'SST (deg. C)'; vmax1 = .1; vmax2 = .1 
+	fname = 'SST.npy'; title = 'SST (deg. C)'; vmax1 = 3; vmax2 = .02; c0 = -1.9; vmax3 = .02
 
 	#fname = 'SSS.npy'; title = 'SSS (g/kg)'; vmax1 = 1; vmax2 = .1; c0 = 33.8; vmax3 = 0.5
 
@@ -2546,13 +2546,13 @@ if seasonalData:
 
 	#fname = 'EXFlwdn.npy'; title = 'EXFlwdn (W/m^2)'; vmax1 = 4.e1; vmax2 = 1.e1; c0 = 230.  
 
-	fname = 'EXFswdn.npy'; title = 'EXFswdn (W/m^2)'; vmax1 = 2.e2; vmax2 = 1.e1; c0 = .9; vmax3 = .9
+	#fname = 'EXFswdn.npy'; title = 'EXFswdn (W/m^2)'; vmax1 = 2.e2; vmax2 = 1.e1; c0 = .9; vmax3 = .9
 
-	#fname = 'oceQnet.npy'; title = 'net surf. heat flux (W/m^2)'; vmax1 = 8.e1; vmax2 = 3.e1
+	#fname = 'oceQnet.npy'; title = 'net surf. heat flux (W/m^2)'; vmax1 = 8.e1; vmax2 = 1.e1; c0 = 1; vmax3 = vmax2
 
 	
 
-	SAVE = False
+	SAVE = True
 
 	
 
@@ -2664,7 +2664,7 @@ if seasonalData:
 
 	
 
-	for si in range(1):
+	for si in range(12):
 
 		titles = [seasons[si] + ' ' + title, 'IPO pos comp', 'IPO neg comp']
 
@@ -2696,13 +2696,13 @@ if seasonalData:
 
 		# For plotting anomalies.
 
-		#pt.plot1by3([data1, data2, data3], X=X, Y=Y, mesh=True, vmin=vmin, vmax=vmax, figsize=(13,3), titles=titles, fontsize=9, contour=contour, contourlevels=contourlevels, save=SAVE, outname=outname, show=SEASONAL)
+		pt.plot1by3([data1, data2, data3], X=X, Y=Y, mesh=True, vmin=vmin, vmax=vmax, figsize=(13,3), titles=titles, fontsize=9, contour=contour, contourlevels=contourlevels, save=SAVE, outname=outname, show=SEASONAL)
 
 	
 
 		# For plotting absolute values.
 
-		pt.plot1by3([data1, data2+data1, data3+data1], X=X, Y=Y, mesh=False, contourfNlevels=17, vmin=vminc, vmax=vmaxc, figsize=(13,3), titles=titles, fontsize=9, contour=contour, contourlevels=contourlevels, save=SAVE, outname=outname)
+		#pt.plot1by3([data1, data2+data1, data3+data1], X=X, Y=Y, mesh=False, contourfNlevels=17, vmin=vminc, vmax=vmaxc, figsize=(13,3), titles=titles, fontsize=9, contour=contour, contourlevels=contourlevels, save=SAVE, outname=outname)
 
 			
 
@@ -4188,7 +4188,7 @@ if compositeIPO:
 
 	#fname = 'EXFswdn.npy'; title = 'EXFswdn (W/m^2)'; vmax1 = 1.e3; vmax2 = vmax1
 
-	#fname = 'oceQnet.npy'; title = 'oceQnet (W/m^2)'; vmax1 = 1.e2; vmax2 = vmax1
+	fname = 'oceQnet.npy'; title = 'oceQnet (W/m^2)'; vmax1 = 1.e2; vmax2 = vmax1
 
 	#fname = 'EXFpress.npy'; title = 'EXFpress (N/m^2)'; vmax1 = 4.e1; vmax2 = 1.5e2    
 
@@ -6136,9 +6136,217 @@ if coherence:
 
 
 
+SIrad_annual = True
+
+if SIrad_annual:
+
+
+
+	nn = 60	
+
+	ts = -2; te = - 3
+
+		
+
+	from TPI import TPI_unfiltered_PSL as IPO
+
+	IPO_start = 14*12+1 + ts; IPO_end = te
+
+	IPO = np.array(IPO[IPO_start:IPO_end])
+
+	IPO = PAS_tools.windowAv(IPO, n=nn)[nn//2:-nn//2+1]
+
+
+
+	t_start = 0; t_end = 779
+
+	start = 24*12 + 5*12 + ts; end= -11 + te
+
+	
+
+	path = '/home/michael/Documents/data/slopeCurrent/'
+
+	path = path + str(t_start) + '_' + str(t_end) + '_y1/'
+
+	
+
+	grid = Grid_PAS(PASDIR)
+
+	bathy = grid.bathy
+
+	draft = grid.draft
+
+		
+
+	LATS = [-72, -70]; LONS = [230, 240]
+
+	latsi = grid.getIndexFromLat(LATS); lonsi = grid.getIndexFromLon(LONS)
+
+	bathy = tools.getSubregionXY(bathy, latsi, lonsi)
+
+	draft = tools.getSubregionXY(draft, latsi, lonsi)
+
+	X, Y = grid.XYsubr(LONS, LATS)
+
+	
+
+	#box = (-72, -70, 230, 240)
+
+	#pt.plot1by1(bathy, X=X, Y=Y, vmin=-1000, vmax=0, mesh=True, box=box); quit()
+
+		
+
+	timefile = 'PAS_time.npy'
+
+	t = np.load(path+timefile)
+
+	year = PAS_tools.getDecimalTime(t)[nn//2+start:end-nn//2+1]
+
+
+
+	#==
+
+	# For data in fnames, load data, remove start/end years, get subregion, detrend, get winter mean/IPO variability.
+
+	
+
+	fnames = ['ua', 'SSS', 'SIheff', 'SIhsnow', 'EXFatemp', 'EXFaqh', 'EXFlwdn', 'EXFswdn', 'FWflx']	
+
+	dataDict = {}
+
+	
+
+	si = 0 # Season of choice. 0 for winter with default params.
+
+
+
+	for fname in fnames:
+
+	
+
+		print('Processing ' + fname)
+
+		
+
+		data = np.load(path+fname+'.npy')[nn//2+start:end-nn//2+1]
+
+		
+
+		data = tools.getSubregionXY(data, latsi, lonsi)
+
+		data = ptt.maskBathyXY(data, grid, 0, timeDep=True, subregion=True, lons=lonsi, lats=latsi)
+
+	
+
+		# Use one below when plotting absolute values.
+
+		#data = PAS_tools.detrendXY(data, None, interceptFlag=0)
+
+		
+
+		# Get monthly averages of data
+
+		dataSeas, months = PAS_tools.monthlyDataIPO(data, year, IPO, DEMEAN=False)
+
+		
+
+		# Add season mean and absolute values of data during pos/neg IPO.
+
+		dataDict[fname] = dataSeas
+
+	
+
+	# End loop
+
+	#==
+
+
+
+	# Initialise arrays for radiation terms and surf. temp. averaged in box.
+
+	LATav = np.zeros((12,3)); SENSav = np.zeros((12,3)); BBav = np.zeros((12,3))
+
+	LWav = np.zeros((12,3)); SWav = np.zeros((12,3))
+
+	FCav = np.zeros((12,3)); TiSav = np.zeros((12,3))
+
+	
+
+	for mi in range(12):
+
+		
+
+		print(months[mi])
+
+		for i in range(1,2):
+
+
+
+			# Reload all data from dataDict for season mean in given IPO phase.
+
+			qa = dataDict['EXFaqh'][mi][i]; Ua = dataDict['ua'][mi][i]; Ta = dataDict['EXFatemp'][mi][i]
+
+			LW = dataDict['EXFlwdn'][mi][i]; SW = dataDict['EXFswdn'][mi][i]; SSS = dataDict['SSS'][mi][i]
+
+			hi = dataDict['SIheff'][mi][i]; hs = dataDict['SIhsnow'][mi][i]
+
+				
+
+			# T0 = 250, T1 = 280
+
+			RADS = PAS_tools.surfaceRadiation(qa, Ua, Ta, LW, SW, SSS, hi, hs, bathy, draft, nTiS=500, T0=250, T1=280)
+
+			
+
+			LATav[mi, i] = np.mean(RADS['LATENT'])
+
+			SENSav[mi, i] = np.mean(RADS['SENS'])
+
+			BBav[mi, i] = np.mean(RADS['BB'])
+
+			LWav[mi, i] = np.mean(RADS['LW'])
+
+			SWav[mi, i] = np.mean(RADS['SW'])
+
+			FCav[mi, i] = np.mean(RADS['FC'])
+
+			TiSav[mi, i] = np.mean(RADS['TiS'])
+
+			
+
+	#PLOT_FIELDS = {'LAT':LATav, 'SENS':SENSav, 'BB':BBav, 'LW':LWav, 'SW':SWav, 'FC':FCav, 'TiS':TiSav, 'LL+BB':LWav+BBav}
+
+	
+
+	PLOT_FIELDS = {'LAT':LATav, 'SENS':SENSav, 'LW+BB':LWav+BBav, 'SW':SWav, 'FC':FCav}
+
+	
+
+	for field in PLOT_FIELDS.keys():
+
+		plt.plot(months, PLOT_FIELDS[field][:,1], label=field)
+
+		
+
+	plt.grid()
+
+	plt.legend()
+
+	plt.show()
+
+	
+
+	quit()
+
+
+
+#==
+
+
+
 # Radiative snow-covered sea-ice budget for full PAS domain.
 
-SIrad_all = True
+SIrad_all = False
 
 if SIrad_all:
 
@@ -6211,6 +6419,16 @@ if SIrad_all:
 	else:
 
 		X = grid.XC; Y = grid.YC
+
+		
+
+	bathyC = ptt.makeBathyContour(bathy, X, Y)
+
+	
+
+	#box = (-72, -70, 230, 240)
+
+	#pt.plot1by1(bathy, X=X, Y=Y, vmin=-1000, vmax=0, mesh=True, contour=bathyC, contourlevels=[-1000], box=box)
 
 		
 
@@ -6340,6 +6558,8 @@ if SIrad_all:
 
 
 
+	#pt.plotRads(RADS_meanWinter, X, Y, grid, bathy, subr=SUBREGION, lats=latsi, lons=lonsi)
+
 	
 
 	# Repeat for pos IPO radiative terms, but keeps sea-ice data the same.
@@ -6356,19 +6576,35 @@ if SIrad_all:
 
 	
 
+	#pt.plotRads([RADS_posIPOwinter, RADS_meanWinter], X, Y, grid, bathy, subr=SUBREGION, lats=latsi, lons=lonsi)
+
+	
+
 	#==
 
 	
 
+	dFC = RADS_posIPOwinter['FC'] - RADS_meanWinter['FC']
+
+	dTiS = RADS_posIPOwinter['TiS'] - RADS_meanWinter['TiS']
+
 	
 
-	FC_meanWinter = RADS_meanWinter['FC']
+	dFC = ptt.maskBathyXY(dFC, grid, zi=0, subregion=SUBREGION, lats=latsi, lons=lonsi)
 
-	FC_posIPOwinter = RADS_posIPOwinter['FC']
+	dFC = ptt.maskDraftXY(dFC, grid, zi=0, subregion=SUBREGION, lats=latsi, lons=lonsi)
 
-	pt.plot1by1(RADS_meanWinter['FC']-RADS_posIPOwinter['FC'], vmin=-5, vmax=5, mesh=True)
+	
 
-	pt.plot1by1(RADS_meanWinter['TiS']-RADS_posIPOwinter['TiS'], vmin=-5, vmax=5, mesh=True)
+	dTiS = ptt.maskBathyXY(dTiS, grid, zi=0, subregion=SUBREGION, lats=latsi, lons=lonsi)
+
+	dTiS = ptt.maskDraftXY(dTiS, grid, zi=0, subregion=SUBREGION, lats=latsi, lons=lonsi)
+
+	
+
+	pt.plot1by1(dFC, X=X, Y=Y, vmin=-4, vmax=4, mesh=True, contour=bathyC, contourlevels=[-1000], title='pos IPO FC - mean winter FC (W/m^2)')
+
+	pt.plot1by1(dTiS,  X=X, Y=Y, vmin=-4, vmax=4, mesh=True, contour=bathyC, contourlevels=[-1000], title='pos IPO TiS - mean winter TiS (deg. C)')
 
 	
 
@@ -6402,37 +6638,25 @@ if SIrad_all:
 
 	
 
-	threeMonths = 86400 * 90
+	threeMonths = 86400. * 90.
 
-	FWflx = 1.e3 * (hi - hinew) / threeMonths
-
-	
-
-	pt.plot1by1(FWflx, mesh=True, vmin=-6.e-5, vmax=6.e-5)
+	FWflx = 916.7 * (hi - hinew) / threeMonths
 
 	
 
-	quit()
+	FWflx = ptt.maskBathyXY(FWflx, grid, zi=0, subregion=SUBREGION, lats=latsi, lons=lonsi)
+
+	FWflx = ptt.maskDraftXY(FWflx, grid, zi=0, subregion=SUBREGION, lats=latsi, lons=lonsi)
 
 		
 
-	#==
+	pt.plot1by1(FWflx, X=X, Y=Y, mesh=True, vmin=-8.e-5, vmax=8.e-5, title='Predicted FW flux (kg/m^2/s)', contour=bathyC, contourlevels=[-1000])
 
-	 
-
-	for key in RADS.keys():
-
-		rad = RADS[key]
-
-		rad = ptt.maskBathyXY(rad, grid, zi=0, subregion=True, lats=latsi, lons=lonsi)
-
-		rad = ptt.maskDraftXY(rad, grid, zi=0, subregion=True, lats=latsi, lons=lonsi)
-
-		pt.plot1by1(rad, title=key)	
-
-
+	
 
 	quit()
+
+
 
 
 
