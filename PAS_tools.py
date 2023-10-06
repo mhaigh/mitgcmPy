@@ -904,11 +904,13 @@ def seasonalDataIPO(data, year, IPO):
 
 
 
-def monthlyDataIPO(data, year, IPO):
+def monthlyDataIPO(data, year, IPO, DEMEAN=True):
 
 	'''Return dictionary of timeseries data averaged over each month.
 
-	Also return monthly timeseries averaged during positive and negative IPO.'''
+	Also return monthly timeseries averaged during positive and negative IPO.
+
+	If DEMEAN, remove monthly mean from pos/neg IPO data so that they represent anomalies.'''
 
 
 
@@ -978,9 +980,9 @@ def monthlyDataIPO(data, year, IPO):
 
 	monthData[12,0] = np.mean(monthData[:,0], axis=0)
 
-	monthData[12,1] = np.sum(monthData[:,1], axis=0) / np.sum(nPos) - monthData[12,0]
+	monthData[12,1] = np.sum(monthData[:,1], axis=0) / np.sum(nPos)
 
-	monthData[12,2] = np.sum(monthData[:,2], axis=0) / np.sum(nNeg) - monthData[12,0]
+	monthData[12,2] = np.sum(monthData[:,2], axis=0) / np.sum(nNeg)
 
 	
 
@@ -990,15 +992,19 @@ def monthlyDataIPO(data, year, IPO):
 
 		monthData[mi,1] /= nPos[mi]
 
-		monthData[mi,1] -= monthData[mi,0]
-
-		
-
 		monthData[mi,2] /= nNeg[mi]
 
-		monthData[mi,2] -= monthData[mi,0]
-
 	
+
+	# Remove monthly mean from pos/neg IPO absolute values.
+
+	if DEMEAN:
+
+		monthData[:,1] -= monthData[:,0]
+
+		monthData[:,2] -= monthData[:,0]
+
+		
 
 	return monthData, months
 
@@ -1008,7 +1014,7 @@ def monthlyDataIPO(data, year, IPO):
 
 
 
-def surfaceRadiation(qa, Ua, Ta, LW, SW, SSS, hi, hs, bathy, draft, nTiS=1000):
+def surfaceRadiation(qa, Ua, Ta, LW, SW, SSS, hi, hs, bathy, draft, nTiS=1000, T0=250, T1=270):
 
 	'''Return all terms in surface radiation balance.
 
@@ -1092,7 +1098,7 @@ def surfaceRadiation(qa, Ua, Ta, LW, SW, SSS, hi, hs, bathy, draft, nTiS=1000):
 
 		for xi in range(nX):
 
-			TiS[:,yi,xi] = np.linspace(250, 270, nTiS)
+			TiS[:,yi,xi] = np.linspace(T0, T1, nTiS)
 
 	
 
@@ -1264,7 +1270,9 @@ def surfaceRadiation(qa, Ua, Ta, LW, SW, SSS, hi, hs, bathy, draft, nTiS=1000):
 
 				if np.min(p)*np.max(p)>0:
 
-					print('Polynomial has no solutions at (xi, yi) = ' +str(xi,yi))
+					print('Polynomial has no solutions at (xi, yi) = ' + str((xi,yi)))
+
+					plt.plot(T, p); plt.show()
 
 									
 
