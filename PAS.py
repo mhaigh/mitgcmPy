@@ -78,8 +78,6 @@ sections = {'westGetz':westGetz, 'Getz':Getz, 'westPITW':westPITW, 'PITW':PITW, 
 
 
 
-
-
 MAIN = False
 
 if MAIN:
@@ -1358,9 +1356,9 @@ if readSlopeUVfile:
 
 	
 
-	#plotSections = ['westGetz', 'westPITW', 'westPITE']
+	plotSections = ['westGetz', 'westPITW', 'westPITE']
 
-	plotSections = ['westPITW', 'westPITE']
+	#plotSections = ['westPITW', 'westPITE']
 
 
 
@@ -1619,6 +1617,8 @@ if readSlopeUVfile:
 		
 
 		plt.show()
+
+		
 
 		
 
@@ -2405,6 +2405,8 @@ if seasonalBarocl:
 	
 
 	for season in baroclSeasonal:
+
+		print(season)
 
 		tmp = tools.smooth3(baroclSeasonal[season])
 
@@ -6136,7 +6138,7 @@ if coherence:
 
 
 
-SIrad_annual = True
+SIrad_annual = False
 
 if SIrad_annual:
 
@@ -6264,11 +6266,15 @@ if SIrad_annual:
 
 	# Initialise arrays for radiation terms and surf. temp. averaged in box.
 
+	TAav = np.zeros((12,3))
+
 	LATav = np.zeros((12,3)); SENSav = np.zeros((12,3)); BBav = np.zeros((12,3))
 
 	LWav = np.zeros((12,3)); SWav = np.zeros((12,3))
 
 	FCav = np.zeros((12,3)); TiSav = np.zeros((12,3))
+
+	
 
 	
 
@@ -6278,7 +6284,7 @@ if SIrad_annual:
 
 		print(months[mi])
 
-		for i in range(1,2):
+		for i in range(3):
 
 
 
@@ -6288,13 +6294,17 @@ if SIrad_annual:
 
 			LW = dataDict['EXFlwdn'][mi][i]; SW = dataDict['EXFswdn'][mi][i]; SSS = dataDict['SSS'][mi][i]
 
-			hi = dataDict['SIheff'][mi][i]; hs = dataDict['SIhsnow'][mi][i]
+			hi = dataDict['SIheff'][mi][0]; hs = dataDict['SIhsnow'][mi][0]
 
 				
 
 			# T0 = 250, T1 = 280
 
-			RADS = PAS_tools.surfaceRadiation(qa, Ua, Ta, LW, SW, SSS, hi, hs, bathy, draft, nTiS=500, T0=250, T1=280)
+			RADS = PAS_tools.surfaceRadiation(qa, Ua, Ta, LW, SW, SSS, hi, hs, bathy, draft, nTiS=500, T0=250, T1=285)
+
+			
+
+			TAav[mi, i] = np.mean(Ta)
 
 			
 
@@ -6314,27 +6324,79 @@ if SIrad_annual:
 
 			
 
-	#PLOT_FIELDS = {'LAT':LATav, 'SENS':SENSav, 'BB':BBav, 'LW':LWav, 'SW':SWav, 'FC':FCav, 'TiS':TiSav, 'LL+BB':LWav+BBav}
+			
+
+	#==
 
 	
 
-	PLOT_FIELDS = {'LAT':LATav, 'SENS':SENSav, 'LW+BB':LWav+BBav, 'SW':SWav, 'FC':FCav}
+	if True:
 
 	
 
-	for field in PLOT_FIELDS.keys():
-
-		plt.plot(months, PLOT_FIELDS[field][:,1], label=field)
+		#PLOT_FIELDS = {'LAT':LATav, 'SENS':SENSav, 'BB':BBav, 'LW':LWav, 'SW':SWav, 'FC':FCav, 'TiS':TiSav, 'LL+BB':LWav+BBav, 'ALL_ATM_UP':LATav+SENSav+BBav+LWav+SWav}
 
 		
 
-	plt.grid()
+		PLOT_FIELDS = {'LAT':LATav, 'SENS':SENSav, 'LW+BB':LWav+BBav, 'SW':SWav, 'FC':FCav}; ylims = (-50, 50)#, 'ALL_ATM_UP':LATav+SENSav+BBav+LWav+SWav}
 
-	plt.legend()
+		
 
-	plt.show()
+		PLOT_FIELDS = {'BB+LW':BBav+LWav, 'LAT':LATav, 'SENS':SENSav, 'FC':FCav}; ylims = (-5,5);# ylims = (200, 300)
+
+		IPOS = ['Monthly mean', 'Pos IPO - mean', 'Neg IPO - mean']
+
+		for i in range(1,3):
+
+			for field in PLOT_FIELDS.keys():
+
+				plt.plot(months, PLOT_FIELDS[field][:,i]-PLOT_FIELDS[field][:,0], label=field)	
+
+			plt.title('Box-mean surf. fluxes; ' + IPOS[i])
+
+			plt.ylim(ylims[0], ylims[1])
+
+			plt.grid()
+
+			plt.legend()
+
+			plt.show()
 
 	
+
+	#==
+
+	
+
+	if True:
+
+			
+
+		IPOS = ['Monthly mean', 'Pos IPO', 'Neg IPO']
+
+			
+
+		for i in range(3):
+
+		
+
+			plt.plot(months, TiSav[:,i]-TAav[:,i], label='TiS-Ta; ' + IPOS[i])		
+
+			#plt.plot(months, TiSav[:,i], label='TiS; ' + IPOS[i])		
+
+			#plt.plot(months, TAav[:,i], label='Ta; ' + IPOS[i])		
+
+								
+
+		plt.title('TiS - Ta (deg. C)')
+
+		plt.grid()
+
+		plt.legend()
+
+		plt.show()
+
+				
 
 	quit()
 
@@ -6364,7 +6426,7 @@ if SIrad_all:
 
 	
 
-	si = 0 # Season of choice. 0 for winter with default params.
+	si = 1 # Season of choice. 0 for winter with default params.
 
 	
 
@@ -6554,11 +6616,15 @@ if SIrad_all:
 
 	# Get upward conductive flux FC and other radiation terms for average winter.
 
-	RADS_meanWinter = PAS_tools.surfaceRadiation(qa, Ua, Ta, LW, SW, SSS, hi, hs, bathy, draft, nTiS=500)
+	RADS_meanWinter = PAS_tools.surfaceRadiation(qa, Ua, Ta, LW, SW, SSS, hi, hs, bathy, draft, nTiS=500, T1=280)
 
 
 
-	#pt.plotRads(RADS_meanWinter, X, Y, grid, bathy, subr=SUBREGION, lats=latsi, lons=lonsi)
+	pt.plotRads(RADS_meanWinter, X, Y, grid, bathy, subr=SUBREGION, lats=latsi, lons=lonsi)
+
+
+
+	quit()
 
 	
 
@@ -6572,11 +6638,11 @@ if SIrad_all:
 
 		
 
-	RADS_posIPOwinter = PAS_tools.surfaceRadiation(qa, Ua, Ta, LW, SW, SSS, hi, hs, bathy, draft, nTiS=500)
+	RADS_posIPOwinter = PAS_tools.surfaceRadiation(qa, Ua, Ta, LW, SW, SSS, hi, hs, bathy, draft, nTiS=500, T1=280)
 
 	
 
-	#pt.plotRads([RADS_posIPOwinter, RADS_meanWinter], X, Y, grid, bathy, subr=SUBREGION, lats=latsi, lons=lonsi)
+	pt.plotRads([RADS_posIPOwinter, RADS_meanWinter], X, Y, grid, bathy, subr=SUBREGION, lats=latsi, lons=lonsi)
 
 	
 
@@ -6915,6 +6981,194 @@ if SIrad:
 	plt.show()
 
 	
+
+	quit()
+
+
+
+#==
+
+
+
+iceShelfMelt = True
+
+if iceShelfMelt:
+
+
+
+	path = '/home/michael/Documents/data/slopeCurrent/0_779_y1/'
+
+	
+
+	start = 24*12 + 5*12; end=-11
+
+	nn = 60
+
+	
+
+	t = np.load(path+'PAS_time.npy')
+
+	t = t[start:end][nn//2:-nn//2+1]
+
+	year = PAS_tools.getDecimalTime(t)
+
+	
+
+	data = - np.load(path+'SHIfwFlx.npy')[start:end]
+
+	
+
+	#PIbayLats = [-75.5, -72]; PIbayLons = [245, 265] # All PI bay
+
+	PIbayLats = [-75.5, -74]; PIbayLons = [251, 262] # PI and Thwaites glaciers
+
+
+
+	grid = Grid_PAS(PASDIR)
+
+
+
+	latsi = grid.getIndexFromLat(PIbayLats); lonsi = grid.getIndexFromLon(PIbayLons)
+
+	data = tools.getSubregionXY(data, latsi, lonsi)
+
+	
+
+	melt = -np.sum(data, axis=(1,2))
+
+	melt = PAS_tools.detrend(melt, None)
+
+	melt = PAS_tools.deseason(melt)
+
+	
+
+	#==
+
+	
+
+	# Correlate melt with other field.
+
+	fname = 'EXFlwdn.npy'
+
+	data = np.load(path+fname)[start:end]
+
+	
+
+	#EASlons[0] = 225; LATS = EASlats; LONS = EASlons
+
+	LATS = [-72., -71.]; LONS = [230, 240]
+
+	
+
+	latsi = grid.getIndexFromLat(LATS); lonsi = grid.getIndexFromLon(LONS)
+
+	
+
+	data = tools.getSubregionXY(data, latsi, lonsi)
+
+	bathy = tools.getSubregionXY(grid.bathy, latsi, lonsi)
+
+	X, Y = grid.XYsubr(LONS, LATS)
+
+	nt, ny,  nx = data.shape
+
+	
+
+	data = PAS_tools.deseason(data)
+
+	data_av = np.mean(data, axis=(1,2))
+
+	
+
+	nw = 61; window_lengths = np.linspace(1,nw,nw)
+
+	corrw = PAS_tools.windowCorr(data_av, melt, window_lengths, year, return_uv=False)
+
+	
+
+	plt.plot(window_lengths, corrw); 
+
+	plt.ylabel('Corr(Off-shelf LWD, PI+Thwaites melt)')
+
+	plt.xlabel('Running mean window length (months)')
+
+	plt.grid(); plt.show()
+
+	quit()
+
+			
+
+	nl = 60
+
+	corr = np.zeros((nl, ny, nx))
+
+	pval = np.zeros((nl, ny, nx))
+
+	for ti in range(nl):
+
+		print(ti)
+
+		if ti == 0:
+
+			ti_ = None
+
+		else:
+
+			ti_ = -ti
+
+			
+
+		for j in range(ny):
+
+			for i in range(nx):
+
+				corr[ti,j,i], pval[ti,j,i] = pearsonr(data[:ti_,j,i], melt[ti:])
+
+		
+
+		#bathyC = ptt.makeBathyContour(bathy, X, Y)
+
+		#pt.plot1by1(corr[ti], X=X, Y=Y, contour=bathyC, contourlevels=[-1000], cmap='bwr', stippling=pval[ti])#, vmin=-.2, vmax=.2)
+
+	
+
+	corrav = np.mean(corr, axis=(1,2))
+
+	
+
+	plt.plot(corrav)
+
+	plt.title('Corr(Off-shelf LWD, PI+Thwaites melt)')
+
+	plt.xlabel('Lag (months)')
+
+	plt.grid()
+
+	plt.show()
+
+	
+
+	quit()
+
+				
+
+	#==
+
+	
+
+	melt = PAS_tools.windowAv(melt, n=nn)[nn//2:-nn//2+1]
+
+	
+
+	plt.plot(year, melt)
+
+	plt.grid(); plt.show()
+
+		
+
+	#pt.plot1by1(data.mean(axis=0), X=X, Y=Y, mesh=True)#, vmin=-1.e3, vmax=0)
+
+
 
 	quit()
 
