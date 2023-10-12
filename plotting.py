@@ -24,7 +24,7 @@ from mpl_toolkits.mplot3d import axes3d
 
 	
 
-from plotting_tools import setText, getContourfLevels, maskBathyXY, maskDraftXY, makeList, doTicks, doTitle, doLabels
+from plotting_tools import setText, getContourfLevels, maskBathyXY, maskDraftXY, makeList, doTicks, doTitle, doLabels, doStippling, doBox, makeBathyContour
 
 
 
@@ -172,7 +172,7 @@ def timeSeries(data, TIME=None, Y=None, time_units='days', figsize=(6,3), labels
 
 
 
-def plot1by1(data, X=None, Y=None, contour=None, contourlevels=None, figsize=(5,4), title=None, fontsize=14, mesh=False, cmap='jet', vmin=None, vmax=None, text_data=None, xlabel=None, ylabel=None, grid=True, contourfNlevels=9, save=False, outpath='', outname='plot1by1.png', show=True, dpi=200, hlines=None, xmin=[0], xmax=[1], vlines=None, xlim=None, ylim=None):
+def plot1by1(data, X=None, Y=None, contour=None, contourlevels=None, figsize=(5,4), title=None, fontsize=14, mesh=False, cmap='jet', vmin=None, vmax=None, text_data=None, xlabel=None, ylabel=None, grid=True, contourfNlevels=9, save=False, outpath='', outname='plot1by1.png', show=True, dpi=200, hlines=None, xmin=[0], xmax=[1], vlines=None, xlim=None, ylim=None, stippling=None, stipData=[0.05, 4, 4, .1], box=None):
 
 	
 
@@ -279,6 +279,16 @@ def plot1by1(data, X=None, Y=None, contour=None, contourlevels=None, figsize=(5,
 	if ylim is not None:
 
 		plt.ylim(ylim)
+
+		
+
+	if stippling is not None:
+
+		doStippling(stippling, X=X, Y=Y, dataLim=stipData[0], dx=stipData[1], dy=stipData[2], s=stipData[3])
+
+		
+
+	doBox(box, X, Y)
 
 		
 
@@ -785,6 +795,242 @@ def quiver1byN(u, v, Xd, Yd, C=None, ccmap='bwr', contourf=None, contourfNlevels
 			else:			
 
 				plt.yticks(yticks[pi], labels='')
+
+
+
+	#==
+
+	
+
+	#fig.subplots_adjust(wspace=-1, hspace=0)
+
+
+
+	plt.tight_layout()
+
+
+
+	if save:
+
+		plt.savefig(outpath + outname, bbox_inches="tight")
+
+
+
+	if show:
+
+		plt.show()
+
+
+
+	plt.close()
+
+
+
+#==
+
+
+
+def quiver1byN_Basemap(u, v, Xd, Yd, lat_0, lon_0, C=None, ccmap='bwr', contourf=None, contourfNlevels=9, X=None, Y=None, mesh=False, contour=None, contourLevels=None, figsize=None, title=None, fontsize=14, cmap='jet', vmin=None, vmax=None, xlabel=None, ylabel=None, parallels=None, meridians=None, save=False, outpath='', outname='quiver1byN.png', show=True, dpi=200, text_data=None, width_ratios=None, labelData=None, cbar=True, cbarShrink=1., grid=True, scale=2, qs=0.1, qunits='m/s'):
+
+
+
+	N = len(u)
+
+
+
+	Xd = makeList(Xd, N)
+
+	Yd = makeList(Yd, N)
+
+
+
+	if contourf is not None:
+
+		X = makeList(X, N)
+
+		Y = makeList(Y, N)
+
+
+
+	vmin = makeList(vmin, N)
+
+	vmax = makeList(vmax, N)
+
+
+
+	cbar = makeList(cbar, N)
+
+	grid = makeList(grid, N)
+
+	title = makeList(title, N)
+
+
+
+	xlabel = makeList(xlabel, N)
+
+	ylabel = makeList(ylabel, N)
+
+	
+
+	qs = makeList(qs, N)
+
+	scale = makeList(scale, N)
+
+	
+
+	from mpl_toolkits.basemap import Basemap
+
+		
+
+	m = Basemap(llcrnrlon=X[0][0,0],llcrnrlat=Y[0][0,0],urcrnrlon=X[0][-1,-1],urcrnrlat=Y[0][-1,-1], projection='merc',lat_0=lat_0+3,lon_0=lon_0-10)
+
+	
+
+	if figsize is None:
+
+		if N == 2:
+
+			figsize = (8,3)
+
+		elif N == 3:
+
+			figsize = (11,3)
+
+		else:
+
+			figsize = (8,3)
+
+
+
+	fig = plt.figure(figsize=figsize, dpi=dpi)#, constrained_layout=True)
+
+
+
+	if width_ratios is not None:
+
+		gs = gridspec.GridSpec(ncols=N, nrows=1, figure=fig, width_ratios=width_ratios)
+
+
+
+	for pi in range(N):
+
+		if width_ratios is not None:			
+
+			ax = fig.add_subplot(gs[0,pi])
+
+		else:
+
+			plt.subplot(1,N,pi+1)
+
+			ax = plt.gca()
+
+
+
+		ax.patch.set_color('.5')
+
+
+
+		X0, Y0 = m(X[pi],Y[pi])
+
+		Xd0, Yd0 = m(Xd[pi],Yd[pi])
+
+	
+
+		if contourf is not None:
+
+			if mesh:
+
+				plt.pcolormesh(X0, Y0, contourf[pi], vmin=vmin[pi], vmax=vmax[pi], cmap=cmap)		
+
+			else:
+
+				levels = getContourfLevels(vmin[pi], vmax[pi], contourfNlevels)
+
+				plt.contourf(X0, Y0, contourf[pi], cmap=cmap, levels=levels)
+
+
+
+			if cbar[pi]:
+
+				cbar_ = plt.colorbar(shrink=cbarShrink)
+
+				cbar_.ax.tick_params(labelsize=fontsize)
+
+		
+
+		if contour is not None:
+
+			if contourLevels is not None:
+
+				plt.contour(X0, Y0, contour[pi], levels=contourLevels[pi], colors='k', linestyles='solid', linewidths=0.4)
+
+			else:
+
+				plt.contour(X0, Y0, contour[pi], levels=contourLevels[pi], colors='k', linestyles='solid', linewidths=0.4)
+
+
+
+		if C is not None:
+
+			cax = ax.quiver(Xd0, Yd0, u[pi], v[pi], C[pi], cmap=ccmap, scale=scale[pi])
+
+			if width_ratios is None:
+
+				plt.colorbar(cax, ax=ax)
+
+		else:
+
+			cax = plt.quiver(Xd0, Yd0, u[pi], v[pi], scale=scale[pi])
+
+		ax.quiverkey(cax, 0.8, 0.03, qs[pi], str(qs[pi]) + ' ' + qunits, labelpos='N', coordinates='axes')
+
+				
+
+		doLabels(xlabel[pi], ylabel[pi], fontsize=fontsize)
+
+		doTitle(title[pi], fontsize=fontsize)
+
+
+
+		if text_data is not None:
+
+			setText(ax, text_data[pi], set_invisible=False)
+
+		
+
+		if labelData is not None:
+
+			for li in labelData[pi]:
+
+				plt.scatter(li['x'][0], li['x'][1], s=1, color='r')
+
+				plt.annotate(li['t'], li['x'])
+
+
+
+		#ax.set_aspect('equal')
+
+
+
+		if grid[pi]:
+
+			plt.grid()
+
+		
+
+		ax.set_aspect('equal')
+
+		if parallels is not None:
+
+			# Latitudes
+
+			m.drawparallels(parallels,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[2,1], fontsize=fontsize)
+
+		if meridians is not None:
+
+			# Longitudes
+
+			m.drawmeridians(meridians,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[2,1], fontsize=fontsize)
 
 
 
@@ -1738,9 +1984,13 @@ def PAS_2by2_uvs(u, v, Xd, Yd, C=None, ccmap='bwr', contour=None, X=None, Y=None
 
 
 
-def plot1by2(data, X=[None]*2, Y=[None]*2, contour=[None]*2, contourlevels=[None]*2, figsize=(9,4), titles=[None]*2, fontsize=14, titlefontsize=None, mesh=False, cmaps=['jet']*2, vmin=[None]*2, vmax=[None]*2, text_data=[None]*2, xlabels=[None]*2, ylabels=[None]*2, grid=True, contourfNlevels=[9]*2, save=False, outpath='', outname='plot1by2.png', show=True, dpi=200, width_ratios=None, cbar=[True]*2, cbarLabel=[None]*2, xticks=[None]*2, yticks=[None]*2, xticksvis=[True]*2, yticksvis=[True]*2, vlines=[None]*2, patches=[None]*2):
+def plot1by2(data, X=[None]*2, Y=[None]*2, contour=[None]*2, contourlevels=[None]*2, figsize=(9,4), titles=[None]*2, fontsize=14, titlefontsize=None, mesh=False, cmaps=['jet']*2, vmin=[None]*2, vmax=[None]*2, stippling=[None]*2, stipData=[0.05, 4, 4, .1], text_data=[None]*2, xlabels=[None]*2, ylabels=[None]*2, grid=True, contourfNlevels=[9]*2, save=False, outpath='', outname='plot1by2.png', show=True, dpi=200, width_ratios=None, cbar=[True]*2, cbarLabel=[None]*2, xticks=[None]*2, yticks=[None]*2, xticksvis=[True]*2, yticksvis=[True]*2, vlines=[None]*2, patches=[None]*2):
 
 	
+
+	X = makeList(X, 2)
+
+	Y = makeList(Y, 2)
 
 	vmin = makeList(vmin, 2)
 
@@ -1867,6 +2117,12 @@ def plot1by2(data, X=[None]*2, Y=[None]*2, contour=[None]*2, contourlevels=[None
 		doTicks(xticks[pi], xticksvis[pi], yticks[pi], yticksvis[pi])
 
 		doTitle(titles[pi], fontsize=titlefontsize)
+
+		
+
+		if stippling[pi] is not None:
+
+			doStippling(stippling[pi], X=X[pi], Y=Y[pi], dataLim=stipData[0], dx=stipData[1], dy=stipData[2], s=stipData[3])
 
 		
 
@@ -2070,7 +2326,7 @@ def plot1by3(data, X=[None]*3, Y=[None]*3, contour=[None]*3, contourlevels=[None
 
 
 
-def plotMbyN(data, X=None, Y=None, figsize=(8,4), titles=None, fontsize=14, mesh=False, cmap='jet', vmin=None, vmax=None, cbar=True, cbarShared=False, cbarSharedData=None, text_data=None, xlabels=None, ylabels=None, grid=True, contourfNlevels=9, save=False, outpath='', outname='plotMbyN.png', show=True, dpi=200, width_ratios=None, xticks=None, yticks=None, xticksvis=True, yticksvis=True, hlines=None, contour=None, contourLevels=None):
+def plotMbyN(data, X=None, Y=None, figsize=(8,4), titles=None, fontsize=14, mesh=False, cmap='jet', vmin=None, vmax=None, cbar=True, cbarShared=False, cbarSharedData=None, text_data=None, xlabels=None, ylabels=None, grid=True, contourfNlevels=	13, save=False, outpath='', outname='plotMbyN.png', show=True, dpi=200, width_ratios=None, xticks=None, yticks=None, xticksvis=True, yticksvis=True, hlines=None, contour=None, contourLevels=None):
 
 
 
@@ -2148,9 +2404,9 @@ def plotMbyN(data, X=None, Y=None, figsize=(8,4), titles=None, fontsize=14, mesh
 
 	contour = makeList(contour, M, N)
 
-	contourLevels = makeList(contourLevels, M, N)
+	contourLevels = makeList(contourLevels, M, N, FORCE_MAKE_LIST=True)
 
-	
+				
 
 	if width_ratios is None:
 
@@ -2250,7 +2506,7 @@ def plotMbyN(data, X=None, Y=None, figsize=(8,4), titles=None, fontsize=14, mesh
 
 	
 
-	#plt.tight_layout()
+	plt.tight_layout()
 
 	if save:
 
@@ -3322,9 +3578,41 @@ def plot1by1Basemap(data, X, Y, lat_0, lon_0, contour=None, contourlevels=None, 
 
 		
 
-def plot1by2Basemap(data, X, Y, lat_0, lon_0, contour=None, contourlevels=None, figsize=(8,3), titles=None, fontsize=14, mesh=False, cmap='jet', vmin=None, vmax=None, text_data=[None,None], xlabels=None, ylabels=None, grid=True, contourfNlevels=9, save=False, outpath='', outname='plot1by1.png', show=True, dpi=200, yline=None, parallels=None, meridians=None, labelData=None):
+def plot1by2Basemap(data, X, Y, lat_0, lon_0, contour=[None]*2, contourlevels=[None]*2, figsize=(8,3), titles=None, fstitle=None, fontsize=14, mesh=False, cmap=['jet']*2, vmin=[None]*2, vmax=[None]*2, text_data=[None,None], xlabels=None, ylabels=None, grid=True, contourfNlevels=9, save=False, outpath='', outname='plot1by2Basemap.png', show=True, dpi=200, yline=None, parallels=None, meridians=None, labelData=None, cbar=[True]*2, cbarTicks=[None, None], xticks=[None]*2, yticks=[None]*2, xticksvis=[True]*2, yticksvis=[True]*2, stippling=[None]*2, stipData=[0.05, 4, 4, .1], width_ratios=[1,1], landscape=True):
 
 	
+
+	X = makeList(X, 2)
+
+	Y = makeList(Y, 2)
+
+	vmin = makeList(vmin, 2)
+
+	vmax = makeList(vmax, 2)
+
+	
+
+	titles = makeList(titles, 2)
+
+	grid = makeList(grid, 2)
+
+	xlabels = makeList(xlabels, 2)
+
+	ylabels = makeList(ylabels, 2)	
+
+
+
+	cmap = makeList(cmap, 2)
+
+	contourfNlevels = makeList(contourfNlevels, 2)
+
+	
+
+	if fstitle is None:
+
+		fstitle = [fontsize]*3
+
+		
 
 	from mpl_toolkits.basemap import Basemap
 
@@ -3334,149 +3622,107 @@ def plot1by2Basemap(data, X, Y, lat_0, lon_0, contour=None, contourlevels=None, 
 
 
 
-	fig = plt.figure(figsize=figsize, dpi=dpi)
+	if landscape:
 
+		fig = plt.figure(figsize=figsize, dpi=dpi)
 
-
-	plt.subplot(121)
-
-	ax = plt.gca()
-
-	ax.patch.set_color('.5')
-
-
-
-	X0, Y0 = m(X[0],Y[0])
-
-
-
-	if mesh:
-
-		m.pcolormesh(X0, Y0, data[0], cmap=cmap, vmin=vmin[0], vmax=vmax[0])
+		gs = gridspec.GridSpec(ncols=2, nrows=1, figure=fig, width_ratios=width_ratios)
 
 	else:
 
-		levels = getContourfLevels(vmin[0], vmax[0], contourfNlevels)
+		fig = plt.figure(figsize=(figsize[1],figsize[0]), dpi=dpi)
 
-		m.contourf(X0, Y0, data[0], cmap=cmap, levels=levels)
-
-			
-
-	doLabels(xlabels[0], ylabels[0], fontsize=fontsize)
-
-	doTicks(xticks[0], xticksvis[0], yticks[0], yticksvis[0])
-
-	doTitle(titles[0], fontsize=fstitle[0])
-
-	
-
-	if grid:
-
-		plt.grid()
+		gs = gridspec.GridSpec(ncols=1, nrows=2, figure=fig, height_ratios=width_ratios)
 
 
 
-	if text_data[0] is not None:
-
-		setText(plt.gca(), text_data[0], set_invisible=False)
+	for pi in range(2):
 
 
 
-	plt.colorbar()
+		if landscape:
 
-	
+			ax = fig.add_subplot(gs[0,pi])
 
-	ax.set_aspect(1)
+		else:
 
-	if parallels is not None:
+			ax = fig.add_subplot(gs[pi,0])
 
-		# Latitudes
+					
 
-		m.drawparallels(parallels,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[2,1])
+		if pi == 1:
 
-	if meridians is not None:
-
-		# Longitudes
-
-		m.drawmeridians(meridians,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[2,1])
+			ax1 = ax
 
 
 
-
-
-	#==
-
-	# Second Panel
-
-	#==
-
-	
-
-	plt.subplot(122)
-
-	ax = plt.gca()
-
-	ax.patch.set_color('.5')
-
-
-
-
-
-	X0, Y0 = m(X[1],Y[1])
-
-
-
-	if mesh:
-
-		m.pcolormesh(X0, Y0, data[1], cmap='jet', vmin=vmin[1], vmax=vmax[1])
-
-	else:
-
-		levels = getContourfLevels(vmin[1], vmax[1], contourfNlevels)
-
-		m.contourf(X0, Y0, data[1], cmap=cmap, levels=levels)
-
-	
-
-	doLabels(xlabels[1], ylabels[1], fontsize=fontsize)
-
-	doTicks(xticks[1], xticksvis[1], yticks[1], yticksvis[1])
-
-	doTitle(titles[1], fontsize=fstitle[1])
+		ax.patch.set_color('.5')
 
 		
 
-	if grid:
+		X0, Y0 = m(X[pi],Y[pi])
 
-		plt.grid()
+
+
+		if mesh:
+
+			cax = m.pcolormesh(X0, Y0, data[pi], cmap=cmap[pi], vmin=vmin[pi], vmax=vmax[pi])
+
+		else:
+
+			levels = getContourfLevels(vmin[pi], vmax[pi], contourfNlevels[pi])
+
+			cax = m.contourf(X0, Y0, data[pi], cmap=cmap[pi], levels=levels)
 
 	
 
-	if text_data[1] is not None:
+		if cbar[pi]:
 
-		setText(plt.gca(), text_data[1], set_invisible=False)
+			plt.colorbar(ticks=cbarTicks[pi])
+
+		
+
+		if contour[pi] is not None:
+
+			m.contour(X0, Y0, contour[pi], colors='k', linestyles='solid', linewidths=0.4, levels=contourlevels[pi])
+
+				
+
+		doLabels(xlabels[pi], ylabels[pi], fontsize=fontsize)
+
+		doTicks(xticks[pi], xticksvis[pi], yticks[pi], yticksvis[pi])
+
+		doTitle(titles[pi], fontsize=fstitle[pi])
+
+		
+
+		if grid:
+
+			plt.grid()
 
 
 
-	plt.colorbar()
+		if text_data[pi] is not None:
 
-	
+			setText(plt.gca(), text_data[pi], set_invisible=False)
 
-	ax.set_aspect(1)
+		
 
-	if parallels is not None:
+		ax.set_aspect(1)
 
-		# Latitudes
+		if parallels is not None:
 
-		m.drawparallels(parallels,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[2,1])
+			# Latitudes
 
-	if meridians is not None:
+			m.drawparallels(parallels,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[4,4])
 
-		# Longitudes
+		if meridians is not None:
 
-		m.drawmeridians(meridians,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[2,1])
+			# Longitudes
 
+			m.drawmeridians(meridians,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[4,4])
 
+			
 
 	#==
 
@@ -3726,7 +3972,7 @@ def plot1by2Basemap1(data, X, Y, lat_0, lon_0, contour=[None,None], contourlevel
 
 
 
-def quiver1by1Basemap(u, v, X, Y, d, lat_0, lon_0, vmin=None, vmax=None, width=2.8e6, height=1.7e6, contourf=None, figsize=(5,4), title='', fontsize=14, mesh=True, cmap='jet', xlabel='', ylabel='', save=False, outpath='', outname='quiver1by1Basemap.png', show=True, dpi=200, text_data=None, parallels=None, meridians=None, isf=None, outline=None, extend='neither'):
+def quiver1by1Basemap(u, v, X, Y, d, lat_0, lon_0, qx=0.3, qy=0.03, qs=0.05, qunits='m/s', scale=1, vmin=None, vmax=None, width=2.8e6, height=1.7e6, contourf=None, contourfNlevels=13, contour=None, contourlevels=None, contourColours=None, figsize=(5,4), title='', fontsize=14, mesh=True, cmap='jet', xlabel='', ylabel='', save=False, outpath='', outname='quiver1by1Basemap.png', show=True, dpi=200, text_data=None, parallels=None, meridians=None, isf=None, outline=None, extend='neither'):
 
 
 
@@ -3766,31 +4012,41 @@ def quiver1by1Basemap(u, v, X, Y, d, lat_0, lon_0, vmin=None, vmax=None, width=2
 
 		else:
 
-			m.contour(X, Y, contourf, levels=[-3000, -2000, -1000])
+			levels = getContourfLevels(vmin, vmax, contourfNlevels)
+
+			m.contourf(X, Y, contourf, levels=levels, cmap=cmap)
 
 			m.colorbar(extend=extend)
+
+	
+
+	if contour is not None:	
+
+		for ci in range(len(contour)):
+
+			cs = m.contour(X, Y, contour[ci], levels=contourlevels[ci], colors=contourColours[ci], linestyles='solid', linewidths=0.8)
+
+			#plt.clabel(cs, fontsize=7)
 
 
 
 	if isinstance(u, (list)):
 
-		q = m.quiver(Xd,Yd,u[0][::d, ::d],v[0][::d, ::d], color='r', scale=2)
+		q = m.quiver(Xd,Yd,u[0][::d, ::d],v[0][::d, ::d], color='r', scale=scale)
 
 		#plt.quiverkey(q,0.1, -0.1, 0.1, r'0.1 N m$^{-2}$',labelpos='W')
 
-		q = m.quiver(Xd,Yd,u[1][::d, ::d],v[1][::d, ::d], color='k', scale=2)
+		q = m.quiver(Xd,Yd,u[1][::d, ::d],v[1][::d, ::d], color='k', scale=scale)
 
-		plt.quiverkey(q,0.94, 0.03, 0.1, r'0.1 N m$^{-2}$',labelpos='W')
-
-
+		plt.quiverkey(q, qx, qy, qs, str(qs) + ' ' + qunits ,labelpos='W', fontproperties={'size':11})
 
 	else:
 
 		u = u[::d, ::d]; v = v[::d, ::d]
 
-		q = m.quiver(Xd,Yd,u,v)
+		q = m.quiver(Xd, Yd, u, v, scale=scale)
 
-		plt.quiverkey(q,0.94, 0.03, 0.1, r'0.1 N m$^{-2}$',labelpos='W')
+		plt.quiverkey(q, qx, qy, qs, str(qs) + ' ' + qunits ,labelpos='W', fontproperties={'size':11})
 
 	#m.fillcontinents(color='#cc9955', zorder = 0)
 
@@ -3814,7 +4070,7 @@ def quiver1by1Basemap(u, v, X, Y, d, lat_0, lon_0, vmin=None, vmax=None, width=2
 
 	if text_data is not None:
 
-		setText(ax, text_data, i=0)
+		setText(ax, text_data)
 
 
 
@@ -3824,13 +4080,13 @@ def quiver1by1Basemap(u, v, X, Y, d, lat_0, lon_0, vmin=None, vmax=None, width=2
 
 		# Latitudes
 
-		m.drawparallels(parallels,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[2,1])
+		m.drawparallels(parallels,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[4,4])
 
 	if meridians is not None:
 
 		# Longitudes
 
-		m.drawmeridians(meridians,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[2,1])
+		m.drawmeridians(meridians,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[4,4])
 
 
 
@@ -3838,15 +4094,9 @@ def quiver1by1Basemap(u, v, X, Y, d, lat_0, lon_0, vmin=None, vmax=None, width=2
 
 	if isf is not None:
 
-		#x, y = m(isf[0], isf[1])  # transform coordinates
-
-		#m.scatter(x, y, color='k', s=1)
-
 		extent = [X[0,0], X[0,-1], -Y[0,0], -Y[-1,0]]
 
 		m.imshow(1-isf, cmap=plt.cm.gray, interpolation='nearest', extent=extent, zorder=3);
-
-		#m.contour(X, Y, isf, levels=[1], colors='k')
 
 
 
@@ -4283,6 +4533,160 @@ def plot3D(X, Y, data):
 	plt.show()
 
 	
+
+#==
+
+
+
+def plotRads(RADS, X, Y, grid, bathy, subr=False, lats=None, lons=None):
+
+	'''Plot six surface radiation terms in one figure.'''
+
+
+
+	# Check if RADs is list. If so, do first data in first dict minus data in second.
+
+	if isinstance(RADS, list):
+
+		diff = True
+
+		LATENT = RADS[0]['LATENT'] - RADS[1]['LATENT']
+
+		SENS = RADS[0]['SENS'] - RADS[1]['SENS']
+
+		BB = RADS[0]['BB'] - RADS[1]['BB']
+
+		LW = RADS[0]['LW'] - RADS[1]['LW']
+
+		SW = RADS[0]['SW'] - RADS[1]['SW']
+
+		FC = RADS[0]['FC'] - RADS[1]['FC']
+
+	# Otherwise, assume RADS is single dictionary.
+
+	else:
+
+		diff = False
+
+		LATENT = RADS['LATENT']
+
+		SENS = RADS['SENS']
+
+		BB = RADS['BB']
+
+		LW = RADS['LW']
+
+		SW = RADS['SW']
+
+		FC = RADS['FC']
+
+
+
+	#RADS  = {'LATENT':LATENT_out, 'SENS':SENS_out, 'BB':BB_out, 'LW':LW_out, 'SW':SW_out, 'FC':FC_out,...} 
+
+	
+
+	LATENT = maskBathyXY(LATENT, grid, zi=0, subregion=subr, lats=lats, lons=lons)
+
+	LATENT = maskDraftXY(LATENT, grid, zi=0, subregion=subr, lats=lats, lons=lons)
+
+	
+
+	SENS = maskBathyXY(SENS, grid, zi=0, subregion=subr, lats=lats, lons=lons)
+
+	SENS = maskDraftXY(SENS, grid, zi=0, subregion=subr, lats=lats, lons=lons)
+
+	
+
+	BB = maskBathyXY(BB, grid, zi=0, subregion=subr, lats=lats, lons=lons)
+
+	BB = maskDraftXY(BB, grid, zi=0, subregion=subr, lats=lats, lons=lons)
+
+
+
+	LW = maskBathyXY(LW, grid, zi=0, subregion=subr, lats=lats, lons=lons)
+
+	LW = maskDraftXY(LW, grid, zi=0, subregion=subr, lats=lats, lons=lons)
+
+	
+
+	SW = maskBathyXY(SW, grid, zi=0, subregion=subr, lats=lats, lons=lons)
+
+	SW = maskDraftXY(SW, grid, zi=0, subregion=subr, lats=lats, lons=lons)
+
+
+
+	FC = maskBathyXY(FC, grid, zi=0, subregion=subr, lats=lats, lons=lons)
+
+	FC = maskDraftXY(FC, grid, zi=0, subregion=subr, lats=lats, lons=lons)
+
+		
+
+	data = [[-SW, -LW, BB], [-LATENT, -SENS, FC]] #-(LAT+SENS+BB+LW+SW)
+
+	titles = [[r'SW $\downarrow$ (W/m^2)', r'LW $\downarrow$', r'BB $\uparrow$'], [r'LATENT $\downarrow$', r'SENS $\downarrow$', r'FC $\uparrow$']]
+
+	
+
+	if diff:
+
+		SWvmin = -0.02; SWvmax = 0.02
+
+		LWvmin = -12; LWvmax = 12
+
+		BBvmin = -10.; BBvmax = 10.
+
+		LATvmin = -2.; LATvmax = 2.
+
+		SENSvmin = -3.; SENSvmax = 3.
+
+		FCvmin = -3.; FCvmax = 3.
+
+	else:
+
+		SWvmin = 0.04; SWvmax = 0.24
+
+		#LWvmin = 190; LWvmax = 240
+
+		#BBvmin = 220; BBvmax = 270
+
+		LWvmin = 190; LWvmax = 270
+
+		BBvmin = 190; BBvmax = 270	
+
+		LATvmin = 0; LATvmax = 6
+
+		SENSvmin = -12; SENSvmax = 12
+
+		FCvmin = 4; FCvmax = 20
+
+		
+
+	vmin = [[SWvmin, LWvmin, BBvmin], [LATvmin, SENSvmin, FCvmin]]
+
+	vmax = [[SWvmax, LWvmax, BBvmax], [LATvmax, SENSvmax, FCvmax]]
+
+	
+
+	vmin = None; vmax = None
+
+	
+
+	bathyC = makeBathyContour(bathy, X, Y)
+
+	
+
+	plotMbyN(data, X=X, Y=Y, xticksvis=False, yticksvis=False, xticks=[[[]]*3]*2, yticks=[[[]]*3]*2, titles=titles, vmin=vmin, vmax=vmax, contour=bathyC, contourLevels=[-1000], save=True)
+
+	
+
+#==
+
+	
+
+	
+
+
 
 
 
