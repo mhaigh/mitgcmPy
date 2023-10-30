@@ -30,7 +30,11 @@ import plotting_tools as ptt
 
 
 
-import PAS_tools
+from TPI import getIPO
+
+	
+
+import PAS_tools as ptools
 
 import tools
 
@@ -70,7 +74,19 @@ eastPITE = [230, 250]
 
 	
 
-sections = {'westGetz':westGetz, 'Getz':Getz, 'westPITW':westPITW, 'PITW':PITW, 'westPITE':westPITE, 'PITE':PITE, 'eastPITE':eastPITE}
+SECTIONS = {'westGetz':westGetz, 'Getz':Getz, 'westPITW':westPITW, 'PITW':PITW, 'westPITE':westPITE, 'PITE':PITE, 'eastPITE':eastPITE}
+
+
+
+nn = 60
+
+
+
+ts_shift = -2; te_shift = -3
+
+t_start = 24*12 + 5*12 + ts_shift; t_end = -11 + te_shift
+
+IPO_t_start = 14*12+1 + ts_shift; IPO_t_end = te_shift
 
 
 
@@ -126,7 +142,7 @@ if MAIN:
 
 	# Get lat, lon lists of continental slope
 
-	slope_x, slope_y = PAS_tools.getSlopeContour(bathy, X, Y, pathno)
+	slope_x, slope_y = ptools.getSlopeContour(bathy, X, Y, pathno)
 
 
 
@@ -134,7 +150,7 @@ if MAIN:
 
 
 
-	bearing = PAS_tools.getBearing(slope_x, slope_y)
+	bearing = ptools.getBearing(slope_x, slope_y)
 
 	plt.plot(bearing); plt.show(); quit()
 
@@ -462,7 +478,7 @@ if MAINZ:
 
 	# Get lat, lon lists of continental slope
 
-	slope_x, slope_y = PAS_tools.getSlopeContour(bathy, X, Y, pathno)
+	slope_x, slope_y = ptools.getSlopeContour(bathy, X, Y, pathno)
 
 
 
@@ -470,7 +486,7 @@ if MAINZ:
 
 
 
-	bearing = PAS_tools.getBearing(slope_x, slope_y)
+	bearing = ptools.getBearing(slope_x, slope_y)
 
 	
 
@@ -748,7 +764,7 @@ if slopeSalinity:
 
 	# Get lat, lon lists of continental slope
 
-	slope_x, slope_y = PAS_tools.getSlopeContour(bathy, X, Y, pathno)
+	slope_x, slope_y = ptools.getSlopeContour(bathy, X, Y, pathno)
 
 
 
@@ -934,7 +950,7 @@ if onShelfWindCurl:
 
 	# Get lat, lon lists of continental slope
 
-	slope_x, slope_y = PAS_tools.getSlopeContour(bathy, X, Y, pathno)
+	slope_x, slope_y = ptools.getSlopeContour(bathy, X, Y, pathno)
 
 
 
@@ -942,7 +958,7 @@ if onShelfWindCurl:
 
 
 
-	bearing = PAS_tools.getBearing(slope_x, slope_y)
+	bearing = ptools.getBearing(slope_x, slope_y)
 
 
 
@@ -1038,7 +1054,7 @@ if onShelfWindCurl:
 
 	rho0 = 1028.5
 
-	f = PAS_tools.getCoriolis(Y)
+	f = ptools.getCoriolis(Y)
 
 	wk = curl / (rho0 * f)
 
@@ -1248,13 +1264,91 @@ if saveEkman:
 
 	rho0 = 1028.5
 
-	f = PAS_tools.getCoriolis(Y)
+	f = ptools.getCoriolis(Y)
 
 	wk = curl / (rho0 * f)
 
 	
 
 	np.save('wk', np.ma.filled(wk, fill_value=np.nan))
+
+	
+
+	quit()
+
+	
+
+#==
+
+
+
+depthIntFields = False
+
+if depthIntFields:
+
+
+
+	NORM = False
+
+	Zbot = 50
+
+
+
+	grid = Grid_PAS(PASDIR)
+
+	bathy = grid.bathy
+
+
+
+	zi = grid.getIndexFromDepth(-Zbot)
+
+	Zbot = int(-grid.RC.squeeze()[zi])
+
+	print(zi, Zbot)
+
+	
+
+	if NORM: 
+
+		norm = np.ma.sum(grid.hFacC[:zi] * grid.DRF[:zi], axis=0)
+
+		normstr = ''
+
+	else:
+
+		norm = 1.
+
+		normstr = 'Abs'
+
+
+
+	#SALT = readVariable('SALT', PASDIR, file_format='nc', meta=False, var2D=False)
+
+
+
+	fnames = ['RHOAnoma']
+
+
+
+	for fname in fnames:
+
+
+
+		print(fname)
+
+
+
+		data = readVariable(fname, PASDIR, file_format='nc', meta=False, var2D=False)
+
+		data = np.ma.masked_where(data!=data, data)
+
+
+
+		data = np.ma.sum(data[:,:zi] * grid.hFacC[:zi] * grid.DRF[:zi], axis=1) / norm
+
+
+
+		np.save(fname+'_zInt'+normstr+'_'+str(Zbot), np.ma.filled(data, fill_value=np.nan))
 
 	
 
@@ -1326,7 +1420,7 @@ if readSlopeUVfile:
 
 	
 
-	year = PAS_tools.getDecimalTime(time, t_start=t_start, t_end=t_end)
+	year = ptools.getDecimalTime(time, t_start=t_start, t_end=t_end)
 
 	
 
@@ -1374,7 +1468,7 @@ if readSlopeUVfile:
 
 		for section in plotSections:
 
-			iw = sections[section][0]; ie = sections[section][1]
+			iw = SECTIONS[section][0]; ie = SECTIONS[section][1]
 
 			uv_sum += np.sum(slope_uv[:,iw:ie], axis=1)
 
@@ -1400,25 +1494,25 @@ if readSlopeUVfile:
 
 		# Demean
 
-		uv_mean = PAS_tools.demean(uv_mean)
+		uv_mean = ptools.demean(uv_mean)
 
-		surf_uv_mean = PAS_tools.demean(surf_uv_mean)
+		surf_uv_mean = ptools.demean(surf_uv_mean)
 
 		
 
 		# Deseason
 
-		uv_mean = PAS_tools.deseason(uv_mean)
+		uv_mean = ptools.deseason(uv_mean)
 
-		surf_uv_mean = PAS_tools.deseason(surf_uv_mean)
+		surf_uv_mean = ptools.deseason(surf_uv_mean)
 
 		
 
 		# Detrend
 
-		uv_mean = PAS_tools.detrend(uv_mean, year)
+		uv_mean = ptools.detrend(uv_mean, year)
 
-		surf_uv_mean = PAS_tools.detrend(surf_uv_mean, year)
+		surf_uv_mean = ptools.detrend(surf_uv_mean, year)
 
 		
 
@@ -1426,25 +1520,25 @@ if readSlopeUVfile:
 
 		
 
-		corruv = PAS_tools.crossCorr(uv_mean, surf_uv_mean, nl, nl2, P_VALUE=False)
+		corruv = ptools.crossCorr(uv_mean, surf_uv_mean, nl, nl2, P_VALUE=False)
 
-		corruu = PAS_tools.crossCorr(uv_mean, uv_mean, nl, nl2, P_VALUE=False)
+		corruu = ptools.crossCorr(uv_mean, uv_mean, nl, nl2, P_VALUE=False)
 
-		corrvv = PAS_tools.crossCorr(surf_uv_mean, surf_uv_mean, nl, nl2, P_VALUE=False)
+		corrvv = ptools.crossCorr(surf_uv_mean, surf_uv_mean, nl, nl2, P_VALUE=False)
 
-		Fcuv, freq, period = PAS_tools.fft(corruv)
+		Fcuv, freq, period = ptools.fft(corruv)
 
-		Fcuu, freq, period = PAS_tools.fft(corruu)
+		Fcuu, freq, period = ptools.fft(corruu)
 
-		Fcvv, freq, period = PAS_tools.fft(corrvv)
+		Fcvv, freq, period = ptools.fft(corrvv)
 
 		
 
-		Puv = PAS_tools.fftPower(Fcuv, nl2)
+		Puv = ptools.fftPower(Fcuv, nl2)
 
-		Puu = PAS_tools.fftPower(Fcuu, nl2)
+		Puu = ptools.fftPower(Fcuu, nl2)
 
-		Pvv = PAS_tools.fftPower(Fcvv, nl2)
+		Pvv = ptools.fftPower(Fcvv, nl2)
 
 		coh = Puv**2 / (Puu * Pvv)
 
@@ -1456,9 +1550,9 @@ if readSlopeUVfile:
 
 		window_lengths = np.linspace(1,nw,nw)
 
-		corrw, tw, uw, vw = PAS_tools.windowCorr(uv_mean, surf_uv_mean, window_lengths, year, return_uv=True)
+		corrw, tw, uw, vw = ptools.windowCorr(uv_mean, surf_uv_mean, window_lengths, year, return_uv=True)
 
-		corrwl, p_value = PAS_tools.crossCorrWindowAv(uv_mean, surf_uv_mean, window_lengths, nl, nl2)
+		corrwl, p_value = ptools.crossCorrWindowAv(uv_mean, surf_uv_mean, window_lengths, nl, nl2)
 
 
 
@@ -1516,11 +1610,11 @@ if readSlopeUVfile:
 
 		nn = 60
 
-		uv_mean = PAS_tools.windowAv(uv_mean, n=nn)[nn//2:-nn//2+1]
+		uv_mean = ptools.windowAv(uv_mean, n=nn)
 
-		surf_uv_mean = PAS_tools.windowAv(surf_uv_mean, n=nn)[nn//2:-nn//2+1]
+		surf_uv_mean = ptools.windowAv(surf_uv_mean, n=nn)
 
-		year = PAS_tools.windowAv(year, n=nn)[nn//2:-nn//2+1]
+		year = ptools.windowAv(year, n=nn)
 
 		
 
@@ -1580,7 +1674,7 @@ if readSlopeUVfile:
 
 		IPO = np.array(IPO[IPO_start:IPO_end])
 
-		IPO = PAS_tools.windowAv(IPO, n=nn)[nn//2:-nn//2+1]
+		IPO = ptools.windowAv(IPO, n=nn)
 
 		IPO /= 100*np.max(np.abs(IPO))
 
@@ -1628,11 +1722,11 @@ if readSlopeUVfile:
 
 		for section in plotSections:
 
-			iw = sections[section][0]; ie = sections[section][1]
+			iw = SECTIONS[section][0]; ie = SECTIONS[section][1]
 
 			uv = np.mean(slope_uv[:,iw:ie], axis=1)
 
-			uv = window_average(uv, n=nn)[nn//2:-nn//2+1]
+			uv = window_average(uv, n=nn)
 
 			plt.plot(year_, uv, label=section)
 
@@ -1838,7 +1932,7 @@ if readAllSlopeFiles:
 
 	for section in plotSections:
 
-		iw = sections[section][0]; ie = sections[section][1]
+		iw = SECTIONS[section][0]; ie = SECTIONS[section][1]
 
 		uv_sum += np.sum(slope_uv[:,iw:ie], axis=1)
 
@@ -1882,37 +1976,37 @@ if readAllSlopeFiles:
 
 	if DEMEAN:
 
-		uv_mean = PAS_tools.demean(uv_mean)
+		uv_mean = ptools.demean(uv_mean)
 
-		surf_uv_mean = PAS_tools.demean(surf_uv_mean)
+		surf_uv_mean = ptools.demean(surf_uv_mean)
 
-		barocl_mean = PAS_tools.demean(barocl_mean)
+		barocl_mean = ptools.demean(barocl_mean)
 
-		uw_mean = PAS_tools.demean(uw_mean)
+		uw_mean = ptools.demean(uw_mean)
 
-		us_mean = PAS_tools.demean(us_mean)
+		us_mean = ptools.demean(us_mean)
 
-		curl_deep = PAS_tools.demean(curl_deep)
+		curl_deep = ptools.demean(curl_deep)
 
-		curl_shelf = PAS_tools.demean(curl_shelf)
+		curl_shelf = ptools.demean(curl_shelf)
 
-		wk_deep = PAS_tools.demean(wk_deep)
+		wk_deep = ptools.demean(wk_deep)
 
-		wk_shelf = PAS_tools.demean(wk_shelf)
+		wk_shelf = ptools.demean(wk_shelf)
 
-		wk_coast = PAS_tools.demean(wk_coast)
+		wk_coast = ptools.demean(wk_coast)
 
-		SI_deep = PAS_tools.demean(SI_deep)
+		SI_deep = ptools.demean(SI_deep)
 
-		SI_shelf = PAS_tools.demean(SI_shelf)
+		SI_shelf = ptools.demean(SI_shelf)
 
-		SI_coast = PAS_tools.demean(SI_coast)
+		SI_coast = ptools.demean(SI_coast)
 
-		FWflx_deep = PAS_tools.demean(FWflx_deep)
+		FWflx_deep = ptools.demean(FWflx_deep)
 
-		FWflx_shelf = PAS_tools.demean(FWflx_shelf)
+		FWflx_shelf = ptools.demean(FWflx_shelf)
 
-		FWflx_coast = PAS_tools.demean(FWflx_coast)
+		FWflx_coast = ptools.demean(FWflx_coast)
 
 			
 
@@ -1920,37 +2014,37 @@ if readAllSlopeFiles:
 
 	if DESEASON:
 
-		uv_mean = PAS_tools.deseason(uv_mean)
+		uv_mean = ptools.deseason(uv_mean)
 
-		surf_uv_mean = PAS_tools.deseason(surf_uv_mean)
+		surf_uv_mean = ptools.deseason(surf_uv_mean)
 
-		barocl_mean = PAS_tools.deseason(barocl_mean)
+		barocl_mean = ptools.deseason(barocl_mean)
 
-		uw_mean = PAS_tools.deseason(uw_mean)
+		uw_mean = ptools.deseason(uw_mean)
 
-		us_mean = PAS_tools.deseason(us_mean)
+		us_mean = ptools.deseason(us_mean)
 
-		curl_deep = PAS_tools.deseason(curl_deep)
+		curl_deep = ptools.deseason(curl_deep)
 
-		curl_shelf = PAS_tools.deseason(curl_shelf)
+		curl_shelf = ptools.deseason(curl_shelf)
 
-		wk_deep = PAS_tools.deseason(wk_deep)
+		wk_deep = ptools.deseason(wk_deep)
 
-		wk_shelf = PAS_tools.deseason(wk_shelf)
+		wk_shelf = ptools.deseason(wk_shelf)
 
-		wk_coast = PAS_tools.deseason(wk_coast)
+		wk_coast = ptools.deseason(wk_coast)
 
-		SI_deep = PAS_tools.deseason(SI_deep)
+		SI_deep = ptools.deseason(SI_deep)
 
-		SI_shelf = PAS_tools.deseason(SI_shelf)
+		SI_shelf = ptools.deseason(SI_shelf)
 
-		SI_coast = PAS_tools.deseason(SI_coast)
+		SI_coast = ptools.deseason(SI_coast)
 
-		FWflx_deep = PAS_tools.deseason(FWflx_deep)
+		FWflx_deep = ptools.deseason(FWflx_deep)
 
-		FWflx_shelf = PAS_tools.deseason(FWflx_shelf)
+		FWflx_shelf = ptools.deseason(FWflx_shelf)
 
-		FWflx_coast = PAS_tools.deseason(FWflx_coast)
+		FWflx_coast = ptools.deseason(FWflx_coast)
 
 		
 
@@ -1958,37 +2052,37 @@ if readAllSlopeFiles:
 
 	if DETREND:
 
-		uv_mean = PAS_tools.detrend(uv_mean, year)
+		uv_mean = ptools.detrend(uv_mean, year)
 
-		surf_uv_mean = PAS_tools.detrend(surf_uv_mean, year)
+		surf_uv_mean = ptools.detrend(surf_uv_mean, year)
 
-		barocl_mean = PAS_tools.detrend(barocl_mean, year)
+		barocl_mean = ptools.detrend(barocl_mean, year)
 
-		uw_mean = PAS_tools.detrend(uw_mean, year)
+		uw_mean = ptools.detrend(uw_mean, year)
 
-		us_mean = PAS_tools.detrend(us_mean, year)
+		us_mean = ptools.detrend(us_mean, year)
 
-		curl_deep = PAS_tools.detrend(curl_deep, year)
+		curl_deep = ptools.detrend(curl_deep, year)
 
-		curl_shelf = PAS_tools.detrend(curl_shelf, year)
+		curl_shelf = ptools.detrend(curl_shelf, year)
 
-		wk_deep = PAS_tools.detrend(wk_deep, year)
+		wk_deep = ptools.detrend(wk_deep, year)
 
-		wk_shelf = PAS_tools.detrend(wk_shelf, year)
+		wk_shelf = ptools.detrend(wk_shelf, year)
 
-		wk_coast = PAS_tools.detrend(wk_coast, year)
+		wk_coast = ptools.detrend(wk_coast, year)
 
-		SI_deep = PAS_tools.detrend(SI_deep, year)
+		SI_deep = ptools.detrend(SI_deep, year)
 
-		SI_shelf = PAS_tools.detrend(SI_shelf, year)
+		SI_shelf = ptools.detrend(SI_shelf, year)
 
-		SI_coast = PAS_tools.detrend(SI_coast, year)
+		SI_coast = ptools.detrend(SI_coast, year)
 
-		FWflx_deep = PAS_tools.detrend(FWflx_deep, year)
+		FWflx_deep = ptools.detrend(FWflx_deep, year)
 
-		FWflx_shelf = PAS_tools.detrend(FWflx_shelf, year)
+		FWflx_shelf = ptools.detrend(FWflx_shelf, year)
 
-		FWflx_coast = PAS_tools.detrend(FWflx_coast, year)
+		FWflx_coast = ptools.detrend(FWflx_coast, year)
 
 		
 
@@ -2002,35 +2096,35 @@ if readAllSlopeFiles:
 
 	window_lengths = np.linspace(1,nw,nw)
 
-	corr_surfDeep, p_value_surfDeep = PAS_tools.crossCorrWindowAv(surf_uv_mean, uv_mean, window_lengths, nl, nl2)
+	corr_surfDeep, p_value_surfDeep = ptools.crossCorrWindowAv(surf_uv_mean, uv_mean, window_lengths, nl, nl2)
 
-	corr_deepWind, p_value_deepWind = PAS_tools.crossCorrWindowAv(uv_mean, uw_mean, window_lengths, nl, nl2)
+	corr_deepWind, p_value_deepWind = ptools.crossCorrWindowAv(uv_mean, uw_mean, window_lengths, nl, nl2)
 
-	corr_surfWind, p_value_surfWind = PAS_tools.crossCorrWindowAv(surf_uv_mean, uw_mean, window_lengths, nl, nl2)
+	corr_surfWind, p_value_surfWind = ptools.crossCorrWindowAv(surf_uv_mean, uw_mean, window_lengths, nl, nl2)
 
-	corr_deepStress, p_value_deepStress = PAS_tools.crossCorrWindowAv(uv_mean, us_mean, window_lengths, nl, nl2)
+	corr_deepStress, p_value_deepStress = ptools.crossCorrWindowAv(uv_mean, us_mean, window_lengths, nl, nl2)
 
-	corr_surfStress, p_value_surfStress = PAS_tools.crossCorrWindowAv(surf_uv_mean, us_mean, window_lengths, nl, nl2)
+	corr_surfStress, p_value_surfStress = ptools.crossCorrWindowAv(surf_uv_mean, us_mean, window_lengths, nl, nl2)
 
-	corr_deepDeepCurl, p_value_deepDeepCurl = PAS_tools.crossCorrWindowAv(uv_mean, curl_deep, window_lengths, nl, nl2)
+	corr_deepDeepCurl, p_value_deepDeepCurl = ptools.crossCorrWindowAv(uv_mean, curl_deep, window_lengths, nl, nl2)
 
-	corr_deepShCurl, p_value_deepShCurl = PAS_tools.crossCorrWindowAv(uv_mean, curl_shelf, window_lengths, nl, nl2)
+	corr_deepShCurl, p_value_deepShCurl = ptools.crossCorrWindowAv(uv_mean, curl_shelf, window_lengths, nl, nl2)
 
-	corr_deepWkDeep, p_value_deepWkDeep = PAS_tools.crossCorrWindowAv(uv_mean, wk_deep, window_lengths, nl, nl2)
+	corr_deepWkDeep, p_value_deepWkDeep = ptools.crossCorrWindowAv(uv_mean, wk_deep, window_lengths, nl, nl2)
 
-	corr_deepWkShelf, p_value_deepWkShelf = PAS_tools.crossCorrWindowAv(uv_mean, wk_shelf, window_lengths, nl, nl2)
+	corr_deepWkShelf, p_value_deepWkShelf = ptools.crossCorrWindowAv(uv_mean, wk_shelf, window_lengths, nl, nl2)
 
-	corr_stressWkShelf, p_value_stressWkShelf = PAS_tools.crossCorrWindowAv(us_mean, wk_shelf, window_lengths, nl, nl2)
+	corr_stressWkShelf, p_value_stressWkShelf = ptools.crossCorrWindowAv(us_mean, wk_shelf, window_lengths, nl, nl2)
 
-	corr_stressWkDeep, p_value_stressWkDeep = PAS_tools.crossCorrWindowAv(us_mean, wk_deep, window_lengths, nl, nl2)
+	corr_stressWkDeep, p_value_stressWkDeep = ptools.crossCorrWindowAv(us_mean, wk_deep, window_lengths, nl, nl2)
 
-	corr_deepSIdeep, p_value_deepSIdeep = PAS_tools.crossCorrWindowAv(uv_mean, SI_deep, window_lengths, nl, nl2)
+	corr_deepSIdeep, p_value_deepSIdeep = ptools.crossCorrWindowAv(uv_mean, SI_deep, window_lengths, nl, nl2)
 
-	corr_deepSIshelf, p_value_deepSIshelf = PAS_tools.crossCorrWindowAv(uv_mean, SI_shelf, window_lengths, nl, nl2)
+	corr_deepSIshelf, p_value_deepSIshelf = ptools.crossCorrWindowAv(uv_mean, SI_shelf, window_lengths, nl, nl2)
 
-	corr_surfSIdeep, p_value_surfSIdeep = PAS_tools.crossCorrWindowAv(surf_uv_mean, SI_deep, window_lengths, nl, nl2)
+	corr_surfSIdeep, p_value_surfSIdeep = ptools.crossCorrWindowAv(surf_uv_mean, SI_deep, window_lengths, nl, nl2)
 
-	corr_surfSIshelf, p_value_surfSIshelf = PAS_tools.crossCorrWindowAv(surf_uv_mean, SI_shelf, window_lengths, nl, nl2)
+	corr_surfSIshelf, p_value_surfSIshelf = ptools.crossCorrWindowAv(surf_uv_mean, SI_shelf, window_lengths, nl, nl2)
 
 	
 
@@ -2126,41 +2220,41 @@ if readAllSlopeFiles:
 
 	nn = 60
 
-	#year = PAS_tools.windowAv(year, n=nn)[nn//2:-nn//2+1]
+	#year = ptools.windowAv(year, n=nn)
 
 	year = year[nn//2:-nn//2+1]
 
-	uv_mean = PAS_tools.windowAv(uv_mean, n=nn)[nn//2:-nn//2+1]
+	uv_mean = ptools.windowAv(uv_mean, n=nn)
 
-	surf_uv_mean = PAS_tools.windowAv(surf_uv_mean, n=nn)[nn//2:-nn//2+1]
+	surf_uv_mean = ptools.windowAv(surf_uv_mean, n=nn)
 
-	barocl_mean = PAS_tools.windowAv(barocl_mean, n=nn)[nn//2:-nn//2+1]
+	barocl_mean = ptools.windowAv(barocl_mean, n=nn)
 
-	uw_mean = PAS_tools.windowAv(uw_mean, n=nn)[nn//2:-nn//2+1]
+	uw_mean = ptools.windowAv(uw_mean, n=nn)
 
-	us_mean = PAS_tools.windowAv(us_mean, n=nn)[nn//2:-nn//2+1]
+	us_mean = ptools.windowAv(us_mean, n=nn)
 
-	curl_deep = PAS_tools.windowAv(curl_deep, n=nn)[nn//2:-nn//2+1]	
+	curl_deep = ptools.windowAv(curl_deep, n=nn)	
 
-	curl_shelf = PAS_tools.windowAv(curl_shelf, n=nn)[nn//2:-nn//2+1]
+	curl_shelf = ptools.windowAv(curl_shelf, n=nn)
 
-	wk_deep = PAS_tools.windowAv(wk_deep, n=nn)[nn//2:-nn//2+1]	
+	wk_deep = ptools.windowAv(wk_deep, n=nn)	
 
-	wk_shelf = PAS_tools.windowAv(wk_shelf, n=nn)[nn//2:-nn//2+1]
+	wk_shelf = ptools.windowAv(wk_shelf, n=nn)
 
-	wk_coast = PAS_tools.windowAv(wk_coast, n=nn)[nn//2:-nn//2+1]
+	wk_coast = ptools.windowAv(wk_coast, n=nn)
 
-	SI_deep = PAS_tools.windowAv(SI_deep, n=nn)[nn//2:-nn//2+1]	
+	SI_deep = ptools.windowAv(SI_deep, n=nn)	
 
-	SI_shelf = PAS_tools.windowAv(SI_shelf, n=nn)[nn//2:-nn//2+1]
+	SI_shelf = ptools.windowAv(SI_shelf, n=nn)
 
-	SI_coast = PAS_tools.windowAv(SI_coast, n=nn)[nn//2:-nn//2+1]
+	SI_coast = ptools.windowAv(SI_coast, n=nn)
 
-	FWflx_deep = PAS_tools.windowAv(FWflx_deep, n=nn)[nn//2:-nn//2+1]	
+	FWflx_deep = ptools.windowAv(FWflx_deep, n=nn)	
 
-	FWflx_shelf = PAS_tools.windowAv(FWflx_shelf, n=nn)[nn//2:-nn//2+1]
+	FWflx_shelf = ptools.windowAv(FWflx_shelf, n=nn)
 
-	FWflx_coast = PAS_tools.windowAv(FWflx_coast, n=nn)[nn//2:-nn//2+1]
+	FWflx_coast = ptools.windowAv(FWflx_coast, n=nn)
 
 	
 
@@ -2298,7 +2392,7 @@ if seasonalBarocl:
 
 	t = np.load(path+timefile)
 
-	year = PAS_tools.getDecimalTime(t)
+	year = ptools.getDecimalTime(t)
 
 	year = year[start:end]
 
@@ -2338,7 +2432,7 @@ if seasonalBarocl:
 
 	for section in plotSections:
 
-		iw = sections[section][0]; ie = sections[section][1]
+		iw = SECTIONS[section][0]; ie = SECTIONS[section][1]
 
 		uv_sum += np.sum(slope_uv[:,iw:ie], axis=1)
 
@@ -2360,11 +2454,11 @@ if seasonalBarocl:
 
 	if DEMEAN:
 
-		uv_mean = PAS_tools.demean(uv_mean)
+		uv_mean = ptools.demean(uv_mean)
 
-		surf_uv_mean = PAS_tools.demean(surf_uv_mean)
+		surf_uv_mean = ptools.demean(surf_uv_mean)
 
-		barocl_mean = PAS_tools.demean(barocl_mean)
+		barocl_mean = ptools.demean(barocl_mean)
 
 			
 
@@ -2372,11 +2466,11 @@ if seasonalBarocl:
 
 	if DESEASON:
 
-		uv_mean = PAS_tools.deseason(uv_mean)
+		uv_mean = ptools.deseason(uv_mean)
 
-		surf_uv_mean = PAS_tools.deseason(surf_uv_mean)
+		surf_uv_mean = ptools.deseason(surf_uv_mean)
 
-		barocl_mean = PAS_tools.deseason(barocl_mean)
+		barocl_mean = ptools.deseason(barocl_mean)
 
 		
 
@@ -2384,21 +2478,21 @@ if seasonalBarocl:
 
 	if DETREND:
 
-		uv_mean = PAS_tools.detrend(uv_mean, year)
+		uv_mean = ptools.detrend(uv_mean, year)
 
-		surf_uv_mean = PAS_tools.detrend(surf_uv_mean, year)
+		surf_uv_mean = ptools.detrend(surf_uv_mean, year)
 
-		barocl_mean = PAS_tools.detrend(barocl_mean, year)
+		barocl_mean = ptools.detrend(barocl_mean, year)
 
 	
 
-	baroclSeasonal = PAS_tools.seasonalData(barocl_mean, year)
+	baroclSeasonal = ptools.seasonalData(barocl_mean, year)
 
 		
 
 	nn = 60
 
-	barocl_mean = PAS_tools.windowAv(barocl_mean, n=nn)[nn//2:-nn//2+1]
+	barocl_mean = ptools.windowAv(barocl_mean, n=nn)
 
 	year_ = year[nn//2:-nn//2+1]
 
@@ -2448,51 +2542,61 @@ if seasonalData:
 
 
 
-	SEASONAL = False; ns = 12 # If False, computes monthly instead.
+	#SEASONAL = False; ns = 12 # If False, computes monthly instead.
 
 	#SUBREGION = False
 
 	
 
-	
+	path = '/home/michael/Documents/data/slopeCurrent/0_779_y1/'
 
-	grid = Grid_PAS(PASDIR)
-
-	
-
-	nn = 60	
-
-	ts = -2; te = - 3
-
-		
-
-	from TPI import TPI_unfiltered_PSL as IPO
-
-	IPO_start = 14*12+1 + ts; IPO_end = te
-
-	IPO = np.array(IPO[IPO_start:IPO_end])
-
-	IPO = PAS_tools.windowAv(IPO, n=nn)[nn//2:-nn//2+1]
+	sections = ['westGetz', 'westPITW', 'westPITE']
 
 
 
-	#t_start = 107; t_end = 622
+	# Start/end month in PAS. Using smaller range via shifts to focus on two main events.
 
-	t_start = 0; t_end = 779
+	ts_shift = -2+24
 
-	#t_start = 0; t_end = 10
+	te_shift = -3-48
+
+	t_start = 24*12 + 5*12 + ts_shift; t_end = -11 + te_shift
+
+	IPO_t_start = 14*12+1 + ts_shift; IPO_t_end = te_shift
 
 	
 
-	start = 24*12 + 5*12 + ts; end= -11 + te
+	thresholdScale = .5
+
+	nn = 60
+
+
+
+	# Use IPO or undercurrent for composites.
+
+	# IPO data is 1970-2017.
+
+	#IPO = getIPO(IPO_t_start=IPO_t_start, IPO_t_end=IPO_t_end)
+
+	#compstr = 'IPO'
 
 	
 
-	path = '/home/michael/Documents/data/slopeCurrent/'
+	
 
-	path = path + str(t_start) + '_' + str(t_end) + '_y1/'
+	#IPO = ptools.getBarocl(t_start=t_start, t_end=t_end); compstr = 'barocl.'
+
+	IPO = ptools.getUndercurrent(t_start=t_start, t_end=t_end); compstr = 'undercurrent'
+
+	IPO = ptools.avSlopeSections(IPO, sections=sections)
+
+	IPO = ptools.windowAv(ptools.detrend(IPO, None), n=nn)
 
 	
+
+	print(IPO.shape)
+
+
 
 	grid = Grid_PAS(PASDIR)
 
@@ -2504,17 +2608,17 @@ if seasonalData:
 
 	t = np.load(path+timefile)
 
-	year = PAS_tools.getDecimalTime(t)
+	year = ptools.getDecimalTime(t)
 
-	year = year[start:end]
+	year = year[t_start:t_end]
 
 
 
-	#fname = 'wk.npy'; title = 'Ekman (m/s)'; vmax1 = 2.e-6; vmax2 = vmax1
+	#fname = 'wk.npy'; title = 'Ekman (m/s)'; vmax1 = 1.e-5; vmax2 = vmax1; c0 = 0
 
 	#fname = 'FWflx.npy'; title = 'FWflx (kg/m^2/s)'; vmax1 = 2.e-4; vmax2 = 5.e-5; c0 = 0#4.e-6
 
-	fname = 'SST.npy'; title = 'SST (deg. C)'; vmax1 = 3; vmax2 = .02; c0 = -1.9; vmax3 = .02
+	#fname = 'SST.npy'; title = 'SST (deg. C)'; vmax1 = 3; vmax2 = .02; c0 = -1.9; vmax3 = .02
 
 	#fname = 'SSS.npy'; title = 'SSS (g/kg)'; vmax1 = 1; vmax2 = .1; c0 = 33.8; vmax3 = 0.5
 
@@ -2528,15 +2632,15 @@ if seasonalData:
 
 	#fname = 'SIhsnow.npy'; title = 'hsnow'; vmax1 = .1; vmax2 = .1; c0 = .25; vmax3 = .25
 
-	#fname = 'EXFuwind.npy'; title = 'EXFuwind (m/s)'; vmax1 = 0.6; vmax2 = 0.6
+	#fname = 'EXFuwind.npy'; title = 'EXFuwind (m/s)'; vmax1=vmax1 = 2.; vmax2 = 2.; c0 = 1.
 
-	#fname = 'EXFvwind.npy'; title = 'EXFvwind (m/s)'; vmax1 = 0.2; vmax2 = 0.2
+	#fname = 'EXFvwind.npy'; title = 'EXFvwind (m/s)'; vmax1 = 2.; vmax2 = 2.; c0 = 1.
 
 	#fname = 'SHIfwFlx.npy'; title = 'SHIfwFlx'
 
 	#fname = 'SIconv'; vmax1 = 2.e-1; vmax2 = vmax1
 
-	#fname = 'EXFpreci.npy'; title = 'EXFpreci (m/s)'; vmax1 = 1.e-8; vmax2 = vmax1
+	#fname = 'EXFpreci.npy'; title = 'EXFpreci (m/s)'; vmax1 = 1.e-8; vmax2 = vmax1; c0 = 0
 
 	#fname = 'EXFatemp.npy'; title = 'EXFatemp (degK)'; vmax1 = 8.; vmax2 = 2.5; c0 = 260. 
 
@@ -2546,7 +2650,7 @@ if seasonalData:
 
 	#fname = 'EXFroff.npy'; title = 'EXFroff (m/s)'; vmax1 = 1.e-56; vmax2 = vmax1
 
-	#fname = 'EXFlwdn.npy'; title = 'EXFlwdn (W/m^2)'; vmax1 = 4.e1; vmax2 = 1.e1; c0 = 230.  
+	fname = 'EXFlwdn.npy'; title = 'EXFlwdn (W/m^2)'; vmax1 = 4.e1; vmax2 = 1.e1; c0 = 230.  
 
 	#fname = 'EXFswdn.npy'; title = 'EXFswdn (W/m^2)'; vmax1 = 2.e2; vmax2 = 1.e1; c0 = .9; vmax3 = .9
 
@@ -2572,9 +2676,7 @@ if seasonalData:
 
 
 
-	data = np.load(path+fname)
-
-	data = data[start:end]
+	data = np.load(path+fname)[t_start:t_end]
 
 	data = data[nn//2:-nn//2+1]
 
@@ -2610,23 +2712,23 @@ if seasonalData:
 
 	
 
-	#data = PAS_tools.demean(data)
+	data = ptools.demean(data)
 
-	#data = PAS_tools.detrendXY(data, None); c0 = 0
+	data = ptools.detrendXY(data, None)#,  interceptFlag=0); c0 = 0
 
 	# Use one below when plotting absolute values.
 
-	#data = PAS_tools.detrendXY(data, None, interceptFlag=0)
+	#data = ptools.detrendXY(data, None, interceptFlag=0)
 
 		
 
 	if SEASONAL:
 
-		dataSeas, seasons = PAS_tools.seasonalDataIPO(data, year, IPO)
+		dataSeas, seasons = ptools.seasonalDataIPO(data, year, IPO, thresholdScale=thresholdScale)
 
 	else:
 
-		dataSeas, seasons = PAS_tools.monthlyDataIPO(data, year, IPO)
+		dataSeas, seasons = ptools.monthlyDataIPO(data, year, IPO, thresholdScale=thresholdScale)
 
 
 
@@ -2650,25 +2752,25 @@ if seasonalData:
 
 	
 
+	bathyC = ptt.makeBathyContour(bathy, X, Y)
+
+	contour = [bathyC, bathyC, bathyC]
+
+	contourLevels=[[-1000]]*3
+
+
+
 	X = [X, X, X]; Y = [Y, Y, Y]
 
-	contour = [bathy, bathy, bathy]
 
-	contourlevels=[[-1000]]*3
 
 	savenum = ''
 
 	
 
-	ny = data.shape[-2]; nx = data.shape[-1]
-
-	ipopos = np.zeros((ny,nx))
-
-	
-
 	for si in range(12):
 
-		titles = [seasons[si] + ' ' + title, 'IPO pos comp', 'IPO neg comp']
+		titles = [seasons[si] + ' ' + title, compstr + ' pos. comp.', compstr + ' neg. comp.']
 
 		print(seasons[si])
 
@@ -2688,9 +2790,7 @@ if seasonalData:
 
 		#data2 += data1; data3 += data1
 
-		if not SEASONAL:
-
-			savenum = str(si+1) 
+		savenum = str(si+1) 
 
 		outname = 'tmpimg/' + fname[:-4] + savenum + seasons[si]
 
@@ -2698,19 +2798,19 @@ if seasonalData:
 
 		# For plotting anomalies.
 
-		pt.plot1by3([data1, data2, data3], X=X, Y=Y, mesh=True, vmin=vmin, vmax=vmax, figsize=(13,3), titles=titles, fontsize=9, contour=contour, contourlevels=contourlevels, save=SAVE, outname=outname, show=SEASONAL)
+		pt.plot1by3([data1, data2, data3], X=X, Y=Y, mesh=True, vmin=vmin, vmax=vmax, figsize=(13,3), titles=titles, fontsize=9, contour=contour, contourLevels=contourLevels, save=SAVE, outname=outname, show=SEASONAL)
 
 	
 
 		# For plotting absolute values.
 
-		#pt.plot1by3([data1, data2+data1, data3+data1], X=X, Y=Y, mesh=False, contourfNlevels=17, vmin=vminc, vmax=vmaxc, figsize=(13,3), titles=titles, fontsize=9, contour=contour, contourlevels=contourlevels, save=SAVE, outname=outname)
+		#pt.plot1by3([data1, data2+data1, data3+data1], X=X, Y=Y, mesh=False, contourfNlevels=17, vmin=vminc, vmax=vmaxc, figsize=(13,3), titles=titles, fontsize=9, contour=contour, contourLevels=contourLevels, save=SAVE, outname=outname)
 
 			
 
 		# For checking colorbar limits.		
 
-		#pt.plot1by3([data1, data2+data1, data3+data1], X=X, Y=Y, mesh=False, contourfNlevels=17, figsize=(13,3), titles=titles, fontsize=9, contour=contour, contourlevels=contourlevels, save=False, outname=outname)
+		#pt.plot1by3([data1, data2+data1, data3+data1], X=X, Y=Y, mesh=False, contourfNlevels=17, figsize=(13,3), titles=titles, fontsize=9, contour=contour, contourLevels=contourLevels, save=False, outname=outname)
 
 		
 
@@ -2740,45 +2840,63 @@ if seasonalQuiver:
 
 
 
-	SUBREGION = False; lonsi = None; latsi = None
+	SEASONAL = True; ns = 4;
 
-	#SUBREGION = True
+	SUBREGION = True; lonsi = None; latsi = None
+
+
+
+	#SEASONAL = False; ns = 12 # If False, computes monthly instead.
+
+	SUBREGION = False
+
+
 
 	SAVE = True
 
-		
+	
 
-	grid = Grid_PAS(PASDIR)
+	path = '/home/michael/Documents/data/slopeCurrent/0_779_y1/'
+
+	sections = ['westGetz', 'westPITW', 'westPITE']
+
+
+
+	# Start/end month in PAS. Using smaller range via shifts to focus on two main events.
+
+	ts_shift = -2+24
+
+	te_shift = -3-48
+
+	t_start = 24*12 + 5*12 + ts_shift; t_end = -11 + te_shift
+
+	IPO_t_start = 14*12+1 + ts_shift; IPO_t_end = te_shift
 
 	
 
-	nn = 60	
+	thresholdScale = .5
 
-	ts = -2; te = - 3
-
-		
-
-	from TPI import TPI_unfiltered_PSL as IPO
-
-	IPO_start = 14*12+1 + ts; IPO_end = te
-
-	IPO = np.array(IPO[IPO_start:IPO_end])
-
-	IPO = PAS_tools.windowAv(IPO, n=nn)[nn//2:-nn//2+1]
+	nn = 60
 
 
 
-	t_start = 0; t_end = 779
+	# Use IPO or undercurrent for composites.
+
+	# IPO data is 1970-2017.
+
+	IPO = getIPO(IPO_t_start=IPO_t_start, IPO_t_end=IPO_t_end)
+
+	compstr = 'IPO'
 
 	
 
-	start = 24*12 + 5*12 + ts; end= -11 + te
+	#IPO = ptools.getBarocl(t_start=t_start, t_end=t_end); compstr = 'barocl.'
 
-	
+	#IPO = ptools.getUndercurrent(t_start=t_start, t_end=t_end); compstr = 'undercurrent'
 
-	path = '/home/michael/Documents/data/slopeCurrent/'
+	#IPO = ptools.avSlopeSections(IPO, sections=sections)
 
-	path = path + str(t_start) + '_' + str(t_end) + '_y1/'
+	#IPO = ptools.windowAv(ptools.detrend(IPO, None), n=nn)
 
 	
 
@@ -2796,13 +2914,15 @@ if seasonalQuiver:
 
 	t = np.load(path+timefile)
 
-	year = PAS_tools.getDecimalTime(t)
+	year = ptools.getDecimalTime(t)
 
-	year = year[start:end]
+	year = year[t_start:t_end]
 
 
 
 	if False: # SI vel. and heff
+
+		fname = 'SIvel_SIheff_'
 
 		u = np.load(path+'SIu.npy'); v = np.load(path+'SIv.npy')
 
@@ -2814,25 +2934,25 @@ if seasonalQuiver:
 
 	if True:
 
+		fname = 'wind_FWflx_'
+
 		u = np.load(path+'EXFuwind.npy'); v = np.load(path+'EXFvwind.npy')
 
-		data = np.load(path+'wk.npy'); vmax1 = 1.e-5; vmax2 = 1.e-5
+		data = np.load(path+'FWflx_noPr.npy'); vmax1 = 4.e-5; vmax2 = 4.e-5
 
-		title = 'wind & wk'; qs = .5; scale = 10; qunits = 'm/s'
+		title = 'wind & FWflx'; qs = .5; scale = 15; qunits = 'm/s'
 
-		savename = 'wind_wk'	
+		savename = 'wind_FWflx'	
 
 	
 
-	data = data[start:end];	data = data[nn//2:-nn//2+1]
+	data = data[t_start:t_end];	data = data[nn//2:-nn//2+1]
 
-	u = u[start:end]; u = u[nn//2:-nn//2+1]
+	u = u[t_start:t_end]; u = u[nn//2:-nn//2+1]
 
-	v = v[start:end]; v = v[nn//2:-nn//2+1]
+	v = v[t_start:t_end]; v = v[nn//2:-nn//2+1]
 
 	year = year[nn//2:-nn//2+1]
-
-	print(u.shape)
 
 	
 
@@ -2886,23 +3006,35 @@ if seasonalQuiver:
 
 		data = ptt.maskBathyXY(data, grid, 0, timeDep=True)
 
-		
+		data = ptt.maskDraftXY(data, grid, 0, timeDep=True)
 
-	#data = PAS_tools.demean(data)
+	
 
-	data = PAS_tools.detrendXY(data, None)
+	lim=5; pt.plot1by1(np.mean(data,axis=0)[lim:-lim,lim:-lim], X=X[lim:-lim,lim:-lim], Y=Y[lim:-lim,lim:-lim], cmap='bwr', vmin=-3*vmax1, vmax=3*vmax1, title='Time-mean (1986-2016) surf. FW flux (kg/m^2/s)', mesh=True, contour=ptt.makeBathyContour(bathy, X, Y)[lim:-lim,lim:-lim], contourLevels=[-1000]); quit()
 
-	u = PAS_tools.detrendXY(u, None)
+	
 
-	v = PAS_tools.detrendXY(v, None)
+	#data = ptools.demean(data)
 
-			
+	data = ptools.detrendXY(data, None); u = ptools.detrendXY(u, None); v = ptools.detrendXY(v, None)
 
-	dataSeas, seasons = PAS_tools.seasonalDataIPO(data, year, IPO)
+	
 
-	uSeas, seasons = PAS_tools.seasonalDataIPO(u, year, IPO)
+	if SEASONAL:
 
-	vSeas, seasons = PAS_tools.seasonalDataIPO(v, year, IPO)
+		dataSeas, seasons = ptools.seasonalDataIPO(data, year, IPO, thresholdScale=thresholdScale)
+
+		uSeas, seasons = ptools.seasonalDataIPO(u, year, IPO, thresholdScale=thresholdScale)
+
+		vSeas, seasons = ptools.seasonalDataIPO(v, year, IPO, thresholdScale=thresholdScale)
+
+	else:
+
+		dataSeas, seasons = ptools.monthlyDataIPO(data, year, IPO, thresholdScale=thresholdScale)
+
+		uSeas, seasons = ptools.monthlyDataIPO(u, year, IPO, thresholdScale=thresholdScale)
+
+		vSeas, seasons = ptools.monthlyDataIPO(v, year, IPO, thresholdScale=thresholdScale)
 
 		
 
@@ -2932,6 +3064,14 @@ if seasonalQuiver:
 
 	
 
+	bathyC = ptt.makeBathyContour(bathy, X, Y)
+
+	contour = [bathyC, bathyC, bathyC]
+
+	contourLevels=[[-1000]]*3
+
+		
+
 	d = 16; Xd = X[::d, ::d]; Yd = Y[::d, ::d]
 
 	Xd = [Xd, Xd, Xd]; Yd = [Yd, Yd, Yd]
@@ -2940,19 +3080,15 @@ if seasonalQuiver:
 
 	
 
-	contour = [bathy, bathy, bathy]
-
-	contourlevels=[[-1000]]*3
-
-	
-
 #	ny = data.shape[-2]; nx = data.shape[-1]
 
 #	ipopos = np.zeros((ny,nx))
 
-	for si in range(4):
+	savenum = ''
 
-		titles = [seasons[si] + ' ' + title, 'IPO pos comp', 'IPO neg comp']
+	for si in range(12):
+
+		titles = [seasons[si] + ' ' + compstr + ' pos. composite: ' + title, seasons[si] + ' ' + compstr + ' neg. composite: ' + title]
 
 		print(seasons[si])
 
@@ -2998,19 +3134,19 @@ if seasonalQuiver:
 
 		
 
-		#data2 += data1; data3 += data1
+		if not SEASONAL:
 
-		outname = 'tmpimg/a' + savename + seasons[si]
+			savenum = str(si+1) 
 
-		#pt.quiver1byN([u1,u2,u3], [v1,v2,v3], Xd, Yd, contourf=[data1,data2,data3], X=X, Y=Y, vmin=vmin, vmax=vmax, contour=contour, contourLevels=contourlevels, scale=scale, qs=qs, mesh=True, title=titles, fontsize=10, save=SAVE, outname=outname, figsize=(12,3))
-
-		
-
-		pt.quiver1byN_Basemap([u1,u2,u3], [v1,v2,v3], Xd, Yd, lat_0, lon_0, contourf=[data1,data2,data3], X=X, Y=Y, vmin=vmin, vmax=vmax, contour=contour, contourLevels=contourlevels, parallels=paras, meridians=merids, scale=scale, qs=qs, mesh=True, cbarShrink=0.5, title=titles, fontsize=7, save=SAVE, outname=outname, figsize=(12,3))
+		outname = 'tmpimg/' + fname[:-4] + savenum + seasons[si]
 
 		
 
-		#pt.plot1by3([data1, data2, data3], X=X, Y=Y, mesh=True, vmin=vmin, vmax=vmax, figsize=(13,3), titles=titles, fontsize=9, contour=contour, contourlevels=contourlevels, save=SAVE, outname=outname)
+		pt.quiver1byN_Basemap([u2,u3], [v2,v3], Xd, Yd, lat_0, lon_0, contourf=[data2,data3], cmap='bwr', X=X, Y=Y, vmin=vmin, vmax=vmax, contour=contour, contourLevels=contourLevels, parallels=paras, meridians=merids, scale=scale, qs=qs, mesh=True, cbarShrink=.8, title=titles, fontsize=7, save=SAVE, outname=outname, figsize=(8,3), show=False)
+
+		
+
+		#pt.plot1by3([data1, data2, data3], X=X, Y=Y, mesh=True, vmin=vmin, vmax=vmax, figsize=(13,3), titles=titles, fontsize=9, contour=contour, contourLevels=contourLevels, save=SAVE, outname=outname)
 
 	
 
@@ -3058,7 +3194,7 @@ if seaIce:
 
 	IPO = np.array(IPO[IPO_start:IPO_end])
 
-	IPO = PAS_tools.windowAv(IPO, n=nn)[nn//2:-nn//2+1]
+	IPO = ptools.windowAv(IPO, n=nn)
 
 	
 
@@ -3074,7 +3210,7 @@ if seaIce:
 
 	t = t[start:end]
 
-	year = PAS_tools.getDecimalTime(t)[nn//2:-nn//2+1]
+	year = ptools.getDecimalTime(t)[nn//2:-nn//2+1]
 
 	print(len(year))
 
@@ -3090,13 +3226,13 @@ if seaIce:
 
 	
 
-	heff = PAS_tools.deseason(heff)
+	heff = ptools.deseason(heff)
 
-	#heff = PAS_tools.detrendXY(heff, None)
+	#heff = ptools.detrendXY(heff, None)
 
 	
 
-	heff = PAS_tools.windowAv(heff, n=nn)[nn//2:-nn//2+1]
+	heff = ptools.windowAv(heff, n=nn)
 
 	heff = np.sum(heff, axis=(1,2))
 
@@ -3204,19 +3340,19 @@ if plotZ_ST:
 
 	nn = 60
 
-	Sgrad = PAS_tools.windowAv(Sgrad[:,zz[0]:zz[1]], n=nn)[nn//2:-nn//2+1]
+	Sgrad = ptools.windowAv(Sgrad[:,zz[0]:zz[1]], n=nn)
 
 	
 
-	Sgrad = PAS_tools.demean(Sgrad)
+	Sgrad = ptools.demean(Sgrad)
 
-	#Sgrad = PAS_tools.desurf(Sgrad, axis=1)
+	#Sgrad = ptools.desurf(Sgrad, axis=1)
 
 
 
 	t = t[nn//2:-nn//2+1]
 
-	year = PAS_tools.getDecimalTime(t)
+	year = ptools.getDecimalTime(t)
 
 	nT = len(t)
 
@@ -3224,9 +3360,9 @@ if plotZ_ST:
 
 
 
-	IPO = PAS_tools.windowAv(IPO, n=nn)[nn//2:-nn//2+1]
+	IPO = ptools.windowAv(IPO, n=nn)
 
-	IPO = PAS_tools.detrend(IPO, tin=t)
+	IPO = ptools.detrend(IPO, tin=t)
 
 	
 
@@ -3252,11 +3388,11 @@ if plotZ_ST:
 
 		Sgrad = -Sgrad
 
-		Sgrad = PAS_tools.desurf(Sgrad, axis=1)
+		Sgrad = ptools.desurf(Sgrad, axis=1)
 
 		#for i in range(12, len(dZ)):
 
-		#	plt.plot(year, PAS_tools.detrend(Sgrad[:,i],None), label='level=' + str(i) + ', depth=' + str(Z[i]) + 'm')
+		#	plt.plot(year, ptools.detrend(Sgrad[:,i],None), label='level=' + str(i) + ', depth=' + str(Z[i]) + 'm')
 
 		#	plt.legend(); plt.show()
 
@@ -3270,11 +3406,11 @@ if plotZ_ST:
 
 		for zi in zs:
 
-			tmp = PAS_tools.detrend(Sgrad[:,zi],None); ylabel = 'PGF'
+			tmp = ptools.detrend(Sgrad[:,zi],None); ylabel = 'PGF'
 
 			#tmp = Z[zi]+1.e7*tmp; ylabel = '1.e7 * PGF + depth'
 
-			corr = np.round(PAS_tools.pearson(tmp, IPO), 3)
+			corr = np.round(ptools.pearson(tmp, IPO), 3)
 
 			label = 'depth=' + str(Z[zi]) + 'm, corr='+str(corr)
 
@@ -3382,13 +3518,13 @@ if plotZ_uv:
 
 	nn = 60
 
-	uv = PAS_tools.windowAv(uv[:,zz[0]:zz[1]], n=nn)[nn//2:-nn//2+1]
+	uv = ptools.windowAv(uv[:,zz[0]:zz[1]], n=nn)
 
 	
 
 	t = t[nn//2:-nn//2+1]
 
-	year = PAS_tools.getDecimalTime(t)
+	year = ptools.getDecimalTime(t)
 
 	nT = len(t)
 
@@ -3406,7 +3542,7 @@ if plotZ_uv:
 
 		uvb[:,zi] = uv[:,zi] - uv[:,0]
 
-		corr[zi] = PAS_tools.pearson(uv[:,0], uv[:,zi])
+		corr[zi] = ptools.pearson(uv[:,0], uv[:,zi])
 
 	
 
@@ -3462,97 +3598,179 @@ if plotZ_uv:
 
 
 
-plotSlopeSalinity = False
+plotSlopeSalinity = True
 
 if plotSlopeSalinity:
-
-	
-
-	grid = Grid_PAS(PASDIR)
 
 
 
 	path = '/home/michael/Documents/data/slopeCurrent/0_779_y1/'
 
-		
+	
 
-	start = 24*12 + 5*12; end=-11
+	sections = ['westGetz', 'westPITW', 'westPITE']
+
+	section_indices = ptools.getSectionIndices(sections)
+
+			
+
+	# Start/end month in PAS. Using smaller range via shifts to focus on two main events.
+
+	ts_shift = -2 + 24
+
+	te_shift = -3 -50
+
+	t_start = 24*12 + 5*12 + ts_shift; t_end = -11 + te_shift
+
+	IPO_t_start = 14*12+1 + ts_shift; IPO_t_end = te_shift
+
+
+
+	thresholdScale = .5
+
+	nn = 60
+
+
+
+	# Use IPO or undercurrent for composites.
+
+	#from TPI import TPI_unfiltered_PSL as IPO
+
+	#IPO = np.array(IPO[IPO_t_start:IPO_t_end])
+
+	#IPO = ptools.windowAv(IPO, n=nn)
+
+	#compstr = 'IPO'
 
 	
 
-	t = np.load(path+'PAS_time.npy')
+	IPO = ptools.getUndercurrent(t_start=t_start, t_end=t_end)
 
-	S = np.load(path + 'slopeSalt.npy'); outname = 'slopeSalinity.mp4'; vmin = 33.8; vmax = 34.8;
+	IPO = ptools.avSlopeSections(IPO, sections=sections)
 
-	#S = np.load(path + 'slopeTheta.npy'); outname = 'slopeTheta.mp4'; vmin = -2.; vmax = 2
+	IPO = ptools.windowAv(ptools.detrend(IPO, None), n=nn)
 
-	bathy = np.load(path + 'slopeBathy.npy')
+	compstr = 'undercurrent'
 
 	
 
-	section = westGetz
+	# Get grid data
 
-		
-
-	S = S[start:end]
-
-	t = t[start:end]
-
-		
+	grid = Grid_PAS(PASDIR)
 
 	X = grid.Xsubr1D(grid.getIndexFromLon(EASlons))
 
-	zs = [0, -1000]; zz = grid.getIndexFromDepth(zs)
+	Y = grid.Xsubr1D(grid.getIndexFromLon(EASlons))
+
+	zs = [0, -600]; zz = grid.getIndexFromDepth(zs)
 
 	Z = grid.RC.squeeze()[zz[0]:zz[1]]
 
-	yslim = 50; ynlim = 20; nY = ynlim + yslim
+	yslim = 50; ynlim = 50; nY = ynlim + yslim
 
 	dy = 3.6e0
 
 	Y = np.linspace(-yslim*dy, ynlim*dy, nY)
 
+
+
+	time = np.load(path+'PAS_time.npy')
+
+	year = ptools.getDecimalTime(time, t_start=t_start, t_end=t_end)
+
+	year = ptools.windowAv(year, n=nn, av=False)
+
+	
+
+	#==
+
+	
+
+	# Uncomment one of these. Plot SALT, THETA or RHOAnoma.
+
+	
+
+	S = np.load(path+'slopeSalt.npy')[t_start:t_end,zz[0]:zz[1],:,section_indices]; outname = 'slopeSalinity.mp4'; vmin = 33.5; vmax = 34.8; varName = 'S (g/kg)'; vminAnom = -.04; vmaxAnom = .04
+
+
+
+	#S = np.load(path+'slopeRho.npy')[t_start:t_end,zz[0]:zz[1],:,section_indices]; outname = 'slopeRho.mp4'; vmin = -2.; vmax = 2.; varName = 'Rho (kg/m^3)'; vminAnom = -.03; vmaxAnom = .03
+
+	
+
+	#S = np.load(path+'slopeTheta.npy')[t_start:t_end,zz[0]:zz[1],:,section_indices]; outname = 'slopeTheta.mp4'; vmin = -2; vmax = 2; varName = 'Theta (deg. C)'; vminAnom = -.25; vmaxAnom = .25
+
+	
+
+	#==
+
+	
+
+	S = np.ma.mean(S, axis=-1)
+
+		
+
+	uv = None; UV = True 
+
+	if UV:
+
+		uv = np.load(path+'slope_uv_xyz.npy')[t_start:t_end,zz[0]:zz[1],:,section_indices]; outname = 'slopeVel.mp4'; uvmin = -0.06; uvmax = 0.06; uvminAnom = -0.01; uvmaxAnom = 0.01
+
+		#uv = tools.subtractSurfFlow(uv)
+
+		uv = np.ma.mean(uv, axis=-1)
+
+		#uv = ptools.demean(uv)
+
+		uv = ptools.detrendXY(uv, None)
+
+		uv = ptools.windowAv(uv, n=nn)
+
+
+
+	#==
+
+	
+
+	S = ptools.detrendXY(S, None, interceptFlag=0)
+
+	S = ptools.windowAv(S, n=nn)
+
+	#S = S[nn//2:-nn//2+1]
+
+	Smean = np.mean(S, axis=0)
+
+	
+
+	nt, nz, ny = S.shape
+
+	
+
+	# Plot predictor
+
+	std = thresholdScale * (np.mean(IPO**2)**0.5)
+
+	plt.plot(year, IPO, color='k'); plt.axhline(std, color='grey', linestyle='dashed'); plt.axhline(-std, color='grey', linestyle='dashed'); plt.grid(); plt.ylim(-0.007,.007); plt.title('Undercurrent speed anom. (m/s)'); plt.show()
+
+	
+
+	compPos, compNeg = ptools.computeComposites(S, IPO, thresholdScale=thresholdScale)
+
 	
 
 	#==
 
 
 
-	# Get Y,Z slice, mask, take running mean.	
+	# Create bathymetry mask.
 
-	#xi = 10; S = S[...,xi]
-
-	print(S.shape)
-
-	
-
-	S = np.ma.mean(S[...,section[0]:section[1]], axis=-1)
-
-	
-
-	nn = 60
-
-	S = PAS_tools.windowAv(S, n=nn)[nn//2:-nn//2+1]
-
-	
-
-	t = t[nn//2:-nn//2+1]
-
-	nT = len(t)
-
-	text_data = ptt.getTextData(t, 'ctime', Y[1], Z[-1], PAS=True, color='w')
-
-
-
-	#==
-
-
+	bathy = np.load(path+'slopeBathy.npy')
 
 	bathyMask = np.zeros((S.shape))
 
 	for yi in range(nY):
 
-		bathyMask[:, :, yi] = np.max(bathy[yi, section[0]:section[1]], axis=-1)
+		bathyMask[:, :, yi] = np.max(bathy[yi, section_indices], axis=-1)
 
 	for zi in range(len(Z)):
 
@@ -3564,23 +3782,487 @@ if plotSlopeSalinity:
 
 	xlabel = 'Dist. from slope (km)'; ylabel = 'Depth (m)'
 
-	title = 'S (60-month running mean)'
+	title = varName + ' ('+str(nn)+'-month running mean)'
 
-	#S = np.ma.masked_where(S<20., S)
 
-	S = np.ma.masked_where(bathyMask>0, S)
 
-	S = tools.boundData(S, vmin, vmax, d=d)
+	compPos = np.ma.masked_where(bathyMask[0]>0, compPos-Smean)
+
+	compNeg = np.ma.masked_where(bathyMask[0]>0, compNeg-Smean)
+
+	compPos = tools.boundData(compPos, vminAnom, vmaxAnom, d=d)
+
+	compNeg = tools.boundData(compNeg, vminAnom, vmaxAnom, d=d)
 
 		
 
-	pt.animate1by1(S, Y, Z, vmin=vmin, vmax=vmax, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=False, text_data=text_data, contourfNlevels=17, figsize=(4,4), outname=outname)
+	if UV:
+
+		uvCompPos, uvCompNeg = ptools.computeComposites(uv, IPO, thresholdScale=thresholdScale)
+
+		uvCompPos = np.ma.masked_where(bathyMask[0]>0, uvCompPos)
+
+		uvCompNeg = np.ma.masked_where(bathyMask[0]>0, uvCompNeg)	
+
+
+
+	#==
+
+	
+
+	# Plots
+
+	
+
+	titles = [varName + ' pos. ' + compstr + ' composite', varName + ' neg. ' + compstr + ' composite']
+
+	pt.plot1by2([uvCompPos, uvCompNeg], X=Y, Y=Z, contourfNlevels=17)
+
+
+
+	#contourLevels = [[-.02,0.,.02]]*2
+
+	contourLevels = [[-.002,-.001,0.,.001,.002]]*2
+
+	pt.plot1by2([compPos, compNeg], X=Y, Y=Z, vmin=vminAnom, vmax=vmaxAnom, contourfNlevels=17, titles=titles, contour=[uvCompPos, uvCompNeg], contourLevels=contourLevels, DASH_NEG_CONTOURS=True, cmaps='coolwarm')
 
 	
 
 	quit()
 
+	
 
+	# Animations.
+
+	
+
+	nT = len(t)
+
+	text_data = ptt.getTextData(t, 'ctime', Y[1], Z[-1], PAS=True, color='w')
+
+	
+
+	IPOstr = ["IPO = {:.2f}".format(IPO[i]) for i in range(len(IPO))]
+
+	text_data2 = {'text':IPOstr, 'xloc':Y[1], 'yloc':Z[-2], 'fontdict':{'fontsize':14, 'color':'w'}}
+
+	
+
+	S = np.ma.masked_where(bathyMask>0, S)
+
+	#S = tools.boundData(S, vmin, vmax, d=d)
+
+	Smean = np.mean(S, axis=0)
+
+	
+
+	pt.animate1by1(S-Smean, Y, Z, vmin=vminAnom, vmax=vmaxAnom, cmap=cmaps, xlabel=xlabel, ylabel=ylabel, title=title, mesh=False, text_data=text_data, text_data2=text_data2, contourfNlevels=17, figsize=(4,4), outname=outname, cmaps='coolwarm')#, contourAnim=uv, contourAnimLevels=[-.1,0.,.1],
+
+	
+
+	#outname2 = 'slopeSalinityAbs.mp4'
+
+	#pt.animate1by1(S, Y, Z, vmin=vmin, vmax=vmax, cmap=cmap, xlabel=xlabel, ylabel=ylabel, title=title, mesh=False, text_data=text_data, text_data2=text_data2, contourfNlevels=17, figsize=(4,4), outname=outname2)
+
+		
+
+	quit()
+
+
+
+#==
+
+
+
+shelfTimeSeries = False
+
+if shelfTimeSeries:
+
+
+
+	path = '/home/michael/Documents/data/slopeCurrent/0_779_y1/'
+
+	
+
+	ts_shift = -2; te_shift = -3
+
+	t_start = 24*12 + 5*12 + ts_shift; t_end = -11 + te_shift
+
+	
+
+	nn = 60
+
+	AV = True
+
+	
+
+	# Lats/lons for average	
+
+	lonsN=[225, 260]; lonsS=[225,260]; Nrange=57
+
+	
+
+	# Lats/lons for subregion. Must contain above lats/lons
+
+	LATS = [-75.5, -68]; LONS = [225, 262]	
+
+	
+
+	time = np.load(path+'PAS_time.npy')
+
+	year = ptools.getDecimalTime(time, t_start=t_start, t_end=t_end)
+
+	year = ptools.windowAv(year, n=nn, av=False)
+
+	
+
+	grid = Grid_PAS(PASDIR)
+
+	bathy = grid.bathy
+
+	draft = grid.draft
+
+	areaIS = grid.RAC * (1-grid.hFacW[0]) * (1-grid.hFacS[0])
+
+	area = grid.RAC * grid.hFacW[0] * grid.hFacS[0]
+
+	areaS, areaN = ptools.maskSouthNorthSlope(area, grid, lonsN=lonsN, lonsS=lonsS, Nrange=Nrange)
+
+
+
+	latsi = grid.getIndexFromLat(LATS); lonsi = grid.getIndexFromLon(LONS)
+
+	bathy = tools.getSubregionXY(bathy, latsi, lonsi)
+
+	areaSubrS = tools.getSubregionXY(areaS, latsi, lonsi)
+
+	areaSubrN = tools.getSubregionXY(areaN, latsi, lonsi)
+
+	X, Y = grid.XYsubr(LONS, LATS)
+
+	
+
+	#==
+
+
+
+	fnames = ['FWflx.npy', 'EXFlwdn.npy', 'EXFswdn.npy', 'EXFpreci.npy', 'EXFaqh.npy', 'EXFatemp.npy', 'SIheff.npy', 'SST.npy', 'SSS.npy', 'wk.npy', 'oceQnet.npy', 'EXFpress.npy']
+
+	#fnames = ['EXFpreci.npy', 'FWflx.npy']
+
+	#fnames = ['EXFswdn.npy', 'EXFlwdn.npy']
+
+	
+
+	dN=0; dS=0
+
+	
+
+	for fname in fnames:
+
+	
+
+		print(fname)
+
+		data = np.load(path+fname)[t_start:t_end]
+
+		data = ptools.windowAv(data, n=nn, av=AV)
+
+
+
+		# Get masks either side of slope. At the moment has to be done before getting subregion
+
+		dataS, dataN = ptools.maskSouthNorthSlope(data, grid, lonsN=lonsN, lonsS=lonsS, Nrange=Nrange)
+
+	
+
+		dataS = tools.getSubregionXY(dataS, latsi, lonsi)
+
+		dataN = tools.getSubregionXY(dataN, latsi, lonsi)
+
+
+
+		dataS = ptt.maskBathyXY(dataS, grid, 0, timeDep=True, subregion=True, lons=lonsi, lats=latsi)
+
+		dataN = ptt.maskBathyXY(dataN, grid, 0, timeDep=True, subregion=True, lons=lonsi, lats=latsi)
+
+		dataS = ptt.maskDraftXY(dataS, grid, 0, timeDep=True, subregion=True, lons=lonsi, lats=latsi)
+
+		dataN = ptt.maskDraftXY(dataN, grid, 0, timeDep=True, subregion=True, lons=lonsi, lats=latsi)
+
+	
+
+		dataSav = np.ma.sum(dataS*areaSubrS, axis=(1,2)) / np.ma.sum(areaSubrS)
+
+		dataNav = np.ma.sum(dataN*areaSubrN, axis=(1,2)) / np.ma.sum(areaSubrN)
+
+		
+
+		dataSsum = np.ma.sum(dataS*areaSubrS, axis=(1,2))
+
+		dataNsum = np.ma.sum(dataN*areaSubrN, axis=(1,2))
+
+		
+
+		dataSav = ptools.detrend(dataSav, None)
+
+		dataNav = ptools.detrend(dataNav, None)
+
+		dataSsum = ptools.detrend(dataSsum, None)
+
+		dataNsum = ptools.detrend(dataNsum, None)
+
+			
+
+		#==
+
+		
+
+		#plt.plot(year, dataNsum, label='North')
+
+		#plt.plot(year, dataSsum, label='South')
+
+		#plt.plot(year, dataSsum-dataNsum, label='South-North')
+
+		#plt.legend(); plt.grid()
+
+		#plt.title(fname[:-4] + ' shelf/off-shelf sum')
+
+		#plt.show()
+
+		
+
+		#dataNav += dN
+
+		#dataSav += dS
+
+		
+
+		plt.figure()
+
+		plt.plot(year, dataNav, label='North')
+
+		plt.plot(year, dataSav, label='South')
+
+		plt.plot(year, dataSav-dataNav, label='South-North')
+
+		plt.legend(); plt.grid()
+
+		plt.title(fname[:-4] + ' shelf/off-shelf sum')
+
+		#plt.savefig('tmpimg/SNshelfAv_nn'+str(nn)+'_'+fname[:-4]+'.png')
+
+		plt.savefig('tmpimg/SNshelfAv_'+fname[:-4]+'_.png')
+
+		#plt.show()
+
+	
+
+		#dN = 1.e3*dataNav; #dS = 1.e3*dataSav
+
+		dN = dataNav; dS = dataSav
+
+			
+
+	quit()
+
+
+
+	
+
+#==
+
+
+
+iceShelfTimeSeries = False
+
+if iceShelfTimeSeries:
+
+
+
+	path = '/home/michael/Documents/data/slopeCurrent/0_779_y1/'
+
+	grid = Grid_PAS(PASDIR)
+
+	bathy = grid.bathy
+
+	draft = grid.draft
+
+	areaIS = grid.RAC * (1-grid.hFacW[0]) * (1-grid.hFacS[0])
+
+	area = grid.RAC * grid.hFacW[0] * grid.hFacS[0]
+
+	X = grid.XC; Y = grid.YC
+
+	nn = 60
+
+		
+
+	time = np.load(path+'PAS_time.npy')
+
+	year = ptools.getDecimalTime(time, t_start=t_start, t_end=t_end)
+
+	year = ptools.windowAv(year, n=nn, av=False)
+
+	
+
+	SHIfw = -np.load(path+'SHIfwFlx.npy')[t_start:t_end]
+
+	FW = np.load(path+'FWflx.npy')[t_start:t_end]
+
+	FW = ptools.windowAv(FW, n=nn)
+
+
+
+	lonsN=[225, 260]; lonsS=[225,260]; Nrange=57
+
+	# Get masks either side of slope. At the moment has to be done before getting subregion
+
+	FWS, FWN = ptools.maskSouthNorthSlope(FW, grid, lonsN=lonsN, lonsS=lonsS, Nrange=Nrange)
+
+	areaS, areaN = ptools.maskSouthNorthSlope(area, grid, lonsN=lonsN, lonsS=lonsS, Nrange=Nrange)
+
+	
+
+	LATS = [-75.5, -68]; LONS = [225, 262]
+
+	latsi = grid.getIndexFromLat(LATS); lonsi = grid.getIndexFromLon(LONS)
+
+	bathy = tools.getSubregionXY(bathy, latsi, lonsi)
+
+	FWS = tools.getSubregionXY(FWS, latsi, lonsi)
+
+	FWN = tools.getSubregionXY(FWN, latsi, lonsi)
+
+	areaSubrS = tools.getSubregionXY(areaS, latsi, lonsi)
+
+	areaSubrN = tools.getSubregionXY(areaN, latsi, lonsi)
+
+	X, Y = grid.XYsubr(LONS, LATS)
+
+
+
+	FWS = ptt.maskBathyXY(FWS, grid, 0, timeDep=True, subregion=True, lons=lonsi, lats=latsi)
+
+	FWN = ptt.maskBathyXY(FWN, grid, 0, timeDep=True, subregion=True, lons=lonsi, lats=latsi)
+
+	FWS = ptt.maskDraftXY(FWS, grid, 0, timeDep=True, subregion=True, lons=lonsi, lats=latsi)
+
+	FWN = ptt.maskDraftXY(FWN, grid, 0, timeDep=True, subregion=True, lons=lonsi, lats=latsi)
+
+	
+
+	FWSav = np.ma.mean(FWS*areaSubrS, axis=(1,2))
+
+	FWNav = np.ma.mean(FWN*areaSubrN, axis=(1,2))
+
+	
+
+	FWSsum = np.ma.sum(FWS*areaSubrS, axis=(1,2))
+
+	FWNsum = np.ma.sum(FWN*areaSubrN, axis=(1,2))
+
+
+
+	print(np.sum(areaSubrS), np.sum(areaSubrN))
+
+	FWav = FWSav - FWNav
+
+	FWsum = (FWSsum - FWNsum) / (np.sum(areaSubrS) + np.sum(areaSubrN))  
+
+	
+
+	FWSav = ptools.detrend(FWSav, None)
+
+	FWNav = ptools.detrend(FWNav, None)
+
+	FWSsum = ptools.detrend(FWSsum, None)
+
+	FWNsum = ptools.detrend(FWNsum, None)
+
+	FWav = ptools.detrend(FWav, None)
+
+	FWsum = ptools.detrend(FWsum, None)
+
+	
+
+	IPO = getIPO()
+
+			
+
+	#==
+
+	
+
+	pt.plot1by2([FWS[0], FWN[0]], X=X, Y=Y, contour=bathy, contourLevels=[[-1000]]*2, titles=['FW flux masks']*2)
+
+	
+
+	#shelves = ['PIG', 'THW', 'CRO', 'DOT', 'GETZe', 'GETZw', 'COS', 'ABB']
+
+	shelves = ['PIG', 'THW', 'GETZe', 'ABB']
+
+	melts = {}
+
+	
+
+	for shelf in shelves:
+
+		melt = grid.getIceShelf(SHIfw.copy(), shelf)
+
+		melt = ptools.windowAv(np.ma.mean(melt*areaIS, axis=(1,2)), n=nn, nBuffer=nn)
+
+		melts[shelf] = ptools.detrend(melt, None)
+
+	
+
+	plt.figure()
+
+	#plt.plot(year, FWSav, label='FWS')
+
+	plt.plot(year, FWSav-FWNav, label='FW south - FW north')	
+
+	
+
+	for shelf in melts:
+
+		plt.plot(year, melts[shelf], label=shelf)
+
+	
+
+	plt.plot(year, np.max(FWSav-FWNav)*IPO/np.max(IPO), color='k', linestyle='dashed', label='IPO')
+
+	plt.title('Area-mean ice shelf & sea ice melt (kg/m2/s)')
+
+	plt.grid(); plt.legend()
+
+	plt.show()
+
+
+
+	plt.figure()
+
+	plt.plot(year, FWNav, label='FW north')
+
+	plt.plot(year, FWSav, label='FW south')
+
+	plt.plot(year, FWSav-FWNav, label='FWS-FWN')
+
+	plt.plot(year, np.max(FWSav-FWNav)*IPO/np.max(IPO), color='k', linestyle='dashed', label='IPO')	
+
+	plt.grid(); plt.legend()
+
+	plt.show()
+
+	
+
+	#==
+
+	
+
+	quit()
+
+	
 
 #==
 
@@ -3698,7 +4380,7 @@ if regressions:
 
 	for section in plotSections:
 
-		iw = sections[section][0]; ie = sections[section][1]
+		iw = SECTIONS[section][0]; ie = SECTIONS[section][1]
 
 		uv_sum += np.sum(uv[:,iw:ie], axis=1)
 
@@ -3710,15 +4392,15 @@ if regressions:
 
 	nt = len(uv_mean); t = np.linspace(0,nt,nt)
 
-	uv_mean = PAS_tools.detrend(uv_mean, tin=t)
+	uv_mean = ptools.detrend(uv_mean, tin=t)
 
 	
 
 	nn = 60
 
-	data = PAS_tools.windowAv(data, n=nn)[nn//2:-nn//2+1]
+	data = ptools.windowAv(data, n=nn)
 
-	uv_mean = PAS_tools.windowAv(uv_mean, n=nn)[nn//2:-nn//2+1]
+	uv_mean = ptools.windowAv(uv_mean, n=nn)
 
 	
 
@@ -3764,9 +4446,9 @@ if regressions:
 
 			for i in range(nx):
 
-				tmp = PAS_tools.detrend(data[:,j,i], tin=t)
+				tmp = ptools.detrend(data[:,j,i], tin=t)
 
-				corr[:,j,i] = PAS_tools.crossCorr(data[:,j,i], uv_mean, nl, nl2, P_VALUE=False)
+				corr[:,j,i] = ptools.crossCorr(data[:,j,i], uv_mean, nl, nl2, P_VALUE=False)
 
 				 
 
@@ -3834,7 +4516,7 @@ if regressions:
 
 		
 
-		pt.plot1by2([data, arg], X=[X,X], Y=[Y,Y], contour=[bathy,bathy], contourlevels=[[-1000],[-1000]], contourfNlevels=[11,14], titles=titles, cmaps=cmaps, vmin=vmin, vmax=vmax, vlines=vlines)
+		pt.plot1by2([data, arg], X=[X,X], Y=[Y,Y], contour=[bathy,bathy], contourLevels=[[-1000],[-1000]], contourfNlevels=[11,14], titles=titles, cmaps=cmaps, vmin=vmin, vmax=vmax, vlines=vlines)
 
 		
 
@@ -3878,7 +4560,7 @@ if regressions:
 
 				
 
-		pt.plot1by1(corr, X=X, Y=Y, stippling=pval, stipData=[0.05, 4,4, .2], cmap='bwr', vmin=-1., vmax=1., contour=bathy, contourlevels=[-1000])
+		pt.plot1by1(corr, X=X, Y=Y, stippling=pval, stipData=[0.05, 4,4, .2], cmap='bwr', vmin=-1., vmax=1., contour=bathy, contourLevels=[-1000])
 
 
 
@@ -3972,7 +4654,7 @@ if regressionsIPO:
 
 	t = t[start:end]
 
-	year = PAS_tools.getDecimalTime(t)
+	year = ptools.getDecimalTime(t)
 
 	
 
@@ -4000,11 +4682,11 @@ if regressionsIPO:
 
 	nn = 60
 
-	data = PAS_tools.windowAv(data, n=nn)[nn//2:-nn//2+1]
+	data = ptools.windowAv(data, n=nn)
 
 	year = year[nn//2:-nn//2+1]
 
-	IPO = PAS_tools.windowAv(IPO, n=nn)[nn//2:-nn//2+1]
+	IPO = ptools.windowAv(IPO, n=nn)
 
 	#IPO = IPO[nn//2:-nn//2+1]
 
@@ -4022,7 +4704,7 @@ if regressionsIPO:
 
 	nt = len(IPO); t = np.linspace(0,nt,nt)
 
-	IPO = PAS_tools.detrend(IPO, tin=t)
+	IPO = ptools.detrend(IPO, tin=t)
 
 	#plt.plot(year, IPO); plt.grid(); plt.show(); quit()
 
@@ -4040,9 +4722,9 @@ if regressionsIPO:
 
 			for i in range(nx):
 
-				tmp = PAS_tools.detrend(data[:,j,i], tin=t)
+				tmp = ptools.detrend(data[:,j,i], tin=t)
 
-				corr[:,j,i] = PAS_tools.crossCorr(tmp, IPO, nl, nl2, P_VALUE=False)
+				corr[:,j,i] = ptools.crossCorr(tmp, IPO, nl, nl2, P_VALUE=False)
 
 				 
 
@@ -4098,7 +4780,7 @@ if regressionsIPO:
 
 		
 
-		pt.plot1by2([data, arg], X=[X,X], Y=[Y,Y], contour=[bathy,bathy], contourlevels=[[-1000],[-1000]], contourfNlevels=[11,14], titles=titles, cmaps=cmaps, vmin=vmin, vmax=vmax)
+		pt.plot1by2([data, arg], X=[X,X], Y=[Y,Y], contour=[bathy,bathy], contourLevels=[[-1000],[-1000]], contourfNlevels=[11,14], titles=titles, cmaps=cmaps, vmin=vmin, vmax=vmax)
 
 	
 
@@ -4112,15 +4794,15 @@ if regressionsIPO:
 
 			for i in range(nx):
 
-				tmp = PAS_tools.detrend(data[:,j,i], tin=t)
+				tmp = ptools.detrend(data[:,j,i], tin=t)
 
-				corr[j,i] = PAS_tools.pearson(tmp, IPO)
+				corr[j,i] = ptools.pearson(tmp, IPO)
 
 			
 
 		title = 'corr[IPO, ' + title + ']'
 
-		pt.plot1by1(corr, X=X, Y=Y, contour=bathy, contourlevels=[-1000], contourfNlevels=11, title=title)
+		pt.plot1by1(corr, X=X, Y=Y, contour=bathy, contourLevels=[-1000], contourfNlevels=11, title=title)
 
 	
 
@@ -4138,23 +4820,55 @@ if compositeIPO:
 
 
 
-	# TPI_unfiltered_PSL, TPI_filtered_PSL
+	path = '/home/michael/Documents/data/slopeCurrent/0_779_y1/'
 
-	from TPI import TPI_unfiltered_PSL as IPO
+	sections = ['westGetz', 'westPITW', 'westPITE']
 
 
+
+	# Start/end month in PAS. Using smaller range via shifts to focus on two main events.
+
+	ts_shift = -2 +24
+
+	te_shift = -3 -50#-50#-50 for uc, -30 for IPO
+
+	t_start = 24*12 + 5*12 + ts_shift; t_end = -11 + te_shift
+
+	IPO_t_start = 14*12+1 + ts_shift; IPO_t_end = te_shift
+
+	
+
+	# Default start/end is Feb 1984 - Jan 2019
+
+	thresholdScale = .5
+
+	nn = 60
+
+
+
+	# Use IPO or undercurrent for composites.
+
+	# IPO data is 1970-2017.
+
+	#IPO = getIPO(IPO_t_start=IPO_t_start, IPO_t_end=IPO_t_end)
+
+	#compstr = 'IPO'
+
+	
+
+	#IPO = ptools.getBarocl(t_start=t_start, t_end=t_end); compstr = 'barocl.'
+
+	IPO = ptools.getUndercurrent(t_start=t_start, t_end=t_end); compstr = 'uc'
+
+	IPO = ptools.avSlopeSections(IPO, sections=sections)
+
+	IPO = ptools.windowAv(ptools.detrend(IPO, None), n=nn)
+
+	
 
 	#SUBREGION = False; lonsi = None; latsi = None
 
 	SUBREGION = True
-
-	
-
-	path = '/home/michael/Documents/data/slopeCurrent/0_779_y1/'
-
-	grid = Grid_PAS(PASDIR)
-
-	bathy = grid.bathy
 
 	
 
@@ -4164,19 +4878,25 @@ if compositeIPO:
 
 	#fname = 'FWflx.npy'; title = 'FWflx (kg/m^2/s)'; vmax1 = 1.e-5; vmax2 = 1.e-5#4.e-6
 
+	#fname = 'FWflx_noPr.npy'; title = 'FWflx (kg/m^2/s)'; vmax1 = 1.e-5; vmax2 = 1.e-5#4.e-6	
+
 	#fname = 'SST.npy'; title = 'SST (deg. C)'; vmax1 = .1; vmax2 = .1 
 
 	#fname = 'SSH.npy'; title = 'SSH (m)'; vmax1 = .1; vmax2 = .1 
 
 	#fname = 'SIv.npy'; title = 'SIv (m)'; vmax1 = .01; vmax2 = .01 
 
-	#fname = 'SIheff.npy'; title = 'heff'; vmax1 = .1; vmax2 = .1 
+	#fname = 'SIarea.npy'; title = 'SIarea'; vmax1 = .1; vmax2 = .1 
+
+	#fname = 'SIhsnow.npy'; title = 'SIhsnow'; vmax1 = .1; vmax2 = .1 
+
+	#fname = 'SIheff.npy'; title = 'SIheff'; vmax1 = .1; vmax2 = .1 
 
 	#fname = 'EXFuwind.npy'; title = 'EXFuwind (m/s)'; vmax1 = 0.6; vmax2 = 0.6
 
 	#fname = 'EXFvwind.npy'; title = 'EXFvwind (m/s)'; vmax1 = 0.2; vmax2 = 0.2
 
-	#fname = 'SHIfwFlx.npy'; title = 'SHIfwFlx'
+	fname = 'SHIfwFlx.npy'; title = 'FW fluxes (kg/m^2/s)'; vmax1 = 1.e-5; vmax2 = 1.e-5#4.e-6
 
 	#fname = 'SIconv'; vmax1 = 2.e-1; vmax2 = vmax1
 
@@ -4186,19 +4906,33 @@ if compositeIPO:
 
 	#fname = 'EXFaqh.npy'; title = 'EXFaqh (kg/kg)'; vmax1 = 1.e-4; vmax2 = vmax1  
 
-	#fname = 'EXFlwdn.npy'; title = 'EXFlwdn (W/m^2)'; vmax1 = 4.e2; vmax2 = vmax1    
+	#fname = 'EXFlwdn.npy'; title = 'EXFlwdn (W/m^2)'; vmax1 = 1.e0; vmax2 = vmax1    
 
-	#fname = 'EXFswdn.npy'; title = 'EXFswdn (W/m^2)'; vmax1 = 1.e3; vmax2 = vmax1
+	#fname = 'EXFswdn.npy'; title = 'EXFswdn (W/m^2)'; vmax1 = 1.e1; vmax2 = vmax1
 
-	fname = 'oceQnet.npy'; title = 'oceQnet (W/m^2)'; vmax1 = 1.e2; vmax2 = vmax1
+	#fname = 'oceQnet.npy'; title = 'oceQnet (W/m^2)'; vmax1 = 1.e2; vmax2 = vmax1
 
 	#fname = 'EXFpress.npy'; title = 'EXFpress (N/m^2)'; vmax1 = 4.e1; vmax2 = 1.5e2    
 
 	#fname = 'EXFroff.npy'; title = 'EXFroff (m/s)'; vmax1 = 1.e-56; vmax2 = vmax1
 
+	#fname = 'RHOAnoma_zIntAbs_505.npy'; vmax1=0.02; vmax2=0.02; title = 'Depth-integrated (0-505 m) density'
 
+	#fname = 'RHOAnoma_zIntAbs_46.npy'; vmax1=1; vmax2=1; title = 'depth-int. (0-505 m) density'
+
+	#fname = 'RHOAnoma_zInt_46.npy'; vmax1=0.04; vmax2=0.04; title = 'depth-int. (0-50 m) density'
+
+	
 
 	#==
+
+	
+
+	grid = Grid_PAS(PASDIR)
+
+	bathy = grid.bathy
+
+	draft = grid.draft
 
 	
 
@@ -4230,39 +4964,25 @@ if compositeIPO:
 
 		
 
+	if fname == 'SHIfwFlx.npy':
+
+		data = np.where(grid.draft<0, -data, np.load(path+'FWflx.npy'))
+
 		
 
-	#data = PAS_tools.demean(data)
-
-	#pt.plot1by1(data[400], vmin=-vmax1, vmax=vmax1); quit()
+	#==
 
 	
 
-	start = 24*12 + 5*12 - 2; end = -11 - 3
-
-	data = data[start:end]	
+	data = data[t_start:t_end]	
 
 
-
-	pt.plot1by1(np.mean(data,axis=0), vmin=-vmax1, vmax=vmax1, mesh=True); quit()
-
-
-
-	# IPO data is 1970-2017. 
-
-	# Default start/end is Feb 1984 - Jan 2019
-
-	IPO_start = 14*12+1 - 2; IPO_end = -3#None
-
-	IPO = np.array(IPO[IPO_start:IPO_end])
-
-	
 
 	t = np.load(path+'PAS_time.npy')
 
-	t = t[start:end]
+	t = t[t_start:t_end]
 
-	year = PAS_tools.getDecimalTime(t)
+	year = ptools.getDecimalTime(t)
 
 	
 
@@ -4274,9 +4994,9 @@ if compositeIPO:
 
 		bathy = tools.getSubregionXY(bathy, latsi, lonsi)
 
-		X = grid.Xsubr1D(EASlons)
+		draft = tools.getSubregionXY(draft, latsi, lonsi)
 
-		Y = grid.Ysubr1D(EASlats)		
+		X, Y = grid.XYsubr(EASlons, EASlats)
 
 		try:
 
@@ -4296,17 +5016,21 @@ if compositeIPO:
 
 
 
-	nn = 60
+	data = ptools.demean(data)# * 86400.*30
+
+	data = np.where(data!=data, 0, data)
+
+	data = ptools.detrendXY(data, None)
+
+
 
 	WINDOWAV = 1
 
 	if WINDOWAV:
 
-		data = PAS_tools.windowAv(data, n=nn)[nn//2:-nn//2+1]
+		data = ptools.windowAv(data, n=nn)
 
 		year = year[nn//2:-nn//2+1]
-
-		IPO = PAS_tools.windowAv(IPO, n=nn)[nn//2:-nn//2+1]
 
 	else:
 
@@ -4314,59 +5038,15 @@ if compositeIPO:
 
 		year = year[nn//2:-nn//2+1]
 
-		IPO = IPO[nn//2:-nn//2+1]
-
-		vmax1 *= .5e1; vmax2 *= .2e1	
+		#vmax1 *= .5e1; vmax2 *= .2e1	
 
 	
 
-	nt, ny, nx = data.shape
+	compPos, compNeg = ptools.computeComposites(data, IPO, thresholdScale=thresholdScale)
 
-	data = PAS_tools.deseason(data)
+	print(compPos.shape)
 
-	data = PAS_tools.demean(data)
-
-	data = PAS_tools.detrendXY(data, None)
-
-	
-
-	IPO = PAS_tools.detrend(IPO, None)
-
-	IPO = PAS_tools.demean(IPO)
-
-	
-
-	std = np.mean(IPO**2)**0.5
-
-
-
-	plt.plot(year, IPO); plt.grid(); plt.show()
-
-
-
-	compPos = np.zeros((ny, nx)); nPos = 0
-
-	compNeg = np.zeros((ny, nx)); nNeg = 0
-
-	for ti in range(nt):
-
-		if IPO[ti] > std:
-
-			compPos	+= data[ti]
-
-			nPos += 1
-
-		elif IPO[ti] < -std:
-
-			compNeg += data[ti]
-
-			nNeg +=1
-
-			
-
-	compPos /= nPos
-
-	compNeg /= nNeg
+	#pt.plot1by2([compPos, compNeg])
 
 	
 
@@ -4376,19 +5056,27 @@ if compositeIPO:
 
 	d = 1.e-9
 
-	compPos = tools.boundData(compPos, -vmax1, vmax1, d=d)
+	#compPos = tools.boundData(compPos, -vmax1, vmax1, d=d)
 
-	compNeg = tools.boundData(compNeg, -vmax2, vmax2, d=d)
+	#compNeg = tools.boundData(compNeg, -vmax2, vmax2, d=d)
 
 	compPos = ptt.maskBathyXY(compPos, grid, 0, timeDep=False, subregion=SUBREGION, lons=lonsi, lats=latsi)
 
 	compNeg = ptt.maskBathyXY(compNeg, grid, 0, timeDep=False, subregion=SUBREGION, lons=lonsi, lats=latsi)
 
-	compPos = ptt.maskDraftXY(compPos, grid, 0, timeDep=False, subregion=SUBREGION, lons=lonsi, lats=latsi)
+	if fname != 'SHIfwFlx.npy':
 
-	compNeg = ptt.maskDraftXY(compNeg, grid, 0, timeDep=False, subregion=SUBREGION, lons=lonsi, lats=latsi)
+		compPos = ptt.maskDraftXY(compPos, grid, 0, timeDep=False, subregion=SUBREGION, lons=lonsi, lats=latsi)
 
-	
+		compNeg = ptt.maskDraftXY(compNeg, grid, 0, timeDep=False, subregion=SUBREGION, lons=lonsi, lats=latsi)
+
+		contour2 = None
+
+	else:
+
+		contour2 = [draft, draft]
+
+		
 
 	#from scipy.io import savemat
 
@@ -4398,17 +5086,19 @@ if compositeIPO:
 
 	#plt.contourf(X,Y, bathy); plt.plot(246+10*tmp, Y[23:-21]); plt.show()
 
-	pt.plot1by1(compPos, vmin=-vmax1, vmax=vmax1)
 
-	contour = [bathy, bathy]
 
-	contourlevels = [[-1000], [-1000]]
+	bathyC = ptt.makeBathyContour(bathy, X, Y)
+
+	contour = [bathyC, bathyC]
+
+	contourLevels = [[-1000], [-1000]]
 
 	
 
 	vmin = [-vmax1, -vmax2]; vmax = [vmax1, vmax2]
 
-	titles = ['composite(IPO pos, '+title+')', 'composite(IPO neg, '+title+')']
+	titles = ['Composite: pos. ' + compstr + ' & ' + title, 'Composite: neg. ' + compstr + ' & ' + title]
 
 	
 
@@ -4416,7 +5106,11 @@ if compositeIPO:
 
 	
 
-	pt.plot1by2([compPos, compNeg], X=X, Y=Y, vmin=vmin, vmax=vmax, titles=titles, cmaps='bwr',  contourlevels=contourlevels, figsize=(9,3), contour=contour)
+	plt.plot(year, IPO)
+
+	
+
+	pt.plot1by2([compPos, compNeg], X=X, Y=Y, vmin=-vmax1, vmax=vmax1, titles=titles, cmaps='bwr',  contourLevels=contourLevels, figsize=(9,3), titlefontsize=8, contour=contour, contour2=contour2, contourLevels2=[[-1],[-1]], extend=['neither']*2, save=True, outname='composite.png')
 
 	
 
@@ -4438,17 +5132,51 @@ if compositeIPOuv:
 
 
 
-	# TPI_unfiltered_PSL, TPI_filtered_PSL
-
-	from TPI import TPI_unfiltered_PSL as IPO
-
-
-
 	path = '/home/michael/Documents/data/slopeCurrent/0_779_y1/'
 
-	grid = Grid_PAS(PASDIR)
+	sections = ['westGetz', 'westPITW', 'westPITE']
 
-	bathy = grid.bathy
+
+
+	# Start/end month in PAS. Using smaller range via shifts to focus on two main events.
+
+	ts_shift = -2# +24
+
+	te_shift = -3# -50
+
+	t_start = 24*12 + 5*12 + ts_shift; t_end = -11 + te_shift
+
+	IPO_t_start = 14*12+1 + ts_shift; IPO_t_end = te_shift
+
+	
+
+	# Default start/end is Feb 1984 - Jan 2019
+
+	thresholdScale = .5
+
+	nn = 60
+
+
+
+	# Use IPO or undercurrent for composites.
+
+	# IPO data is 1970-2017.
+
+	#IPO = getIPO(IPO_t_start=IPO_t_start, IPO_t_end=IPO_t_end)
+
+	#compstr = 'IPO'
+
+	
+
+	IPO = ptools.getUndercurrent(t_start=t_start, t_end=t_end)
+
+	IPO = ptools.avSlopeSections(IPO, sections=sections)
+
+	IPO = ptools.windowAv(ptools.detrend(IPO, None), n=nn)
+
+	compstr = 'uc'
+
+	#compstr = 'barocl.'
 
 	
 
@@ -4458,9 +5186,9 @@ if compositeIPOuv:
 
 	#fname = 'FWflx.npy'; title1 = 'FWflx (kg/m^2/s)'; vmax1 = 1.e-5; vmax2 = 1.e-5#4.e-6
 
-	#fname = 'SHIfwFlx.npy'; title1 = 'SHIfwFlx'
+	#fname = 'SHIfwFlx.npy'; title1 = 'FW fluxes (kg/m^2/s)'; vmax1 = 1.e-5; vmax2 = 1.e-5#4.e-6
 
-	fname = 'SIconv'; vmax1 = .1; vmax2 = .4
+	fname = 'SIconv'; vmax1 = .1; vmax2 = .4; title1 = 'SIheff conv'; vmax1=4.e-8; vmax2=vmax1
 
 	#fname = 'EXFpreci.npy'; title1 = 'EXFpreci (m/s)'; vmax1 = 8.e-10; vmax2 = vmax1
 
@@ -4480,6 +5208,14 @@ if compositeIPOuv:
 
 	
 
+	grid = Grid_PAS(PASDIR)
+
+	bathy = grid.bathy
+
+	draft = grid.draft
+
+	
+
 	if fname == 'SIconv':
 
 		# https://mitgcm.readthedocs.io/en/latest/phys_pkgs/seaice.html
@@ -4488,13 +5224,13 @@ if compositeIPOuv:
 
 		#SI = np.load(path+'SIhsnow.npy') * grid.RAC; title1 = 'SI hsnow conv'
 
-		u = np.load(path+'SIu.npy')
+		u = np.load(path+'SIu.npy')[t_start:t_end]; v = np.load(path+'SIv.npy')[t_start:t_end]	
 
-		v = np.load(path+'SIv.npy')
+		umax = 6.; title2 = 'SI vel.'; qs = 0.01; scale = .1; qunits = 'm/s'
 
-		umax = 6.; title2 = 'SI vel.'; qs = 0.05; scale = .5; qunits = 'm/s'
+		d = 1.*np.load(path+'SIheff.npy')[t_start:t_end]
 
-		data = - tools.ddx(u, grid.DXG) - tools.ddy(v, grid.DYG); title1 = 'SI vel conv'; vmax1=1.e-7;vmax2=vmax1
+		data = - tools.ddx(u*d, grid.DXG) - tools.ddy(v*d, grid.DYG); 
 
 		#del SI
 
@@ -4506,65 +5242,47 @@ if compositeIPOuv:
 
 	else:
 
-		#u = np.load(path+'EXFuwind.npy'); v = np.load(path+'EXFvwind.npy'); umax = 6.; title2 = 'EXFwind'; qs = 0.2; scale = 4.; qunits = 'm/s'
+		u = np.load(path+'EXFuwind.npy')[t_start:t_end]
 
-		u = np.load(path+'SIu.npy'); v = np.load(path+'SIv.npy'); umax = 6.; title2 = 'SI vel.'; qs = 0.05; scale = .5; qunits = 'm/s'
+		v = np.load(path+'EXFvwind.npy')[t_start:t_end]
+
+		umax = 6.; title2 = 'wind'; qs = 0.2; scale = 4.; qunits = 'm/s'
 
 		#u = np.load(path+'oceTAUX.npy'); v = np.load(path+'oceTAUY.npy'); umax = 1.e0; title2 = 'surf. stress'; qs = 1.e-2; scale = .1; qunits = 'N/m^2'
 
-		data = np.load(path+fname)
+		data = np.load(path+fname)[t_start:t_end]
 
 		
 
-	#data = PAS_tools.demean(data)
+	#data = ptools.demean(data)
 
 	#pt.plot1by1(data[400]); quit()
 
 	
 
-	start = 24*12 + 5*12; end = -11
+	if fname == 'SHIfwFlx.npy':
 
-	data = data[start:end]	
+		data = np.where(grid.draft<0, -data, np.load(path+'FWflx.npy'))
 
-	u = u[start:end]
-
-	v = v[start:end]
-
-	
-
-	# IPO data is 1970-2017. 
-
-	# Default start/end is Feb 1984 - Jan 2019
-
-	IPO_start = 14*12+1; IPO_end = None
-
-	IPO = np.array(IPO[IPO_start:IPO_end])
-
-	
+		
 
 	t = np.load(path+'PAS_time.npy')
 
-	t = t[start:end]
+	year = ptools.getDecimalTime(t, t_start=t_start, t_end=t_end)
 
-	year = PAS_tools.getDecimalTime(t)
+	year = ptools.windowAv(year, n=nn, av=False)
 
 	
 
 	EASlons[0] = 230.
 
-	
-
 	latsi = grid.getIndexFromLat(EASlats); lonsi = grid.getIndexFromLon(EASlons)
 
 	bathy = tools.getSubregionXY(bathy, latsi, lonsi)
 
-	#X1D = grid.Xsubr1D(EASlons)
-
-	#Y1D = grid.Ysubr1D(EASlats)
+	draft = tools.getSubregionXY(draft, latsi, lonsi)
 
 	X, Y = grid.XYsubr(EASlons, EASlats)
-
-			
 
 	try:
 
@@ -4582,35 +5300,17 @@ if compositeIPOuv:
 
 	
 
-	nn = 60
+	data = ptools.detrendXY(data, None); u = ptools.detrendXY(u, None); v = ptools.detrendXY(v, None)
 
-	WINDOWAV = 0
 
-	if WINDOWAV:
 
-		data = PAS_tools.windowAv(data, n=nn)[nn//2:-nn//2+1]
+	AV = True
 
-		u = PAS_tools.windowAv(u, n=nn)[nn//2:-nn//2+1]
+	data = ptools.windowAv(data, n=nn, nBuffer=nn, av=AV)
 
-		v = PAS_tools.windowAv(v, n=nn)[nn//2:-nn//2+1]
+	u = ptools.windowAv(u, n=nn, nBuffer=nn, av=AV)
 
-		year = year[nn//2:-nn//2+1]
-
-		IPO = PAS_tools.windowAv(IPO, n=nn)[nn//2:-nn//2+1]
-
-	else:
-
-		data = data[nn//2:-nn//2+1]
-
-		u = u[nn//2:-nn//2+1]
-
-		v = v[nn//2:-nn//2+1]
-
-		year = year[nn//2:-nn//2+1]
-
-		IPO = IPO[nn//2:-nn//2+1]
-
-		vmax1 *= 1.e0; vmax2 *= 1.e0	
+	v = ptools.windowAv(v, n=nn, nBuffer=nn, av=AV)
 
 		
 
@@ -4618,27 +5318,11 @@ if compositeIPOuv:
 
 	
 
-	data = PAS_tools.demean(data)
+	data = ptools.demean(data)
 
-	data = PAS_tools.detrendXY(data, None)
+	u = ptools.demean(u)
 
-	u = PAS_tools.demean(u)
-
-	u = PAS_tools.detrendXY(u, None)
-
-	v = PAS_tools.demean(v)
-
-	v = PAS_tools.detrendXY(v, None)
-
-	
-
-	IPO = PAS_tools.detrend(IPO, None)
-
-	IPO = PAS_tools.demean(IPO)
-
-	
-
-	std = np.mean(IPO**2)**0.5
+	v = ptools.demean(v)
 
 	
 
@@ -4646,55 +5330,11 @@ if compositeIPOuv:
 
 
 
-	compPos = np.zeros((ny, nx)); nPos = 0
+	compPos, compNeg = ptools.computeComposites(data, IPO, thresholdScale=thresholdScale)
 
-	compNeg = np.zeros((ny, nx)); nNeg = 0
+	ucompPos, ucompNeg = ptools.computeComposites(u, IPO, thresholdScale=thresholdScale)
 
-	ucompPos = np.zeros((ny, nx)); ucompNeg = np.zeros((ny, nx))
-
-	vcompPos = np.zeros((ny, nx)); vcompNeg = np.zeros((ny, nx))
-
-	
-
-	print(u.shape)
-
-	print(v.shape)
-
-	print(ucompPos.shape)
-
-	for ti in range(nt):
-
-		if IPO[ti] > std:
-
-			compPos	+= data[ti]
-
-			ucompPos += u[ti]
-
-			vcompPos += v[ti]
-
-			nPos += 1
-
-		elif IPO[ti] < -std:
-
-			compNeg += data[ti]
-
-			ucompNeg += u[ti]
-
-			vcompNeg += v[ti]
-
-			nNeg +=1
-
-			
-
-	compPos /= nPos; compNeg /= nNeg
-
-	ucompPos /= nPos; ucompNeg /= nNeg
-
-	vcompPos /= nPos; vcompNeg /= nNeg
-
-	
-
-	pt.plot1by2([compPos,compNeg])
+	vcompPos, vcompNeg = ptools.computeComposites(v, IPO, thresholdScale=thresholdScale)
 
 	
 
@@ -4712,9 +5352,17 @@ if compositeIPOuv:
 
 	compNeg = ptt.maskBathyXY(compNeg, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
 
-	compPos = ptt.maskDraftXY(compPos, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+	if fname != 'SHIfwFlx.npy':
 
-	compNeg = ptt.maskDraftXY(compNeg, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+		compPos = ptt.maskDraftXY(compPos, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+		compNeg = ptt.maskDraftXY(compNeg, grid, 0, timeDep=False, subregion=True, lons=lonsi, lats=latsi)
+
+		contour2 = [None]*2
+
+	else:
+
+		contour2 = [draft, draft]
 
 	
 
@@ -4750,7 +5398,9 @@ if compositeIPOuv:
 
 	
 
-	contour = [bathy, bathy]
+	bathyC = ptt.makeBathyContour(bathy, X, Y)
+
+	contour = [bathyC, bathyC]
 
 	contourLevels = [[-1000], [-1000]]
 
@@ -4764,11 +5414,13 @@ if compositeIPOuv:
 
 	vmin = [-vmax1, -vmax2]; vmax = [vmax1, vmax2]
 
-	titles = ['composite(IPO pos, '+title1+'); ' + title2, 'composite(IPO neg, '+title1+'); ' + title2]
+	titles = ['Composite: pos. ' + compstr + ' & ' + title1 + '; ' + title2, 'Composite: neg. ' + compstr + ' & ' + title1 + '; ' + title2]
+
+
 
 	
 
-	d = 12
+	d = 8
 
 	ucompPos = ucompPos[::d, ::d]; ucompNeg = ucompNeg[::d, ::d]
 
@@ -4784,9 +5436,19 @@ if compositeIPOuv:
 
 	Xd = [Xd, Xd]; Yd = [Yd, Yd]
 
-	
 
-	pt.quiver1byN(u, v, Xd, Yd, contourf=contourf, X=XX, Y=YY, vmin=vmin, vmax=vmax, contourfNlevels=13, cmap='bwr', contour=contour, contourLevels=contourLevels, scale=scale, title=titles, fontsize=7, qs=qs, qunits=qunits)
+
+	# Uncomment these if we want to plot pos/neg the other way around
+
+	#contourf = [compNeg, compPos]; u = [ucompNeg, ucompPos]; v = [vcompNeg, vcompPos]
+
+	#titles = ['Composite: neg. ' + compstr + ' & ' + title1 + '; ' + title2, 'Composite: pos. ' + compstr + ' & ' + title1 + '; ' + title2]
+
+		
+
+		
+
+	pt.quiver1byN(u, v, Xd, Yd, contourf=contourf, X=XX, Y=YY, vmin=vmin, vmax=vmax, contourfNlevels=13, cmap='bwr', contour=contour, contourLevels=contourLevels, contour2=contour2, contourLevels2=[[-1],[-1]], scale=scale, title=titles, fontsize=7, qs=qs, qunits=qunits)
 
 	
 
@@ -4796,9 +5458,81 @@ if compositeIPOuv:
 
 	
 
-	pt.quiver1by2Basemap(u, v, Xd, Yd, lat_0, lon_0, X=XX, Y=YY, contourf=contourf, vmin=vmin, vmax=vmax, contourfNlevels=13, scale=scale, contour=contour, contourLevels=contourLevels, title=titles, fontsize=7, qs=qs, qunits=qunits)
+	pt.quiver1by2Basemap(u, v, Xd, Yd, lat_0, lon_0, X=XX, Y=YY, contourf=contourf, vmin=vmin, vmax=vmax, contourfNlevels=13, scale=scale, contour=contour, contourLevels=contourLevels, contour2=contour2, contourLevels2=[[-1],[-1]], title=titles, fontsize=7, qs=qs, qunits=qunits, extend=['both']*2)
 
 	
+
+	quit()
+
+
+
+#==
+
+
+
+isohalineCorr = False
+
+if isohalineCorr:
+
+
+
+	path = '/home/michael/Documents/data/slopeCurrent/0_779_y1/'
+
+
+
+	t_start = 24*12 + 5*12; t_end=-11
+
+
+
+	grid = Grid_PAS(PASDIR)
+
+	bathy = grid.bathy; draft = grid.draft
+
+	X = grid.XC[1,:]; Y = grid.YC[:,1]
+
+	
+
+	nn = 60
+
+	hal = np.load(path+'HalZ_342_S.npy')[t_start:t_end]
+
+	data = np.load(path+'FWflx.npy')[t_start:t_end]
+
+	
+
+	data = np.ma.masked_where(hal!=hal, data)
+
+	hal = np.ma.masked_where(hal!=hal, hal) 
+
+		
+
+	hal = ptools.windowAv(hal, n=nn)
+
+	data = ptools.windowAv(data, n=nn)
+
+
+
+	nT, nY, nX = hal.shape
+
+	corr = np.zeros((nY, nX))
+
+	
+
+	for j in range(nY):
+
+		for i in range(nX):
+
+	
+
+			corr[j,i], pval = pearsonr(hal[:,j,i], data[:,j,i])
+
+			
+
+	pt.plot1by1(corr, X=X, Y=Y, contour=bathy, contourLevels=[-1000])
+
+
+
+
 
 	quit()
 
@@ -4838,6 +5572,8 @@ if isotherm:
 
 	data = np.load(path+fname)
 
+	
+
 	t = np.load(path+'PAS_time.npy')
 
 	slope_x = np.load(path+'slope_x.npy'); slope_y = np.load(path+'slope_y.npy')
@@ -4852,11 +5588,11 @@ if isotherm:
 
 	t = t[start:end]
 
-	year = PAS_tools.getDecimalTime(t)
+	year = ptools.getDecimalTime(t)
 
 
 
-	#pt.plot1by1(data[-1], vmin=vmin, vmax=vmax, mesh=True); quit()
+	pt.plot1by1(data[-1], X=X, Y=Y, vmin=vmin, vmax=vmax, mesh=True); quit()
 
 
 
@@ -4902,7 +5638,7 @@ if isotherm:
 
 	year = year[nn//2:-nn//2+1]
 
-	data1 = PAS_tools.movingAv(data.copy(), n=nn)#[nn//2:-nn//2+1]
+	data1 = ptools.movingAv(data.copy(), n=nn)#[nn//2:-nn//2+1]
 
 	
 
@@ -5066,7 +5802,7 @@ if allIsotherms:
 
 	t = t[start:end]
 
-	year = PAS_tools.getDecimalTime(t)
+	year = ptools.getDecimalTime(t)
 
 
 
@@ -5152,9 +5888,9 @@ if allIsotherms:
 
 	
 
-		#data1 = PAS_tools.movingAv(data.copy(), n=nn)#[nn//2:-nn//2+1]
+		#data1 = ptools.movingAv(data.copy(), n=nn)#[nn//2:-nn//2+1]
 
-		data1 = PAS_tools.windowAv(data, n=nn)[nn//2:-nn//2+1]
+		data1 = ptools.windowAv(data, n=nn)
 
 		
 
@@ -5444,7 +6180,7 @@ if animateX:
 
 	# Get lat, lon lists of continental slope
 
-	slope_x, slope_y = PAS_tools.getSlopeContour(bathy, X, Y, pathno)
+	slope_x, slope_y = ptools.getSlopeContour(bathy, X, Y, pathno)
 
 	bathy = ptt.maskBathyXY(bathy, grid, zi=0, subregion=True, lats=latsi, lons=lonsi)
 
@@ -5454,11 +6190,11 @@ if animateX:
 
 	bearing = np.zeros(len(slope_x))
 
-	bearing[0] = PAS_tools.getBearing(slope_y[0], slope_x[0], slope_y[1], slope_x[1])
+	bearing[0] = ptools.getBearing(slope_y[0], slope_x[0], slope_y[1], slope_x[1])
 
-	bearing[-1] = PAS_tools.getBearing(slope_y[-2], slope_x[-2], slope_y[-1], slope_x[-1])
+	bearing[-1] = ptools.getBearing(slope_y[-2], slope_x[-2], slope_y[-1], slope_x[-1])
 
-	bearing[1:-1] = PAS_tools.getBearing(slope_y[:-2], slope_x[:-2], slope_y[2:], slope_x[2:])
+	bearing[1:-1] = ptools.getBearing(slope_y[:-2], slope_x[:-2], slope_y[2:], slope_x[2:])
 
 	# bearing[i] from slope[i-1] and slope[i+1] 
 
@@ -5692,15 +6428,15 @@ if animateSI:
 
 	nn = 60
 
-	SIu = PAS_tools.windowAv(SIu, n=nn)[nn//2:-nn//2+1]
+	SIu = ptools.windowAv(SIu, n=nn)
 
-	SIv = PAS_tools.windowAv(SIv, n=nn)[nn//2:-nn//2+1]
+	SIv = ptools.windowAv(SIv, n=nn)
 
 	
 
-	SIu = PAS_tools.demean(SIu)
+	SIu = ptools.demean(SIu)
 
-	SIv = PAS_tools.demean(SIv)
+	SIv = ptools.demean(SIv)
 
 	
 
@@ -5798,7 +6534,7 @@ if SLOPE_CONTOUR:
 
 	for i in range(len(x)-1):
 
-		bs.append(PAS_tools.getBearing(y[i],x[i], y[i+1],x[i+1]))
+		bs.append(ptools.getBearing(y[i],x[i], y[i+1],x[i+1]))
 
 	plt.subplot(122)
 
@@ -5832,9 +6568,9 @@ if latLonToCartesian1:
 
 	
 
-	#x, y, dx, dy = PAS_tools.latlon_to_xy(X,Y)
+	#x, y, dx, dy = ptools.latlon_to_xy(X,Y)
 
-	b = PAS_tools.getBearing(1,1,1,2)
+	b = ptools.getBearing(1,1,1,2)
 
 	print(b); quit()
 
@@ -5926,7 +6662,7 @@ if plotSections:
 
 	for sec in plotSections:
 
-		iw = sections[sec][0]; ie = sections[sec][1]
+		iw = SECTIONS[sec][0]; ie = SECTIONS[sec][1]
 
 		plt.plot([X[0,iw], X[0,iw]], [Y[slope_yi[iw]-10,0], Y[slope_yi[iw]+10,0]], linestyle='dashed', color='k')
 
@@ -5960,7 +6696,7 @@ if latLonToCartesian2:
 
 	
 
-	dA, x, y = PAS_tools.dA_from_latlon (lon, lat, periodic=False, return_edges=True)
+	dA, x, y = ptools.dA_from_latlon (lon, lat, periodic=False, return_edges=True)
 
 	
 
@@ -6026,15 +6762,15 @@ if coherence:
 
 
 
-	corruv = PAS_tools.crossCorr(u, v, nl, nl2)
+	corruv = ptools.crossCorr(u, v, nl, nl2)
 
-	corruu = PAS_tools.crossCorr(u, u, nl, nl2)
+	corruu = ptools.crossCorr(u, u, nl, nl2)
 
-	corrvv = PAS_tools.crossCorr(v, v, nl, nl2)
+	corrvv = ptools.crossCorr(v, v, nl, nl2)
 
-	corrvu = PAS_tools.crossCorr(v, u, nl, nl2)
+	corrvu = ptools.crossCorr(v, u, nl, nl2)
 
-	#coh = PAS_tools.coherence(corruv, corruu, corrvv)
+	#coh = ptools.coherence(corruv, corruu, corrvv)
 
 	
 
@@ -6052,7 +6788,7 @@ if coherence:
 
 	window_lengths = np.linspace(1,nw,nw)
 
-	corrw, tw, uw, vw = PAS_tools.windowCorr(u, v, window_lengths, t, return_uv=True)
+	corrw, tw, uw, vw = ptools.windowCorr(u, v, window_lengths, t, return_uv=True)
 
 	#==
 
@@ -6146,29 +6882,15 @@ if SIrad_annual:
 
 	nn = 60	
 
-	ts = -2; te = - 3
-
 		
 
-	from TPI import TPI_unfiltered_PSL as IPO
-
-	IPO_start = 14*12+1 + ts; IPO_end = te
-
-	IPO = np.array(IPO[IPO_start:IPO_end])
-
-	IPO = PAS_tools.windowAv(IPO, n=nn)[nn//2:-nn//2+1]
+	IPO = getIPO(IPO_t_start=IPO_t_start, IPO_t_end=IPO_t_end)
 
 
-
-	t_start = 0; t_end = 779
-
-	start = 24*12 + 5*12 + ts; end= -11 + te
-
-	
 
 	path = '/home/michael/Documents/data/slopeCurrent/'
 
-	path = path + str(t_start) + '_' + str(t_end) + '_y1/'
+	path = path + '0_779_y1/'
 
 	
 
@@ -6202,7 +6924,7 @@ if SIrad_annual:
 
 	t = np.load(path+timefile)
 
-	year = PAS_tools.getDecimalTime(t)[nn//2+start:end-nn//2+1]
+	year = ptools.getDecimalTime(t)[nn//2+t_start:t_end-nn//2+1]
 
 
 
@@ -6212,7 +6934,7 @@ if SIrad_annual:
 
 	
 
-	fnames = ['ua', 'SSS', 'SIheff', 'SIhsnow', 'EXFatemp', 'EXFaqh', 'EXFlwdn', 'EXFswdn', 'FWflx']	
+	fnames = ['ua', 'SSS', 'SST', 'SIheff', 'SIhsnow', 'EXFatemp', 'EXFaqh', 'EXFlwdn', 'EXFswdn', 'FWflx']	
 
 	dataDict = {}
 
@@ -6230,7 +6952,7 @@ if SIrad_annual:
 
 		
 
-		data = np.load(path+fname+'.npy')[nn//2+start:end-nn//2+1]
+		data = np.load(path+fname+'.npy')[nn//2+t_start:t_end-nn//2+1]
 
 		
 
@@ -6242,13 +6964,13 @@ if SIrad_annual:
 
 		# Use one below when plotting absolute values.
 
-		#data = PAS_tools.detrendXY(data, None, interceptFlag=0)
+		#data = ptools.detrendXY(data, None, interceptFlag=0)
 
 		
 
 		# Get monthly averages of data
 
-		dataSeas, months = PAS_tools.monthlyDataIPO(data, year, IPO, DEMEAN=False)
+		dataSeas, months = ptools.monthlyDataIPO(data, year, IPO, DEMEAN=False)
 
 		
 
@@ -6266,15 +6988,13 @@ if SIrad_annual:
 
 	# Initialise arrays for radiation terms and surf. temp. averaged in box.
 
-	TAav = np.zeros((12,3))
+	TAav = np.zeros((12,3)); HIav = np.zeros((12,3))
 
 	LATav = np.zeros((12,3)); SENSav = np.zeros((12,3)); BBav = np.zeros((12,3))
 
 	LWav = np.zeros((12,3)); SWav = np.zeros((12,3))
 
-	FCav = np.zeros((12,3)); TiSav = np.zeros((12,3))
-
-	
+	FCav = np.zeros((12,3)); FMIav = np.zeros((12,3)); TiSav = np.zeros((12,3))
 
 	
 
@@ -6292,19 +7012,25 @@ if SIrad_annual:
 
 			qa = dataDict['EXFaqh'][mi][i]; Ua = dataDict['ua'][mi][i]; Ta = dataDict['EXFatemp'][mi][i]
 
-			LW = dataDict['EXFlwdn'][mi][i]; SW = dataDict['EXFswdn'][mi][i]; SSS = dataDict['SSS'][mi][i]
+			LW = dataDict['EXFlwdn'][mi][i]; SW = dataDict['EXFswdn'][mi][i]
 
-			hi = dataDict['SIheff'][mi][0]; hs = dataDict['SIhsnow'][mi][0]
+			SSS = dataDict['SSS'][mi][i]; SST = dataDict['SST'][mi][i]
+
+			hi = dataDict['SIheff'][mi][i]; hs = dataDict['SIhsnow'][mi][i]
 
 				
 
 			# T0 = 250, T1 = 280
 
-			RADS = PAS_tools.surfaceRadiation(qa, Ua, Ta, LW, SW, SSS, hi, hs, bathy, draft, nTiS=500, T0=250, T1=285)
+			RADS = ptools.surfaceRadiation(qa, Ua, Ta, LW, SW, SSS, hi, hs, bathy, draft, nTiS=500, T0=250, T1=285)
+
+			Fmi = ptools.Fmi(SST, SSS)
 
 			
 
 			TAav[mi, i] = np.mean(Ta)
+
+			HIav[mi, i] = np.mean(hi)
 
 			
 
@@ -6320,9 +7046,9 @@ if SIrad_annual:
 
 			FCav[mi, i] = np.mean(RADS['FC'])
 
-			TiSav[mi, i] = np.mean(RADS['TiS'])
+			FMIav[mi, i] = np.mean(Fmi)
 
-			
+			TiSav[mi, i] = np.mean(RADS['TiS'])
 
 			
 
@@ -6330,7 +7056,7 @@ if SIrad_annual:
 
 	
 
-	if True:
+	if False:
 
 	
 
@@ -6338,23 +7064,39 @@ if SIrad_annual:
 
 		
 
-		PLOT_FIELDS = {'LAT':LATav, 'SENS':SENSav, 'LW+BB':LWav+BBav, 'SW':SWav, 'FC':FCav}; ylims = (-50, 50)#, 'ALL_ATM_UP':LATav+SENSav+BBav+LWav+SWav}
+		#PLOT_FIELDS = {'LAT':LATav, 'SENS':SENSav, 'LW+BB':LWav+BBav, 'SW':SWav, 'FC':FCav}; ylims = (-50, 50); title = 'UPWARD box-mean surf. fluxes' #, 'ALL_ATM_UP':LATav+SENSav+BBav+LWav+SWav}
 
 		
 
-		PLOT_FIELDS = {'BB+LW':BBav+LWav, 'LAT':LATav, 'SENS':SENSav, 'FC':FCav}; ylims = (-5,5);# ylims = (200, 300)
+		#PLOT_FIELDS = {'BB+LW':BBav+LWav, 'LAT':LATav, 'SENS':SENSav, 'FC':FCav}; ylims = (-5,5); 'UPWARD box-mean surf. fluxes' # 
 
-		IPOS = ['Monthly mean', 'Pos IPO - mean', 'Neg IPO - mean']
+		
 
-		for i in range(1,3):
+		#PLOT_FIELDS = {'BB UP':BBav, 'LW DOWN':-LWav}; ylims = (200, 300); title = 'Longwave fluxes'
+
+		
+
+		PLOT_FIELDS = {'FC':FCav,'Fmi':FMIav}; ylims = (-10, 40); title = 'Sea ice fluxes'
+
+		
+
+		#IPOS = ['Monthly mean', 'Pos IPO - mean', 'Neg IPO - mean']; demean = 1
+
+		IPOS = ['Monthly mean', 'Pos IPO', 'Neg IPO']; demean = 0
+
+		
+
+		for i in range(0,3):
 
 			for field in PLOT_FIELDS.keys():
 
-				plt.plot(months, PLOT_FIELDS[field][:,i]-PLOT_FIELDS[field][:,0], label=field)	
+				plt.plot(months, PLOT_FIELDS[field][:,i]-demean*PLOT_FIELDS[field][:,0], label=field)	
 
-			plt.title('Box-mean surf. fluxes; ' + IPOS[i])
+			plt.title(title + '; ' + IPOS[i])
 
 			plt.ylim(ylims[0], ylims[1])
+
+			plt.ylabel(r'Heat flux (W/m$^2$)')
 
 			plt.grid()
 
@@ -6368,7 +7110,7 @@ if SIrad_annual:
 
 	
 
-	if True:
+	if False:
 
 			
 
@@ -6380,15 +7122,51 @@ if SIrad_annual:
 
 		
 
-			plt.plot(months, TiSav[:,i]-TAav[:,i], label='TiS-Ta; ' + IPOS[i])		
+			#plt.plot(months, TiSav[:,i]-TAav[:,i], label='TiS-Ta; ' + IPOS[i])		
 
-			#plt.plot(months, TiSav[:,i], label='TiS; ' + IPOS[i])		
+			plt.plot(months, TiSav[:,i], label='TiS')		
 
-			#plt.plot(months, TAav[:,i], label='Ta; ' + IPOS[i])		
+			plt.plot(months, TAav[:,i], label='Ta')		
 
 								
 
-		plt.title('TiS - Ta (deg. C)')
+		#plt.title('TiS - Ta (deg. C)')
+
+			plt.title('Surf temp and 2m air temp (deg Kel); ' + IPOS[i])
+
+			plt.ylim(256,273)
+
+			plt.grid()
+
+			plt.legend()
+
+			plt.show()
+
+			
+
+	if True:
+
+		
+
+		colours = ['k', 'r', 'b']
+
+		IPOS = ['Monthly mean', 'Pos IPO', 'Neg IPO']
+
+			
+
+		for i in range(3):
+
+		
+
+			#plt.plot(months, TiSav[:,i]-TAav[:,i], label='TiS-Ta; ' + IPOS[i])		
+
+			plt.plot(months, HIav[:,i], label=IPOS[i], color=colours[i])		
+
+								
+
+		#plt.title('TiS - Ta (deg. C)')
+
+		plt.title('Mean sea ice effective thickness')
 
 		plt.grid()
 
@@ -6408,7 +7186,7 @@ if SIrad_annual:
 
 # Radiative snow-covered sea-ice budget for full PAS domain.
 
-SIrad_all = False
+SIrad_all = True
 
 if SIrad_all:
 
@@ -6426,35 +7204,55 @@ if SIrad_all:
 
 	
 
+	sections = ['westGetz', 'westPITW', 'westPITE']
+
+	
+
+	# Start/end month in PAS. Using smaller range via shifts to focus on two main events.
+
+	ts_shift = -2 +24
+
+	te_shift = -3 -48#-50#-50 for uc, -30 for IPO
+
+	t_start = 24*12 + 5*12 + ts_shift; t_end = -11 + te_shift
+
+	IPO_t_start = 14*12+1 + ts_shift; IPO_t_end = te_shift
+
+	
+
 	si = 1 # Season of choice. 0 for winter with default params.
 
 	
 
-	nn = 60	
+	thresholdScale = 0.5
 
-	ts = -2; te = - 3
+	nn = 60	
 
 		
 
-	from TPI import TPI_unfiltered_PSL as IPO
+	# Use IPO or undercurrent for composites.
 
-	IPO_start = 14*12+1 + ts; IPO_end = te
+	# IPO data is 1970-2017.
 
-	IPO = np.array(IPO[IPO_start:IPO_end])
+	IPO = getIPO(IPO_t_start=IPO_t_start, IPO_t_end=IPO_t_end)
 
-	IPO = PAS_tools.windowAv(IPO, n=nn)[nn//2:-nn//2+1]
-
-
-
-	t_start = 0; t_end = 779
-
-	start = 24*12 + 5*12 + ts; end= -11 + te
+	compstr = 'IPO'
 
 	
 
+	#IPO = ptools.getBarocl(t_start=t_start, t_end=t_end); compstr = 'barocl.'
+
+	#IPO = ptools.getUndercurrent(t_start=t_start, t_end=t_end); compstr = 'undercurrent'
+
+	#IPO = ptools.avSlopeSections(IPO, sections=sections)
+
+	#IPO = ptools.windowAv(ptools.detrend(IPO, None), n=nn)
+
+
+
 	path = '/home/michael/Documents/data/slopeCurrent/'
 
-	path = path + str(t_start) + '_' + str(t_end) + '_y1/'
+	path = path + '0_779_y1/'
 
 	
 
@@ -6490,7 +7288,7 @@ if SIrad_all:
 
 	#box = (-72, -70, 230, 240)
 
-	#pt.plot1by1(bathy, X=X, Y=Y, vmin=-1000, vmax=0, mesh=True, contour=bathyC, contourlevels=[-1000], box=box)
+	#pt.plot1by1(bathy, X=X, Y=Y, vmin=-1000, vmax=0, mesh=True, contour=bathyC, contourLevels=[-1000], box=box)
 
 		
 
@@ -6498,7 +7296,7 @@ if SIrad_all:
 
 	t = np.load(path+timefile)
 
-	year = PAS_tools.getDecimalTime(t)[nn//2+start:end-nn//2+1]
+	year = ptools.getDecimalTime(t)[nn//2+t_start:t_end-nn//2+1]
 
 
 
@@ -6520,11 +7318,9 @@ if SIrad_all:
 
 		print('Processing ' + fname)
 
-		
+		data = np.load(path+fname+'.npy')[nn//2+t_start:t_end-nn//2+1]
 
-		data = np.load(path+fname+'.npy')[nn//2+start:end-nn//2+1]
 
-		
 
 		if SUBREGION:
 
@@ -6544,19 +7340,19 @@ if SIrad_all:
 
 	
 
-		#data = PAS_tools.detrendXY(data, None); c0 = 0
+		#data = ptools.detrendXY(data, None); c0 = 0
 
 		# Use one below when plotting absolute values.
 
-		#data = PAS_tools.detrendXY(data, None, interceptFlag=0)
+		#data = ptools.detrendXY(data, None, interceptFlag=0)
 
 		
 
 		# Get 
 
-		dataSeas, seasons = PAS_tools.seasonalDataIPO(data, year, IPO)
+		dataSeas, seasons = ptools.seasonalDataIPO(data, year, IPO, thresholdScale=thresholdScale)
 
-		data = dataSeas[si]; #print(seasons[si])
+		data = dataSeas[si]; print(seasons[si])
 
 		
 
@@ -6588,7 +7384,7 @@ if SIrad_all:
 
 	# Then we have to FCs. One for average winter, one for pos (or neg) IPO winter with sea-ice data of average winter.
 
-	# Then can compute how much sea-ice has to melt for FC to return to old value (to rebalances fluxes from ocean).
+	# Then can compute how much sea-ice has to melt for FC to return to sold value (to rebalances fluxes from ocean).
 
 	
 
@@ -6616,17 +7412,13 @@ if SIrad_all:
 
 	# Get upward conductive flux FC and other radiation terms for average winter.
 
-	RADS_meanWinter = PAS_tools.surfaceRadiation(qa, Ua, Ta, LW, SW, SSS, hi, hs, bathy, draft, nTiS=500, T1=280)
+	RADS_meanWinter = ptools.surfaceRadiation(qa, Ua, Ta, LW, SW, SSS, hi, hs, bathy, draft, nTiS=600, T1=280)
 
 
 
 	pt.plotRads(RADS_meanWinter, X, Y, grid, bathy, subr=SUBREGION, lats=latsi, lons=lonsi)
 
 
-
-	quit()
-
-	
 
 	# Repeat for pos IPO radiative terms, but keeps sea-ice data the same.
 
@@ -6638,7 +7430,7 @@ if SIrad_all:
 
 		
 
-	RADS_posIPOwinter = PAS_tools.surfaceRadiation(qa, Ua, Ta, LW, SW, SSS, hi, hs, bathy, draft, nTiS=500, T1=280)
+	RADS_posIPOwinter = ptools.surfaceRadiation(qa, Ua, Ta, LW, SW, SSS, hi, hs, bathy, draft, nTiS=600, T1=280)
 
 	
 
@@ -6668,9 +7460,9 @@ if SIrad_all:
 
 	
 
-	pt.plot1by1(dFC, X=X, Y=Y, vmin=-4, vmax=4, mesh=True, contour=bathyC, contourlevels=[-1000], title='pos IPO FC - mean winter FC (W/m^2)')
+	pt.plot1by1(dFC, X=X, Y=Y, vmin=-4, vmax=4, mesh=True, contour=bathyC, contourLevels=[-1000], title='pos IPO FC - mean winter FC (W/m^2)')
 
-	pt.plot1by1(dTiS,  X=X, Y=Y, vmin=-4, vmax=4, mesh=True, contour=bathyC, contourlevels=[-1000], title='pos IPO TiS - mean winter TiS (deg. C)')
+	pt.plot1by1(dTiS,  X=X, Y=Y, vmin=-4, vmax=4, mesh=True, contour=bathyC, contourLevels=[-1000], title='pos IPO TiS - mean winter TiS (deg. C)')
 
 	
 
@@ -6716,7 +7508,7 @@ if SIrad_all:
 
 		
 
-	pt.plot1by1(FWflx, X=X, Y=Y, mesh=True, vmin=-8.e-5, vmax=8.e-5, title='Predicted FW flux (kg/m^2/s)', contour=bathyC, contourlevels=[-1000])
+	pt.plot1by1(FWflx, X=X, Y=Y, mesh=True, vmin=-8.e-5, vmax=8.e-5, title='Predicted FW flux (kg/m^2/s)', contour=bathyC, contourLevels=[-1000])
 
 	
 
@@ -6990,7 +7782,7 @@ if SIrad:
 
 
 
-iceShelfMelt = True
+iceShelfMelt = False
 
 if iceShelfMelt:
 
@@ -7000,17 +7792,15 @@ if iceShelfMelt:
 
 	
 
-	start = 24*12 + 5*12; end=-11
-
 	nn = 60
 
 	
 
 	t = np.load(path+'PAS_time.npy')
 
-	t = t[start:end][nn//2:-nn//2+1]
+	t = t[t_start:t_end][nn//2:-nn//2+1]
 
-	year = PAS_tools.getDecimalTime(t)
+	year = ptools.getDecimalTime(t)
 
 	
 
@@ -7036,9 +7826,9 @@ if iceShelfMelt:
 
 	melt = -np.sum(data, axis=(1,2))
 
-	melt = PAS_tools.detrend(melt, None)
+	melt = ptools.detrend(melt, None)
 
-	melt = PAS_tools.deseason(melt)
+	melt = ptools.deseason(melt)
 
 	
 
@@ -7074,7 +7864,7 @@ if iceShelfMelt:
 
 	
 
-	data = PAS_tools.deseason(data)
+	data = ptools.deseason(data)
 
 	data_av = np.mean(data, axis=(1,2))
 
@@ -7082,7 +7872,7 @@ if iceShelfMelt:
 
 	nw = 61; window_lengths = np.linspace(1,nw,nw)
 
-	corrw = PAS_tools.windowCorr(data_av, melt, window_lengths, year, return_uv=False)
+	corrw = ptools.windowCorr(data_av, melt, window_lengths, year, return_uv=False)
 
 	
 
@@ -7128,7 +7918,7 @@ if iceShelfMelt:
 
 		#bathyC = ptt.makeBathyContour(bathy, X, Y)
 
-		#pt.plot1by1(corr[ti], X=X, Y=Y, contour=bathyC, contourlevels=[-1000], cmap='bwr', stippling=pval[ti])#, vmin=-.2, vmax=.2)
+		#pt.plot1by1(corr[ti], X=X, Y=Y, contour=bathyC, contourLevels=[-1000], cmap='bwr', stippling=pval[ti])#, vmin=-.2, vmax=.2)
 
 	
 
@@ -7156,7 +7946,7 @@ if iceShelfMelt:
 
 	
 
-	melt = PAS_tools.windowAv(melt, n=nn)[nn//2:-nn//2+1]
+	melt = ptools.windowAv(melt, n=nn)
 
 	
 
