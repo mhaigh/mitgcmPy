@@ -30,6 +30,68 @@ from scipy.stats import pearsonr
 
 
 
+# Start/end month in PAS
+
+TS_SHIFT = -2; TE_SHIFT = -3
+
+T_START = 24*12 + 5*12 + TS_SHIFT
+
+T_END = -11 + TE_SHIFT
+
+IPO_T_START = 14*12+1 + TS_SHIFT
+
+IPO_T_END = TE_SHIFT
+
+
+
+# Fixed lons that correspond to lons used in computation of slope current etc.
+
+WEST_GETZ_LONS = [1, 60]
+
+GETZ_LONS = [60, 65]
+
+WEST_PITW_LONS = [65, 105]
+
+PITW_LONS = [105, 120]
+
+WEST_PITE_LONS = [120, 180]
+
+PITE_LONS = [180, 230]
+
+EAST_PITE_LONS = [230, 250]
+
+SLOPE_SECTIONS = {'westGetz':WEST_GETZ_LONS, 'Getz':GETZ_LONS, 'westPITW':WEST_PITW_LONS, 'PITW':PITW_LONS, 'westPITE':WEST_PITE_LONS, 'PITE':PITE_LONS, 'eastPITE':EAST_PITE_LONS}
+
+
+
+#==
+
+
+
+def getSectionIndices(sections):
+
+	'''Return list of indices for given sections along continental slope.'''
+
+	
+
+	section_indices = []
+
+	for section in sections:
+
+		for xi in range(SLOPE_SECTIONS[section][0], SLOPE_SECTIONS[section][1]):
+
+			section_indices.append(xi)
+
+			
+
+	return section_indices
+
+
+
+#==
+
+
+
 # General helper function to get the area of each cell from latitude and longitude arrays giving the coordinates of the cell centres. Adapted from Kaitlin Naughten's mitgcm_python.
 
 def dA_from_latlon (lon, lat, periodic=False, return_edges=False):
@@ -532,21 +594,45 @@ def movingAv(a, n=3):
 
 
 
-def windowAv(a, n):
+def windowAv(a, n, nBuffer=None, av=True):
 
-		b = np.copy(a)
+		
 
-		b = np.ma.masked_where(b!=b, b)
+	b = np.zeros(np.array(a).shape)
 
-		if n % 2 == 0:
 
-			n += 1
+
+	if n % 2 == 0:
+
+		n += 1
+
+
+
+	if nBuffer == None:
+
+		nBuffer = n
+
+	else:
+
+		nBuffer += 1 # For compatability with operations on n.
+
+		
+
+	if av:
 
 		for i in range((n-1)//2, len(b)-(n-1)//2+1):
 
-			b[i] = np.ma.mean(b[i-(n-1)//2:i+(n-1)//2], axis=0)
+			#print(a[i-(n-1)//2:i+(n-1)//2].shape)
 
-		return b 
+			b[i] = np.ma.mean(a[i-(n-1)//2:i+(n-1)//2], axis=0)
+
+		return b[(nBuffer-1)//2:-(nBuffer-1)//2+1]
+
+		
+
+	else:
+
+		return a[(nBuffer-1)//2:-(nBuffer-1)//2+1]
 
 		
 
@@ -624,7 +710,7 @@ def windowCorr(u, v, window_lengths, t, return_uv=False):
 
 	else:
 
-		return corrw, tw
+		return corrw
 
 		
 
@@ -722,6 +808,178 @@ def crossCorrWindowAv(uin, vin, window_lengths, nl, nl2):
 
 
 
+def computeComposites(data, timeseries, thresholdScale=1.):
+
+	'''Compute composites of data for timeseries.
+
+	Variable thresholdScale defines scaling of standard deviation.
+
+	Input data has three dimensions, with first representing time.
+
+	Input timeseries has one time dimension.'''
+
+	
+
+	tseries = np.array(timeseries).copy()
+
+	tseries = demean(tseries, axis=0)
+
+	
+
+	std = thresholdScale * (np.mean(tseries**2)**0.5)
+
+	
+
+	nT, nY, nX = data.shape
+
+	
+
+	compPos = np.zeros((nY, nX)); nPos = 0
+
+	compNeg = np.zeros((nY, nX)); nNeg = 0
+
+	
+
+	for ti in range(nT):
+
+		if tseries[ti] > std:
+
+			compPos	+= data[ti]
+
+			nPos += 1
+
+		elif tseries[ti] < -std:
+
+			compNeg += data[ti]
+
+			nNeg +=1
+
+			
+
+	compPos /= nPos
+
+	compNeg /= nNeg
+
+	
+
+	return compPos, compNeg
+
+
+
+#==
+
+
+
+def computeJointComposites(data, timeseries, thresholdScale=1.):
+
+	'''Compute joint composites of data for timeseries.
+
+	Variable thresholdScale defines scaling of standard deviation.
+
+	Input data has three dimensions, with first representing time.
+
+	Input timeseries has one time dimension.'''
+
+	
+
+	timeseries1 = timeseries[0]
+
+	timeseries2 = timeseries[1]
+
+	
+
+	try:
+
+		nT1 = len(timeseries1)
+
+		nT2 = len(timeseries2)
+
+		if nT1 != nT2:
+
+			print('PAS_tools.computeJointComposites error: two timeseries must have same length.')
+
+	except:
+
+		print('PAS_tools.computeJointComposites error: input variable timeseries must be list of two predictors with same length.')
+
+		quit()
+
+	
+
+	std1 = thresholdScale * (np.mean(timeseries1**2)**0.5)
+
+	std2 = thresholdScale * (np.mean(timeseries2**2)**0.5)
+
+	
+
+	nT, nY, nX = data.shape
+
+	
+
+	compPosPos = np.zeros((nY, nX)); nPosPos = 0
+
+	compPosNeg = np.zeros((nY, nX)); nPosNeg = 0
+
+	compNegPos = np.zeros((nY, nX)); nNegPos = 0
+
+	compNegNeg = np.zeros((nY, nX)); nNegNeg = 0
+
+		
+
+	for ti in range(nT):
+
+		if timeseries1[ti] > std1:
+
+			if timeseries2[ti] > std2:
+
+				compPosPos += data[ti]
+
+				nPosPos += 1
+
+			elif timeseries2[ti] < -std2:
+
+				compPosNeg += data[ti]
+
+				nPosNeg += 1
+
+		elif timeseries1[ti] < -std1:
+
+			if timeseries2[ti] > std2:
+
+				compNegPos += data[ti]
+
+				nNegPos += 1
+
+			elif timeseries2[ti] < -std2:
+
+				compNegNeg += data[ti]
+
+				nNegNeg += 1
+
+			
+
+	print('Number of samples: ')
+
+	print(nPosPos, nPosNeg, nNegPos, nNegNeg)
+
+	compPosPos /= nPosPos
+
+	compPosNeg /= nPosNeg
+
+	compNegPos /= nNegPos
+
+	compNegNeg /= nNegNeg
+
+	
+
+	return compPosPos, compPosNeg, compNegPos, compNegNeg
+
+	
+
+#==
+
+
+
 def seasonalData(data, year):
 
 	'''Return dictionary of timeseries data averaged over four seasons.'''
@@ -796,7 +1054,7 @@ def seasonalData(data, year):
 
 
 
-def seasonalDataIPO(data, year, IPO):
+def seasonalDataIPO(data, year, IPO, thresholdScale=1.):
 
 	'''Return dictionary of timeseries data averaged over four seasons.
 
@@ -804,7 +1062,7 @@ def seasonalDataIPO(data, year, IPO):
 
 
 
-	std = np.mean(IPO**2)**0.5
+	std = thresholdScale * (np.mean(IPO**2)**0.5)
 
 			
 
@@ -844,23 +1102,27 @@ def seasonalDataIPO(data, year, IPO):
 
 		
 
+	last = 0
+
 	for yi in range(nyears):
 
 		for si in range(4):
 
 			for mi in range(3):
 
-				seasonData[si, 0, ] += data[12*yi + 3*si + mi, ]
+				index = 12*yi + 3*si + mi
 
-				if IPO[12*yi + 3*si + mi] > std:
+				seasonData[si, 0, ] += data[index, ]
 
-					seasonData[si, 1, ] += data[12*yi + 3*si + mi, ]
+				if IPO[index] > std:
+
+					seasonData[si, 1, ] += data[index, ]
 
 					nPos[si] += 1
 
-				elif IPO[12*yi + 3*si + mi] < - std:
+				elif IPO[index] < - std:
 
-					seasonData[si, 2, ] += data[12*yi + 3*si + mi, ]
+					seasonData[si, 2, ] += data[index, ]
 
 					nNeg[si] += 1
 
@@ -904,7 +1166,7 @@ def seasonalDataIPO(data, year, IPO):
 
 
 
-def monthlyDataIPO(data, year, IPO, DEMEAN=True):
+def monthlyDataIPO(data, year, IPO, DEMEAN=True, thresholdScale=1.):
 
 	'''Return dictionary of timeseries data averaged over each month.
 
@@ -914,7 +1176,7 @@ def monthlyDataIPO(data, year, IPO, DEMEAN=True):
 
 
 
-	std = np.mean(IPO**2)**0.5
+	std = thresholdScale * (np.mean(IPO**2)**0.5)
 
 			
 
@@ -1008,9 +1270,9 @@ def monthlyDataIPO(data, year, IPO, DEMEAN=True):
 
 	return monthData, months
 
-	
 
-#==		
+
+#==
 
 
 
@@ -1300,6 +1562,76 @@ def surfaceRadiation(qa, Ua, Ta, LW, SW, SSS, hi, hs, bathy, draft, nTiS=1000, T
 
 
 
+def Fmi(SST, SSS):
+
+	'''Compute flux from ocean mixed layer into base of sea ice.'''
+
+	
+
+	# Flux is 
+
+	# f_mi = rhow * cw * ch * umix * (Tmix - Tf)
+
+	
+
+	rhow = 1026.
+
+	cw = 4190.
+
+	ch = 0.035 #0.006
+
+	
+
+	SEAICE_dTempFrz_dS = -5.75e-2
+
+	SEAICE_tempFrz0 = 9.01e-2
+
+	celsius2K = 273.15
+
+
+
+	Tf = SEAICE_dTempFrz_dS * SSS + SEAICE_tempFrz0 + celsius2K
+
+	Tmix = SST + celsius2K
+
+		
+
+	dzSurf = 10.
+
+	deltaTtherm = 800.
+
+	umix = dzSurf / deltaTtherm
+
+	
+
+	# https://github.com/MITgcm/MITgcm/blob/master/pkg/seaice/seaice_growth.F
+
+	# https://github.com/MITgcm/MITgcm/blob/master/pkg/seaice/seaice_init_fixed.F
+
+	# https://github.com/MITgcm/MITgcm/blob/master/pkg/seaice/SEAICE_PARAMS.h
+
+	
+
+	f_mi = rhow * cw * ch * umix * (Tmix - Tf)
+
+	
+
+	#SEAICE_frazilFrac*dzSurf/SEAICE_deltaTtherm
+
+	#*
+
+	#(HeatCapacity_Cp*rhoConst * recip_QI)
+
+    # &         * (theta(i,j,kSurface,bi,bj)-tempFrz)
+
+    # &         * SEAICE_deltaTtherm * HEFFM(i,j,bi,bj)
+
+     
+
+	return f_mi
+
+	
+
 #==
 
 
@@ -1572,15 +1904,397 @@ def getCoriolis(lats, Omega=2*np.pi/86400., nx=None):
 
 
 
-	
+#==
+
+
+
+def maskSouthNorthSlope(data, grid, lonsN=[225, 260], lonsS=[225,260], Nrange=58, FOR_PLOTTING=False):
+
+	'''Return copies of data masked either side of continental slope.'''
 
 	
 
-	
+	from plotting_tools import makeBathyContour
 
 	
 
+	bathyDeep = -1001
+
+	bathyShallow = -999
+
+	bathy = grid.bathy
+
+	X = grid.XC; Y = grid.YC
+
+	bathyC = makeBathyContour(bathy, X, Y)
+
+	axis = 0
+
 	
+
+	if len(data.shape) > 2:
+
+		nT, nY, nX = data.shape
+
+		X = np.tile(X, (nT,1,1)).reshape((nT,nY,nX))
+
+		Y = np.tile(Y, (nT,1,1)).reshape((nT,nY,nX))
+
+		bathyC = np.tile(bathyC, (nT,1,1)).reshape((nT,nY,nX))
+
+		axis = 1
+
+		
+
+	dataS = np.ma.masked_where(bathyC<bathyShallow, data)
+
+	dataS = np.ma.masked_where(X<lonsS[0], dataS)
+
+	dataS = np.ma.masked_where(X>lonsS[1], dataS)
+
+		
+
+	dataN = np.ma.masked_where(bathyC>bathyDeep, data) 
+
+	dataN = np.ma.masked_where(np.roll(bathyC, Nrange, axis=axis)<bathyDeep, dataN)
+
+	dataN = np.ma.masked_where(X<lonsN[0], dataN)
+
+	dataN = np.ma.masked_where(X>lonsN[1], dataN)
+
+	
+
+	#==
+
+	
+
+	# This section edits masks, mainly for plotting purposes to show boundaries more clearly in contour plots.
+
+	if FOR_PLOTTING:
+
+	
+
+		# Northern mask
+
+		maskN = np.ma.getmask(dataN)
+
+		for i in range(X.shape[1]):
+
+			j = -1
+
+			while j > -X.shape[0]:
+
+				if maskN[j-1,i] and not maskN[j,i]:
+
+					maskN[j,i] = True
+
+					maskN[j+1,i] = True
+
+					maskN[j+2,i] = True
+
+					j -= X.shape[0]
+
+				j -= 1
+
+		dataN = np.ma.masked_where(maskN, dataN)
+
+		
+
+		# Southern mask
+
+		maskS = np.ma.getmask(dataS)
+
+		for i in range(X.shape[1]):
+
+			j = -1
+
+			while j > -X.shape[0]:
+
+				if maskS[j,i] and not maskS[j-1,i]:
+
+					maskS[j,i] = True
+
+					maskS[j-1,i] = True
+
+					maskS[j-2,i] = True
+
+					maskS[j-3,i] = True
+
+					j -= X.shape[0]
+
+				j -= 1
+
+		dataS = np.ma.masked_where(maskS, dataS)
+
+	
+
+	#==
+
+	
+
+	return dataS, dataN	
+
+	
+
+#== 
+
+
+
+def avSlopeSections(data, axis=1, sections=['westGetz', 'westPITW', 'westPITE']):
+
+	'''Average data over slope sections.'''
+
+
+
+	data_sum = np.zeros(data.shape[0])
+
+	nx = 0
+
+	for section in sections:
+
+		iw = SLOPE_SECTIONS[section][0]
+
+		ie = SLOPE_SECTIONS[section][1]
+
+		data_sum += np.sum(data[:,iw:ie], axis=1)
+
+		nx += ie-iw
+
+	
+
+	data_av = data_sum / nx
+
+	
+
+	return data_av
+
+		
+
+#==
+
+
+
+def getSurfCurrent(path='/home/michael/Documents/data/slopeCurrent/0_779_y1/', fname='surf_uv_av.npy', t_start=T_START, t_end=T_END, sections=['westGetz', 'westPITW', 'westPITE'], DETREND=True, AV=True, nn=60):
+
+	'''Load surface current computed by PAS.py.'''
+
+	
+
+	u = np.load(path+fname)[t_start:t_end]
+
+	
+
+	if sections is not None:
+
+		u = avSlopeSections(u, sections=sections)
+
+	
+
+	if DETREND:
+
+		u = detrend(u, None)
+
+	
+
+	if AV:
+
+		u = windowAv(u, n=nn)
+
+		
+
+	return u 
+
+	
+
+#==
+
+
+
+def getUndercurrent(path='/home/michael/Documents/data/slopeCurrent/0_779_y1/', fname='slope_uv_max.npy', t_start=T_START, t_end=T_END, sections=['westGetz', 'westPITW', 'westPITE'], DETREND=True, AV=True, nn=60):
+
+	'''Load undercurrent computed by PAS.py.'''
+
+	
+
+	u = np.load(path+fname)[t_start:t_end]
+
+	
+
+	if sections is not None:
+
+		u = avSlopeSections(u, sections=sections)
+
+	
+
+	if DETREND:
+
+		u = detrend(u, None)
+
+	
+
+	if AV:
+
+		u = windowAv(u, n=nn)
+
+		
+
+	return u
+
+	
+
+#==
+
+
+
+def getBarocl(path='/home/michael/Documents/data/slopeCurrent/0_779_y1/', fname=['slope_uv_max.npy','surf_uv_av.npy'], t_start=T_START, t_end=T_END, sections=['westGetz', 'westPITW', 'westPITE'], DETREND=True, AV=True, nn=60):
+
+	'''Return difference between undercurrent and surface current computed by PAS.py.'''
+
+	
+
+	u = np.load(path+fname[0])[t_start:t_end] - np.load(path+fname[1])[t_start:t_end]
+
+	
+
+	if sections is not None:
+
+		u = avSlopeSections(u, sections=sections)
+
+	
+
+	if DETREND:
+
+		u = detrend(u, None)
+
+	
+
+	if AV:
+
+		u = windowAv(u, n=nn)
+
+		
+
+	return u
+
+	
+
+#==
+
+
+
+def coastalMask(grid, maskRad=5, draft=True, omitBurkeIsland=False):
+
+	'''Return array of 1s for ocean with maskRad grid points of land.'''
+
+	
+
+	bathy = grid.bathy
+
+	ny, nx = bathy.shape
+
+	
+
+	if omitBurkeIsland:
+
+		X = grid.XC; Y = grid.YC
+
+		mask = np.where(X>256, -1, np.where(X<254,-1,1))
+
+		mask = np.where(Y>-72.5, -1, np.where(Y<-73.25,-1,mask))
+
+		bathy = np.where(mask>0,-1000,bathy)
+
+		
+
+		mask = np.where(X>258, -1, np.where(X<256,-1,1))
+
+		mask = np.where(Y>-74., -1, np.where(Y<-74.2,-1,mask))
+
+		bathy = np.where(mask>0,-1000,bathy)
+
+		#plt.pcolor(bathy, vmin=-1000,vmax=0); plt.colorbar(); plt.show(); quit()
+
+	
+
+	mask = np.zeros((ny, nx))
+
+	for j in range(ny):
+
+		for i in range(nx):
+
+			if bathy[j,i] >= 0:
+
+				mask[max(j-maskRad,0):min(j+maskRad,ny), max(i-maskRad,0):min(i+maskRad,nx)] = 1
+
+			
+
+	if draft: 
+
+		for j in range(ny):
+
+			for i in range(nx):
+
+				if grid.draft[j,i] < 0:
+
+					mask[max(j-maskRad,0):min(j+maskRad,ny), max(i-maskRad,0):min(i+maskRad,nx)] = 1
+
+		mask = np.where(grid.draft<0, 0, mask)	
+
+				
+
+	mask = np.where(bathy>=0, 0, mask)
+
+	mask[200:] = 0
+
+	
+
+	return mask
+
+	
+
+#==
+
+
+
+def ASpolynyaMask(grid, maskRad=10):
+
+	'''Return array of 1s in region of Amundsen Sea polynya, with zeros elsewhere.'''
+
+	
+
+	bathy = grid.bathy
+
+	ny, nx = bathy.shape
+
+	
+
+	mask = np.zeros((ny, nx))
+
+	for j in range(ny):
+
+		for i in range(nx):
+
+			if bathy[j,i] >= 0:
+
+				mask[max(j-maskRad,0):min(j+maskRad,ny), max(i-maskRad,0):i] = 1
+
+	
+
+	X = grid.XC; Y = grid.YC
+
+	mask = np.where(X>249.6, 0, np.where(X<248.2,0,mask))
+
+	mask = np.where(Y>-73.1, 0, np.where(Y<-74.3,0,mask))
+
+	
+
+	return mask
+
+	
+
+#==
+
+
 
 
 
