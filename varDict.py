@@ -40,10 +40,6 @@ Vvel = {'fname':'stateVvel', 'VAR':'VVEL', 'vmin':-0.02, 'vmax':0.02, 'cmap':'co
 
 Wvel = {'fname':'stateWvel', 'VAR':'WVEL', 'vmin':-1.e-5, 'vmax':1.e-5, 'cmap':'coolwarm', 'title':'W (m/s)'}
 
-
-
-
-
 varDict={'ETAN':Eta, 'RHOAnoma':Rho, 'THETA':Theta, 'SALT':Salt, 'UVEL':Uvel, 'VVEL':Vvel, 'WVEL':Wvel}
 
 
@@ -68,23 +64,61 @@ varDict['botTauX'] = {'fname':'state2D', 'vmin':-0.05, 'vmax':0.05, 'cmap':'cool
 
 varDict['botTauY'] = {'fname':'state2D', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Merid. bottom stress'}
 
-varDict['oceTAUX'] = {'fname':'state2D', 'vmin':-0.03, 'vmax':0.03, 'cmap':'coolwarm', 'title':'Zonal surface stress'}
+varDict['oceTAUX'] = {'fname':'state2D', 'vmin':-0.004, 'vmax':0.004, 'cmap':'coolwarm', 'title':'Zonal surface stress'}
 
 varDict['oceTAUY'] = {'fname':'state2D', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Merid. surface stress'}
 
-varDict['EXFuwind'] = {'fname':'stateExf', 'vmin':-4., 'vmax':4., 'cmap':'coolwarm', 'title':'Zonal 10 m wind'}
+varDict['oceQnet'] = {'fname':'state2D', 'vmin':0, 'vmax':1, 'cmap':'jet', 'title':' Surf. specific humidity (kg/kg)'}
 
-varDict['EXFvwind'] = {'fname':'stateExf', 'vmin':-4., 'vmax':4., 'cmap':'coolwarm', 'title':'Merid. 10 m wind'}
+varDict['SIarea'] = {'fname':'state2D', 'vmin':0.0, 'vmax':1., 'cmap':'viridis', 'title':'Sea-ice coverage'}
+
+varDict['SIuice'] = {'fname':'state2D', 'vmin':-.1, 'vmax':.1, 'cmap':'viridis', 'title':'Sea-ice zonal vel.'}
+
+varDict['SIvice'] = {'fname':'state2D', 'vmin':-.1, 'vmax':.1, 'cmap':'viridis', 'title':'Sea-ice merid. vel.'}
+
+varDict['SIheff'] = {'fname':'state2D', 'vmin':0, 'vmax':1, 'cmap':'viridis', 'title':'Sea-ice effective ice thickness'}
+
+varDict['SIhsnow'] = {'fname':'state2D', 'vmin':0, 'vmax':1, 'cmap':'viridis', 'title':'Sea-ice effective snow thickness'}
+
+varDict['oceFWflx'] = {'fname':'state2D', 'vmin':-1.e-4, 'vmax':1.e-4, 'cmap':'coolwarm', 'title':'Freshwater flux'}
+
+varDict['SHIfwFlx'] = {'fname':'state2D', 'vmin':0., 'vmax':1., 'cmap':'coolwarm', 'title':'Ice shelf freshwater flux'}
 
 varDict['Um_dPhiX'] = {'fname':'stateUdpdx', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Zonal PGF'}
 
-varDict['Vm_dPhiX'] = {'fname':'stateVdpdx', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Merid. PGF'}
+varDict['Vm_dPhiY'] = {'fname':'stateVdpdy', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Merid. PGF'}
 
 varDict['ADTAUU'] = {'fname':'adxx_tauu', 'vmin':-0.3, 'vmax':0.3, 'cmap':'coolwarm', 'title':'Merid. PGF'}
 
 
 
+varDict['EXFuwind'] = {'fname':'stateExf', 'vmin':-4., 'vmax':4., 'cmap':'coolwarm', 'title':'Zonal 10 m wind'}
 
+varDict['EXFvwind'] = {'fname':'stateExf', 'vmin':-4., 'vmax':4., 'cmap':'coolwarm', 'title':'Merid. 10 m wind'}
+
+varDict['EXFpress'] = {'fname':'stateExf', 'vmin':-4., 'vmax':4., 'cmap':'coolwarm', 'title':''}
+
+varDict['EXFatemp'] = {'fname':'stateExf', 'vmin':-4., 'vmax':4., 'cmap':'coolwarm', 'title':''}
+
+varDict['EXFpreci'] = {'fname':'stateExf', 'vmin':-4., 'vmax':4., 'cmap':'coolwarm', 'title':''}
+
+varDict['EXFevap'] = {'fname':'state2D', 'vmin':-1.e-5, 'vmax':1.e-5, 'cmap':'coolwarm', 'title':''}
+
+varDict['EXFhs'] = {'fname':'state2D', 'vmin':-1, 'vmax':1, 'cmap':'coolwarm', 'title':''}
+
+varDict['EXFhl'] = {'fname':'state2D', 'vmin':-1, 'vmax':1, 'cmap':'coolwarm', 'title':''}
+
+varDict['EXFqnet'] = {'fname':'state2D', 'vmin':-1, 'vmax':1, 'cmap':'coolwarm', 'title':''}
+
+varDict['EXFroff'] = {'fname':'stateExf', 'vmin':-1.e-4, 'vmax':0, 'cmap':'coolwarm', 'title':''}
+
+varDict['EXFswdn'] = {'fname':'stateExf', 'vmin':-4., 'vmax':4., 'cmap':'coolwarm', 'title':''}
+
+varDict['EXFlwdn'] = {'fname':'state2D', 'vmin':-4., 'vmax':4., 'cmap':'coolwarm', 'title':''}
+
+varDict['EXFaqh'] = {'fname':'stateExf', 'vmin':-4., 'vmax':4., 'cmap':'coolwarm', 'title':''}
+
+	
 
 #==
 
