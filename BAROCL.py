@@ -24,6 +24,8 @@ import plotting_tools as ptt
 
 import tools
 
+import PAS_tools as ptools
+
 
 
 from readData import *
@@ -536,35 +538,265 @@ if crossCorr:
 
 
 
+# Surf and bot flow for given simulation(s). Plot the wind.
+
+BAROCL_1_SIM = 1
+
+if BAROCL_1_SIM:
+
+
+
+	#exp = [['MCS_414','MCS_417'], 'tauu4_t_const.bin', 'precipTanhN10_t.bin']; ylims = [95, 100]; xx = [70, -70]
+
+		
+
+	exp = [['PISOMIP_005'], 'tauu4_t_const.bin', 'precipTanhN16_t.bin']; ylims = [95, 105]; xx = [70, -70]
+
+	#exp = [['MCS_374'], 'tauu1_t.bin', 'precipTanhN16_t.bin']; ylims = [95, 105]; xx = [0, -2]
+
+
+
+	#exp = [['MCS_379', 'MCS_381'], 'tauu4_t_const.bin', 'precipTanhN16_t.bin']; ylims = [95, 105]; xx = [0, -75]
+
+		
+
+	#exp = [['MCS_385'], 'tauu_t_PAS.bin', '']; ylims = [98, 105]; xx = [10, -40]
+
+	#exp = [['MCS_384'], 'tauu_t_PAS.bin', 'precipTanhN16_t.bin']; ylims = [95, 105]; xx = [10, -30]
+
+		
+
+	#exp = [['MCS_383'], 'tauu4_tb.bin', '']; ylims = [95, 105]; xx = [10, -30]
+
+	#exp = [['MCS_382'], 'tauu4_tb.bin', 'precipTanhN16_t.bin']; ylims = [95, 105]; xx = [10, -30]
+
+		
+
+	#exp = [['MCS_386'], 'tauu4_t_const.bin', 'precipGaussNPos_t.bin']; ylims = [95, 105]; xx = [0, -2]
+
+	#exp = [['MCS_387'], 'tauu4_t_const.bin', 'precipGaussN_Sshift_t.bin']; ylims = [95, 105]; xx = [0, -2]
+
+		
+
+	windPath = '/home/michael/Documents/MATLAB/MCS/OUTPUT/'
+
+	nz = 120; ny = 200; nx = 240; dims = (nz, ny, nx)
+
+	nn = 30
+
+	title = 'Barocl'
+
+
+
+	nt = 0
+
+	for ri, run in enumerate(exp[0]):
+
+		
+
+		path = path_root + run + '/run/'
+
+		grid = Grid(path)
+
+
+
+		tmp = readVar('UVEL', path, meta=False, yy=ylims)
+
+		#ub = tools.bottom(tmp, grid, 'u', shiftUp=1, yy=ylims)
+
+		#ub = tmp[:,24]
+
+		nt += tmp.shape[0]
+
+		
+
+		#taux_ = readVar('oceTAUX', path, meta=False, yy=ylims, var2D=True)
+
+			
+
+		# Get time series of surf. and deep flow 
+
+		if ri == 0:
+
+			#surf = ptools.detrend(np.mean(tmp[:,0,:,xx[0]:xx[1]+1], axis=(1,2)), None)
+
+			surf = np.mean(tmp[:,0,:,xx[0]:xx[1]+1], axis=(1,2))
+
+						
+
+			#bot = ptools.detrend(np.max(tmp[:,10:,:,xx[0]:xx[1]+1], axis=(-1,-2,-3)), None)
+
+			bot = np.max(tmp[:,10:,:,xx[0]:xx[1]+1], axis=(-1,-2,-3))
+
+
+
+			#taux = ptools.detrend(np.mean(taux_[:,:,xx[0]:xx[1]+1], axis=(-1,-2)), None)
+
+
+
+		else:
+
+			
+
+			#surf_ = ptools.detrend(np.mean(tmp[:,0,:,xx[0]:xx[1]+1], axis=(1,2)), None)
+
+			surf_ = np.mean(tmp[:,0,:,xx[0]:xx[1]+1], axis=(1,2))
+
+			surf = np.concatenate((surf, ptools.demean(surf_)))
+
+			#ub = ptools.detrend(np.mean(ub[:,:,xx[0]:xx[1]+1], axis=(-1,-2)), None)
+
+			
+
+			#ub = ptools.detrend(np.max(tmp[:,10:,:,xx[0]:xx[1]+1], axis=(-1,-2,-3)), None)
+
+			ub = np.max(tmp[:,10:,:,xx[0]:xx[1]+1], axis=(-1,-2,-3))
+
+			bot = np.concatenate((bot, ub))
+
+			
+
+			#taux_ = ptools.detrend(np.mean(taux_[:,:,xx[0]:xx[1]+1], axis=(-1,-2)), None)
+
+			#taux = np.concatenate((taux, taux_))
+
+								
+
+		title = title + ' ' + run				
+
+
+
+	#==
+
+	
+
+	bot = ptools.detrend(bot, None)
+
+	surf = ptools.detrend(surf, None)
+
+	
+
+	#==
+
+	
+
+	title = title + '; ' + exp[1][:-4] + ' ' + exp[2]
+
+	
+
+	# Lastly, do wind. Repeat wind profile as many times as necessary.
+
+	wind = readnp(windPath+exp[1], dims, rec=0, dtype='>f8')[:,100,0]
+
+	wind = np.tile(wind, int(nt/len(wind)))
+
+	
+
+	#taux = np.max(wind) * taux / np.max(np.abs(taux))
+
+	precip = None
+
+	if exp[2] != '':
+
+		precip = readnp(windPath+exp[2], dims, rec=0, dtype='>f8')[:,125,0]
+
+		precip = np.tile(precip, int(nt/len(precip)))
+
+		precip = 0.005 * precip / np.max(precip)
+
+		precip = precip[nn//2:-nn//2+1]
+
+		
+
+	surf = ptools.windowAv(surf , n=nn)
+
+	bot = ptools.windowAv(bot , n=nn)
+
+	#taux = taux[nn//2:-nn//2+1]
+
+	wind = wind[nn//2:-nn//2+1]
+
+	
+
+	#==
+
+	
+
+	t = np.linspace(1, len(surf), len(surf))/12
+
+	
+
+	plt.plot(t, surf, color='b', label='Surf. flow')
+
+	plt.plot(t, bot, color='r', label='Deep flow')
+
+	#plt.plot(t, bot-surf, color='g', label='Baroclinicity')
+
+	#plt.plot(t, 0.01*wind, color='k', linestyle='--', label='0.01 * shelf slope wind')
+
+	#plt.plot(t, 0.01*taux, color='gray', linestyle='--', label='shelf slope wind stress')
+
+	#if precip is not None:
+
+	#	plt.plot(t, precip, color='k', linestyle='dotted', label='precip north of slope')
+
+	
+
+	plt.xlabel('Time (years)')
+
+	plt.grid()
+
+	#plt.title(title)
+
+	plt.title('5-year running mean along-slope velocity ' + run)
+
+	plt.legend()
+
+	plt.show()
+
+	quit()
+
+
+
+
+
+#==
+
+
+
 BAROCL = 0
 
 if BAROCL:
 
+	
 
+	RESTART = False
 
-	#paths = ['MCS_154', ['MCS_306', 'MCS_302']]; bathyName = 'bathyS'; 	xx = [50,190]
+	
 
-	#paths = ['MCS_154', ['MCS_312', 'MCS_313']]; labels = ['IPO PH neg', 'IPO PH pos']; bathyName = 'bathyS'; xx = [50,190]; tt = [0, None]; ylims = [95,110]
+	paths = ['MCS_379', ['MCS_379']]; labels = ['wind', 'precip', 'precip wind']; bathyName = 'bathyES'; xx = [0,-70]; tt = [0, 240]; ylims = [95, 105]; ylims_surf = [95, 105]
 
-	#paths = ['MCS_154', ['MCS_315', 'MCS_314']]; labels = ['IPO unif neg', 'IPO unif pos']; bathyName = 'bathyS'; xx = [50,190]; tt = [0, 154]; ylims = [95,110]
+	#paths = ['MCS_376', ['MCS_384', 'MCS_379', 'MCS_385']]; labels = ['windPAS', 'precip', 'precip windPAS']; bathyName = 'bathyES'; xx = [20,-20]; tt = [0, 240]; ylims = [95, 105]; ylims_surf = [95, 105]
 
-	#paths = ['MCS_154', ['MCS_319', 'MCS_318']]; labels = ['IPO sin neg, no rel', 'IPO sin pos, no rel']; bathyName = 'bathyS'; xx = [50,190]; tt = [0, 205]; ylims = [95,110]
+	#paths = ['MCS_376', ['MCS_379', 'MCS_381']]; labels = ['precip', 'precip']; bathyName = 'bathyES'; xx = [10,-30]; tt = [0, 240]; ylims = [95, 105]; ylims_surf = [95, 105]; RESTART=True
 
-	#paths = ['MCS_154', ['MCS_320', 'MCS_316']]; labels = ['IPO sin exf', 'IPO sin pos']; bathyName = 'bathyS'; xx = [50,190]; tt = [0, 208]; ylims = [95,110]
+			
 
-	#paths = ['MCS_154', ['MCS_321', 'MCS_316']]; labels = ['IPO sin pos sharp', 'IPO sin pos']; bathyName = 'bathyS'; xx = [50,190]; tt = [0, 205]; ylims = [95,110]
+	#paths = ['MCS_355', ['PISOMIP_001', 'PISOMIP_002', 'MCS_370']]; labels = ['wind', 'precip', 'precip wind']; bathyName = 'bathySkewWall'; xx = [20,-20]; tt = [0, 240]; ylims = [90, 100]; ylims_surf = [90, 100]
 
-	#paths = ['MCS_152', ['MCS_323', 'MCS_322']]; labels = ['IPO sin neg', 'IPO sin pos']; bathyName = 'bathy uniform'; xx = [0,-2];  tt = [0, 240]; ylims = [95,110]
-
-	#paths = ['MCS_152', ['MCS_334', 'MCS_327']]; labels = ['IPO sin neg sharp', 'IPO sin pos sharp']; bathyName = 'bathy uniform'; xx = [0,-2];  tt = [0, 240]; ylims = [95,110]
-
-	#paths = ['MCS_152', ['MCS_326', 'MCS_325']]; labels = ['IPO sin neg sharp (strong)', 'IPO sin pos sharp (strong)']; bathyName = 'bathy uniform'; xx = [0,-2];  tt = [0, 240]; ylims = [95,110]
-
-	paths = ['MCS_340', ['PISOMIP_003', 'PISOMIP_004']]; labels = ['IPO sin neg sharp', 'IPO sin pos sharp']; bathyName = 'bathy uniform'; xx = [2,-2]; tt = [0, 240]; ylims = [90, 100]
-
-		
+	#paths = ['MCS_376', ['PISOMIP_001']]; labels = ['wind', 'precip', 'precip wind']; bathyName = 'bathyES'; xx = [20,-20]; tt = [0, 360]; ylims = [90, 100]; ylims_surf = [90, 100]
 
 	#labels = ['Southward shift', 'Northward shift']
+
+
+
+	#labels = ['Southward shift', 'Northward shift']
+
+	
+
+	import time
+
+	now=time.time()
 
 	
 
@@ -572,9 +804,23 @@ if BAROCL:
 
 	
 
+	try:
+
+		ylims_surf
+
+	except:
+
+		ylims_surf = ylims
+
+	print(ylims_surf)
+
+	
+
 	ttref = [0, None]
 
+	colors = ['b', 'r', 'g']
 
+	
 
 	# First get reference flow from IC run.
 
@@ -598,7 +844,7 @@ if BAROCL:
 
 	vmin, vmax, cmap, title = getPlottingVars(VAR)	
 
-	tmp = readVariable(VAR, path, file_format='nc', meta=False, tt=ttref)
+	tmp = readVar(VAR, path, meta=False, tt=ttref, yy=ylims)
 
 	
 
@@ -606,7 +852,7 @@ if BAROCL:
 
 	surfRef = np.mean(tmp[:,0,:,xx[0]:xx[1]+1], axis=(0,-1))
 
-	surfRefMean = np.mean(tmp[:,0,ylims[0]:ylims[1]+1,xx[0]:xx[1]+1], axis=(1,2))
+	surfRefMean = np.mean(tmp[:,0,:,xx[0]:xx[1]+1], axis=(1,2))
 
 	# Area mean surface flow
 
@@ -614,7 +860,7 @@ if BAROCL:
 
 	# Time mean bottom flow
 
-	ub = tools.bottom(tmp, grid, 'u', shiftUp=1)
+	ub = tools.bottom(tmp, grid, 'u', shiftUp=1, yy=ylims)
 
 	botRef = np.mean(ub[...,xx[0]:xx[1]+1], axis=(0,-1))
 
@@ -622,11 +868,11 @@ if BAROCL:
 
 	# Area mean bottom flow
 
-	botRefMean = np.mean(ub[:,ylims[0]:ylims[1]+1,xx[0]:xx[1]+1], axis=(-1,-2))
+	botRefMean = np.mean(ub[:,:,xx[0]:xx[1]+1], axis=(-1,-2))
 
 	
 
-	baroclRef = np.mean(ub[:,ylims[0]:ylims[1]+1,:]-tmp[:,0,ylims[0]:ylims[1]+1,:], axis=(1,2))
+	baroclRef = np.mean(ub[:,:,:]-tmp[:,0,:,:], axis=(1,2))
 
 	if SMOOTH:
 
@@ -638,8 +884,6 @@ if BAROCL:
 
 	#plt.plot(baroclRef); plt.show(); print(baroclRef.shape); quit()
 
-
-
 	#==
 
 	
@@ -649,8 +893,6 @@ if BAROCL:
 	
 
 	wind = None
-
-	data = [[],[]]
 
 	barocl = []
 
@@ -666,13 +908,15 @@ if BAROCL:
 
 		
 
-		if path_tmp == 'MCS_320' or path_tmp == 'MCS_312':# or path_tmp == 'MCS_326':
+		if path_tmp == 'MCS_320':
 
-			wind = 2*readVariable('oceTAUX', path_root+path_tmp+'/run/', file_format='nc', meta=False, tt=tt)[:,100,0]
+			wind = readVar('oceTAUX', path_root+path_tmp+'/run/', file_format='nc', meta=False, tt=tt, yy=100)
 
-	
+			wind = np.mean(wind, axis=-1); wind = 0.05 * wind / np.max(np.abs(wind))
 
-		tmp = readVariable(VAR, path_root+path_tmp+'/run/', file_format='nc', meta=False, tt=tt)
+		
+
+		tmp = readVar(VAR, path_root+path_tmp+'/run/', meta=False, tt=tt, yy=ylims)
 
 		#tmp = readAllnp('stateUvel', path_root+path_tmp+'/run/', (50, 200, 240))[:tt[1]]
 
@@ -692,9 +936,7 @@ if BAROCL:
 
 			surftmp = tools.smooth3(surftmp)
 
-		data[0].append(surftmp[:,1:-1])
-
-		surf.append(np.mean(surftmp[:,ylims[0]:ylims[1]+1], axis=1))
+		surf.append(np.mean(surftmp, axis=1))
 
 		print(surftmp.shape)
 
@@ -702,7 +944,7 @@ if BAROCL:
 
 		# Bottom flow
 
-		bottmp = tools.bottom(tmp, grid, 'u', shiftUp=1)
+		bottmp = tools.bottom(tmp, grid, 'u', shiftUp=1, yy=ylims)
 
 		bottmp = np.mean(bottmp[...,xx[0]:xx[1]], axis=-1)
 
@@ -710,35 +952,111 @@ if BAROCL:
 
 			bottmp = tools.smooth3(bottmp)
 
-		data[1].append(bottmp[:,1:-1])
+		bot.append(np.mean(bottmp, axis=1))
 
-		bot.append(np.mean(bottmp[:,ylims[0]:ylims[1]+1], axis=1))
+
+
+		barocl.append(np.mean(bottmp - surftmp, axis=1))
+
+
+
+	#==
+
+	
+
+	nt = barocl[0].shape[0]; ndays = 30;
+
+	ttmp = ndays*86400*np.linspace(1, nt, nt)
+
+	text_data = ptt.getTextData(ttmp, 'month', 0.1, Y[-2], color='k')
+
+	Nt = len(barocl[0])
+
+	t = np.linspace(Ntref+1, Ntref+1+Nt, Nt)/12
+
+	
+
+	# Edit inside RESTART=True block as necessary.
+
+	if RESTART:
+
+	
+
+		t = [t for i in range(len(barocl)-1)]
+
+		t.append(t[-1]+Nt/12)
 
 		
 
-		barocl.append(np.mean(bottmp[:,ylims[0]:ylims[1]+1] - surftmp[:,ylims[0]:ylims[1]+1], axis=1))
+		if False:
 
+			surfFull = np.concatenate((surf[0], surf[1]))
 
+			botFull = np.concatenate((bot[0], bot[1]))
+
+			tFull = np.concatenate((t[0], t[1]))
+
+			nw = 61; window_lengths = np.linspace(1,nw,nw)
+
+			corr, tw, surfw, botw = ptools.windowCorr(surfFull, botFull, window_lengths, tFull, return_uv=True)
+
+			plt.plot((window_lengths-1)/12, corr); plt.title('corr(surf flow, deep flow)')
+
+			plt.xlabel('Running mean window size (years)'); plt.show() 
+
+			
+
+			bot60 = ptools.detrend(ptools.demean(botw[60]), None)
+
+			surf60 = ptools.detrend(ptools.demean(surfw[60]), None)	
+
+			plt.plot(tw[60], bot60, color='r', label='deep flow')
+
+			plt.plot(tw[60], surf60, color='k', label='surf flow')
+
+			plt.xlabel('Time (years)'); plt.legend(); plt.show()
+
+			quit()
+
+	
+
+	else:
+
+	
+
+		t = [t for i in range(len(barocl))]
+
+		
+
+		if False:	
+
+			nw = 61; window_lengths = np.linspace(1,nw,nw)
+
+			corr, tw, surfw, botw = ptools.windowCorr(surf[0], bot[0], window_lengths, t, return_uv=True)
+
+			plt.plot((window_lengths-1)/12, corr); plt.title('corr(surf flow, deep flow)')
+
+			plt.xlabel('Running mean window size (years)'); plt.show() 
+
+			
+
+			bot60 = ptools.detrend(ptools.demean(botw[60]), None)
+
+			surf60 = ptools.detrend(ptools.demean(surfw[60]), None)	
+
+			plt.plot(tw[60], bot60, color='r', label='deep flow')
+
+			plt.plot(tw[60], surf60, color='k', label='surf flow')
+
+			plt.xlabel('Time (years)'); plt.legend(); plt.show()
+
+		
 
 	#==
 
 	
 
-	nt = data[0][0].shape[0]; ndays = 30;
-
-	time = ndays*86400*np.linspace(1, nt, nt)
-
-	text_data = ptt.getTextData(time, 'month', 0.1, Y[-2], color='k')
-
-	
-
-	#==
-
-	
-
-	Nt = len(barocl[1])
-
-	t = np.linspace(Ntref+1, Ntref+1+Nt, Nt)/12
+	print(now-time.time())
 
 	
 
@@ -748,19 +1066,17 @@ if BAROCL:
 
 	plt.plot(tref, surfRefMean, color='k', label='Spin up surf. flow')
 
-	plt.plot(t, surf[0], label=labels[0] + ', surf. flow', color='b')
-
-	plt.plot(t, surf[1], label=labels[1] + ', surf. flow', color='r')
-
 	plt.plot(tref, botRefMean, color='k', label='Spin up bot. flow', alpha=0.6)
 
-	plt.plot(t, bot[0], label=labels[0] + ', bot. flow', color='b', alpha=0.6)
+	for i in range(len(surf)):
 
-	plt.plot(t, bot[1], label=labels[1] + ', bot. flow', color='r', alpha=0.6)
+		plt.plot(t[i], surf[i], label=labels[i] + ', surf. flow', color=colors[i])
+
+		plt.plot(t[i], bot[i], label=labels[i] + ', bot. flow', color=colors[i], alpha=0.6)
 
 	if wind is not None:
 
-		plt.plot(t, wind, linestyle='dashed', color='k', alpha=0.8)
+		plt.plot(t[0], wind, linestyle='dashed', color='k', alpha=0.8)
 
 	plt.grid()
 
@@ -776,13 +1092,13 @@ if BAROCL:
 
 	plt.plot(tref, baroclRef, color='k', label='Default wind spin up')
 
-	plt.plot(t, barocl[0], label=labels[0], color='b')
+	for i in range(len(barocl)):
 
-	plt.plot(t, barocl[1], label=labels[1], color='r')
+		plt.plot(t[i], barocl[i], label=labels[i], color=colors[i])
 
 	if wind is not None:
 
-		plt.plot(t, wind, linestyle='dashed', color='k', alpha=0.8)
+		plt.plot(t[i], wind, linestyle='dashed', color='k', alpha=0.8)
 
 	plt.legend()
 
@@ -838,7 +1154,7 @@ if BAROCL:
 
 
 
-surfBotFlowPlot = 1
+surfBotFlowPlot = 0
 
 if surfBotFlowPlot:
 
@@ -856,17 +1172,19 @@ if surfBotFlowPlot:
 
 	#paths = ['MCS_322', 'MCS_154', 'MCS_323'];  labels = ['IPO sin pos', 'Ref. wind', 'IPO sin neg'];	tt = [-120, None]
 
-	paths = ['PISOMIP_001', 'MCS_340', 'PISOMIP_004'];  labels = ['IPO sin pos', 'Ref. wind', 'IPO sin neg'];	tt = [-120, None]
+	paths = ['MCS_379', 'MCS_379', 'MCS_379']; labels = ['IPO sin pos', 'Ref. wind', 'IPO sin neg'];	tt = [-120, None]
 
 	ttref = [-120,None]
 
 	
 
-	xlims = [20, -20]
+	xlims = [0, -75]
 
-	ylims = [90,100]
+	#ylims = [90,100]
 
+	ylims = [95,105]
 
+	
 
 	surfs = []
 
@@ -902,7 +1220,7 @@ if surfBotFlowPlot:
 
 		VAR = 'UVEL'	
 
-		tmp = np.mean(readVariable(VAR, path, file_format='nc', meta=False, tt=tt0), axis=0)
+		tmp = np.mean(readVar(VAR, path, meta=False, tt=tt0), axis=0)
 
 		tmp_surf = ptt.maskBathyXY(tmp[0], grid, zi=0, timeDep=False)
 
@@ -912,7 +1230,7 @@ if surfBotFlowPlot:
 
 		# Time mean bottom flow
 
-		tmp_bot = tools.bottom(tmp, grid, 'u', shiftUp=1, timeDep=False)
+		tmp_bot = tools.bottom(tmp, grid, 'u', shiftUp=0, timeDep=False)
 
 		tmp_bot = ptt.maskBathyXY(tmp_bot, grid, zi=0, timeDep=False)
 
@@ -934,7 +1252,7 @@ if surfBotFlowPlot:
 
 			VAR = 'oceTAUX'
 
-			tmp = readVariable(VAR, path, file_format='nc', meta=False, xx=0, tt=0)
+			tmp = readVariable(VAR, path, file_format='nc', meta=False, xx=120, tt=0)
 
 			tmp = 200 * tmp / np.max(np.abs(tmp)) + 300.
 
@@ -970,7 +1288,7 @@ if surfBotFlowPlot:
 
 	yticks = [0,100,200,300,400,500]
 
-	vmin = -0.2; vmax = 0.2
+	vmin = -0.1; vmax = 0.1
 
 	bathy = ptt.maskBathyXY(grid.bathy, grid, zi=0, timeDep=False)	
 
@@ -996,7 +1314,7 @@ if surfBotFlowPlot:
 
 		plt.colorbar()
 
-		plt.contour(X, Y, bathy, levels=[-501, -401], colors='k', linestyles='solid')
+		plt.contour(X, Y, bathy, levels=[-999,-501, -401], colors='k', linestyles='solid')
 
 
 
@@ -1734,7 +2052,7 @@ if barotropicStreamfunction:
 
 
 
-heatTransport = 1
+heatTransport = 0
 
 if heatTransport:
 
