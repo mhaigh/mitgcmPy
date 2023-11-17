@@ -26,7 +26,7 @@ from mpl_toolkits.basemap import Basemap
 
 	
 
-from plotting_tools import setText, getContourfLevels, maskBathyXY, maskDraftXY, makeList, doTicks, doTitle, doLabels, doStippling, doBox, makeBathyContour
+from plotting_tools import setText, getContourfLevels, maskBathyXY, maskDraftXY, makeList, doTicks, doTitle, doLabels, doStippling, doBox, makeBathyContour, doAntarcticInset
 
 
 
@@ -860,7 +860,7 @@ def quiver1byN(u, v, Xd, Yd, C=None, ccmap='bwr', contourf=None, contourfNlevels
 
 
 
-def quiver1byN_Basemap(u, v, Xd, Yd, lat_0, lon_0, C=None, ccmap='bwr', contourf=None, cbarTicks=None, contourfNlevels=9, X=None, Y=None, mesh=False, isf=None, contour=None, contourLevels=None, ls='solid', lw=0.4, cc='k', contour2=None, contourLevels2=None, ls2='solid', lw2=0.4, cc2='grey', contour3=None, contourLevels3=None, ls3='solid', lw3=0.4, cc3='w', contour4=None, contourLevels4=None, ls4='solid', lw4=0.4, cc4='w', figsize=None, titles=None, fstitle=None, fontsize=14, cmap='jet', vmin=None, vmax=None, xlabel=None, ylabel=None, parallels=None, meridians=None, save=False, outpath='', outname='quiver1byN.png', show=True, dpi=200, text_data=None, width_ratios=1, labelData=None, cbar=True, cbarShrink=1., grid=True, scale=2, qs=0.1, qunits='m/s', labelpos='N', landscape=True, extend='neither'):
+def quiver1byN_Basemap(u, v, Xd, Yd, lat_0, lon_0, C=None, ccmap='bwr', contourf=None, cbarTicks=None, contourfNlevels=9, X=None, Y=None, mesh=False, isf=None, contour=None, contourLevels=None, ls='solid', lw=0.4, cc='k', contour2=None, contourLevels2=None, ls2='solid', lw2=0.4, cc2='grey', contour3=None, contourLevels3=None, ls3='solid', lw3=0.4, cc3='w', contour4=None, contourLevels4=None, ls4='solid', lw4=0.4, cc4='w', DASH_NEG_CONTOURS=[False]*4, figsize=None, titles=None, fstitle=None, fontsize=14, cmap='jet', vmin=None, vmax=None, xlabel=None, ylabel=None, parallels=None, meridians=None, save=False, outpath='', outname='quiver1byN.png', show=True, dpi=200, text_data=None, width_ratios=1, labelData=None, cbar=True, cbarShrink=1., grid=True, scale=2, qs=0.1, qunits='m/s', labelpos='N', landscape=True, extend='neither', width=0.003, headwidth=5., headlength=5., headaxislength=3, qcolor='k', qlabelx=0.3, qlabely=0.03):
 
 
 
@@ -886,7 +886,7 @@ def quiver1byN_Basemap(u, v, Xd, Yd, lat_0, lon_0, C=None, ccmap='bwr', contourf
 
 	vmax = makeList(vmax, N)
 
-	
+
 
 	contour = makeList(contour, N)
 
@@ -894,7 +894,11 @@ def quiver1byN_Basemap(u, v, Xd, Yd, lat_0, lon_0, C=None, ccmap='bwr', contourf
 
 	contour3 = makeList(contour3, N)
 
+	contour4 = makeList(contour4, N)
+
 	
+
+	cmap = makeList(cmap, N)
 
 	cbar = makeList(cbar, N)
 
@@ -922,7 +926,9 @@ def quiver1byN_Basemap(u, v, Xd, Yd, lat_0, lon_0, C=None, ccmap='bwr', contourf
 
 	ylabel = makeList(ylabel, N)
 
-	
+
+
+	qcolor = makeList(qcolor, N)
 
 	qs = makeList(qs, N)
 
@@ -996,13 +1002,13 @@ def quiver1byN_Basemap(u, v, Xd, Yd, lat_0, lon_0, C=None, ccmap='bwr', contourf
 
 			if mesh:
 
-				plt.pcolormesh(X0, Y0, contourf[pi], vmin=vmin[pi], vmax=vmax[pi], cmap=cmap)		
+				plt.pcolormesh(X0, Y0, contourf[pi], vmin=vmin[pi], vmax=vmax[pi], cmap=cmap[pi])		
 
 			else:
 
 				levels = getContourfLevels(vmin[pi], vmax[pi], contourfNlevels)
 
-				plt.contourf(X0, Y0, contourf[pi], cmap=cmap, levels=levels, extend=extend[pi])
+				plt.contourf(X0, Y0, contourf[pi], cmap=cmap[pi], levels=levels, extend=extend[pi])
 
 
 
@@ -1016,17 +1022,35 @@ def quiver1byN_Basemap(u, v, Xd, Yd, lat_0, lon_0, C=None, ccmap='bwr', contourf
 
 		if contour[pi] is not None:
 
+			if DASH_NEG_CONTOURS[0]:
+
+				ls = np.where(np.array(contourLevels[pi]) > 0, "-", "--")
+
 			plt.contour(X0, Y0, contour[pi], colors=cc, linestyles=ls, linewidths=lw, levels=contourLevels[pi])
 
 		if contour2[pi] is not None:
 
+			if DASH_NEG_CONTOURS[1]:
+
+				ls2 = np.where(np.array(contourLevels2[pi]) > 0, "-", "--")
+
 			plt.contour(X0, Y0, contour2[pi], colors=cc2, linestyles=ls2, linewidths=lw2, levels=contourLevels2[pi],zorder=14)
 
+			
+
 		if contour3[pi] is not None:
+
+			if DASH_NEG_CONTOURS[2]:
+
+				ls3 = np.where(np.array(contourLevels3[pi]) > 0, "-", "--")
 
 			plt.contour(X0, Y0, contour3[pi], colors=cc3, linestyles=ls3, linewidths=lw3, levels=contourLevels3[pi], zorder=14)
 
 		if contour4[pi] is not None:
+
+			if DASH_NEG_CONTOURS[3]:
+
+				ls4 = np.where(np.array(contourLevels4[pi]) > 0, "-", "--")
 
 			plt.contour(X0, Y0, contour4[pi], colors=cc4, linestyles=ls4, linewidths=lw4, levels=contourLevels4[pi], zorder=14)
 
@@ -1040,19 +1064,21 @@ def quiver1byN_Basemap(u, v, Xd, Yd, lat_0, lon_0, C=None, ccmap='bwr', contourf
 
 		
 
-		if C is not None:
+		if u[pi] is not None:
 
-			cax = ax.quiver(Xd0, Yd0, u[pi], v[pi], C[pi], cmap=ccmap, scale=scale[pi])
+			if C is not None:
 
-			if width_ratios is None:
+				cax = ax.quiver(Xd0, Yd0, u[pi], v[pi], C[pi], cmap=ccmap, scale=scale[pi])
 
-				plt.colorbar(cax, ax=ax)
+				if width_ratios is None:
 
-		else:
+					plt.colorbar(cax, ax=ax)
 
-			cax = plt.quiver(Xd0, Yd0, u[pi], v[pi], scale=scale[pi])
+			else:
 
-		ax.quiverkey(cax, 0.3, 0.03, qs[pi], str(qs[pi]) + ' ' + qunits, labelpos=labelpos[pi], coordinates='axes')
+				cax = plt.quiver(Xd0, Yd0, u[pi], v[pi], scale=scale[pi], width=width, headwidth=headwidth, headlength=headlength, headaxislength=headaxislength, color=qcolor[pi])
+
+			ax.quiverkey(cax, qlabelx, qlabely, qs[pi], str(qs[pi]) + ' ' + qunits, labelpos=labelpos[pi], coordinates='axes', labelcolor=qcolor[pi])
 
 				
 
@@ -1129,6 +1155,280 @@ def quiver1byN_Basemap(u, v, Xd, Yd, lat_0, lon_0, C=None, ccmap='bwr', contourf
 
 
 	plt.close()
+
+
+
+#==
+
+
+
+
+
+def quiverMbyN_Basemap(u, v, Xd, Yd, lat_0, lon_0, C=None, ccmap='bwr', contourf=None, cbarTicks=None, contourfNlevels=9, X=None, Y=None, mesh=False, isf=None, contour=None, contourLevels=None, ls='solid', lw=0.4, cc='k', contour2=None, contourLevels2=None, ls2='solid', lw2=0.4, cc2='grey', contour3=None, contourLevels3=None, ls3='solid', lw3=0.4, cc3='w', contour4=None, contourLevels4=None, ls4='solid', lw4=0.4, cc4='w', DASH_NEG_CONTOURS=[False]*4, figsize=None, titles=None, fstitle=None, fontsize=14, cmap='jet', vmin=None, vmax=None, xlabel=None, ylabel=None, parallels=None, meridians=None, save=False, outpath='', outname='quiver1byN.png', show=True, dpi=200, text_data=None, width_ratios=1, labelData=None, cbar=True, cbarShrink=1., grid=True, scale=2, qs=0.1, qunits='m/s', labelpos='E', landscape=True, extend='neither', width=0.003, headwidth=5., headlength=5., headaxislength=3, qcolor='k', qlabelx=0.3, qlabely=0.03, w_pad=0, h_pad=0):
+
+
+
+	N = len(u)
+
+	M = len(u[0])
+
+	
+
+	Xd = makeList(Xd, M, N)
+
+	Yd = makeList(Yd, M, N)
+
+
+
+	if contourf is not None:
+
+		X = makeList(X, M, N)
+
+		Y = makeList(Y, M, N)
+
+
+
+	vmin = makeList(vmin, M, N)
+
+	vmax = makeList(vmax, M, N)
+
+
+
+	contour = makeList(contour, M, N)
+
+	contour2 = makeList(contour2, M, N)
+
+	contour3 = makeList(contour3, M, N)
+
+	contour4 = makeList(contour4, M, N)
+
+	
+
+	cmap = makeList(cmap, M, N)
+
+	cbar = makeList(cbar, M, N)
+
+	extend = makeList(extend, M, N)
+
+	cbarTicks = makeList(cbarTicks, M, N)
+
+	
+
+	grid = makeList(grid, M, N)
+
+	titles = makeList(titles, M, N)
+
+	if fstitle is None:
+
+		fstitle = makeList(fontsize, M, N)
+
+		
+
+	width_ratios = makeList(width_ratios, M)
+
+
+
+	xlabel = makeList(xlabel, M, N)
+
+	ylabel = makeList(ylabel, M, N)
+
+
+
+	qcolor = makeList(qcolor, M, N)
+
+	qs = makeList(qs, M, N)
+
+	scale = makeList(scale, M, N)
+
+	labelpos = makeList(labelpos, M, N)
+
+	
+
+	m = Basemap(llcrnrlon=X[0][0][0,0],llcrnrlat=Y[0][0][0,0],urcrnrlon=X[0][0][-1,-1],urcrnrlat=Y[0][0][-1,-1], projection='merc',lat_0=lat_0+3,lon_0=lon_0-10)
+
+	
+
+	fig = plt.figure(figsize=figsize, dpi=dpi)#, constrained_layout=True)
+
+	gs = gridspec.GridSpec(ncols=M, nrows=N, figure=fig, width_ratios=width_ratios)
+
+	
+
+	for col in range(M):
+
+		for row in range(N):
+
+
+
+			ax = fig.add_subplot(gs[row,col])
+
+			ax.patch.set_color('.6')
+
+
+
+			X0, Y0 = m(X[row][col],Y[row][col])
+
+			Xd0, Yd0 = m(Xd[row][col],Yd[row][col])
+
+		
+
+			if contourf is not None:
+
+				if mesh:
+
+					plt.pcolormesh(X0, Y0, contourf[row][col], vmin=vmin[row][col], vmax=vmax[row][col], cmap=cmap[row][col])		
+
+				else:
+
+					levels = getContourfLevels(vmin[row][col], vmax[row][col], contourfNlevels)
+
+					plt.contourf(X0, Y0, contourf[row][col], cmap=cmap[row][col], levels=levels, extend=extend[row][col])
+
+
+
+				if cbar[row][col]:
+
+					cbar_ = plt.colorbar(ticks=cbarTicks[row][col], shrink=cbarShrink)
+
+					cbar_.ax.tick_params(labelsize=fontsize)
+
+			
+
+			if contour[row][col] is not None:
+
+				if DASH_NEG_CONTOURS[0]:
+
+					ls = np.where(np.array(contourLevels[row][col]) > 0, "-", "--")
+
+				plt.contour(X0, Y0, contour[row][col], colors=cc, linestyles=ls, linewidths=lw, levels=contourLevels[row][col])
+
+			if contour2[row][col] is not None:
+
+				if DASH_NEG_CONTOURS[1]:
+
+					ls2 = np.where(np.array(contourLevels2[row][col]) > 0, "-", "--")
+
+				plt.contour(X0, Y0, contour2[row][col], colors=cc2, linestyles=ls2, linewidths=lw2, levels=contourLevels2[row][col],zorder=14)
+
+			if contour3[row][col] is not None:
+
+				if DASH_NEG_CONTOURS[2]:
+
+					ls3 = np.where(np.array(contourLevels3[row][col]) > 0, "-", "--")
+
+				plt.contour(X0, Y0, contour3[row][col], colors=cc3, linestyles=ls3, linewidths=lw3, levels=contourLevels3[row][col], zorder=14)
+
+			if contour4[row][col] is not None:
+
+				if DASH_NEG_CONTOURS[3]:
+
+					ls4 = np.where(np.array(contourLevels4[row][col]) > 0, "-", "--")
+
+				plt.contour(X0, Y0, contour4[row][col], colors=cc4, linestyles=ls4, linewidths=lw4, levels=contourLevels4[row][col], zorder=14)
+
+
+
+			if isf[row][col] is not None:
+
+				extent = [X0[0,0], X0[0,-1], -Y0[0,0], -Y0[-1,0]]
+
+				m.imshow(1-isf[row][col], cmap=plt.cm.gray, interpolation='nearest', extent=extent, zorder=13)
+
+			
+
+			if u[row][col] is not None:
+
+				if C is not None:
+
+					cax = ax.quiver(Xd0, Yd0, u[row][col], v[row][col], C[row][col], cmap=ccmap, scale=scale[row][col])
+
+					if width_ratios is None:
+
+						plt.colorbar(cax, ax=ax)
+
+				else:
+
+					cax = plt.quiver(Xd0, Yd0, u[row][col], v[row][col], scale=scale[row][col], width=width, headwidth=headwidth, headlength=headlength, headaxislength=headaxislength, color=qcolor[row][col])
+
+				ax.quiverkey(cax, qlabelx, qlabely, qs[row][col], str(qs[row][col]) + ' ' + qunits, labelpos=labelpos[row][col], coordinates='axes', labelcolor=qcolor[row][col])
+
+					
+
+			doLabels(xlabel[row][col], ylabel[row][col], fontsize=fontsize)
+
+			doTitle(titles[row][col], fontsize=fstitle[row][col])
+
+
+
+			if text_data is not None:
+
+				setText(ax, text_data[row][col], set_invisible=False)
+
+			
+
+			if labelData is not None:
+
+				for li in labelData[row][col]:
+
+					plt.scatter(li['x'][0], li['x'][1], s=1, color='r')
+
+					plt.annotate(li['t'], li['x'])
+
+
+
+			#ax.set_aspect('equal')
+
+
+
+			if grid[row][col]:
+
+				plt.grid()
+
+			
+
+			ax.set_aspect('equal')
+
+			if parallels[row][col] is not None:
+
+				# Latitudes
+
+				m.drawparallels(parallels[row][col],labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[4,4], fontsize=fontsize)
+
+			if meridians[row][col] is not None:
+
+				# Longitudes
+
+				m.drawmeridians(meridians[row][col],labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[4,4], fontsize=fontsize)
+
+
+
+		#==
+
+	
+
+	#fig.subplots_adjust(wspace=-1, hspace=0)
+
+
+
+	plt.tight_layout(w_pad=w_pad, h_pad=h_pad)
+
+
+
+	if save:
+
+		plt.savefig(outpath + outname, bbox_inches="tight")
+
+
+
+	if show:
+
+		plt.show()
+
+
+
+	plt.close()
+
+
 
 
 
@@ -3638,7 +3938,7 @@ def animate1by1quivers(udata, vdata, X, Y, d=8, qlim=0.1, C=None, ccmap='coolwar
 
 
 
-def plot1by1Basemap(data, X, Y, lat_0, lon_0, contour=None, contourLevels=None, figsize=(5,4), title=None, fontsize=14, mesh=False, cmap='jet', vmin=None, vmax=None, text_data=None, xlabel=None, ylabel=None, grid=True, contourfNlevels=9, save=False, outpath='', outname='plot1by1.png', show=True, dpi=200, yline=None, parallels=None, meridians=None, labelData=None):
+def plot1by1Basemap(data, X, Y, lat_0, lon_0, contour=None, contourLevels=None, figsize=(5,4), title=None, fontsize=14, mesh=False, cmap='jet', vmin=None, vmax=None, text_data=None, xlabel=None, ylabel=None, grid=True, contourfNlevels=9, save=False, outpath='', outname='plot1by1.png', show=True, dpi=200, yline=None, parallels=None, meridians=None, labelData=None, AntarcticInsetData=None):
 
 	
 
@@ -3753,6 +4053,12 @@ def plot1by1Basemap(data, X, Y, lat_0, lon_0, contour=None, contourLevels=None, 
 		plt.annotate(li['t'], li['x'])
 
 
+
+	if AntarcticInsetData is not None:
+
+		doAntarcticInset(fig, AntarcticInsetData)
+
+		
 
 	#==
 
@@ -4410,7 +4716,7 @@ def plot1by2Basemap1(data, X, Y, lat_0, lon_0, contour=[None,None], contourLevel
 
 
 
-def quiver1by1Basemap(u, v, X, Y, d, lat_0, lon_0, qx=0.3, qy=0.03, qs=0.05, qunits='m/s', scale=1, vmin=None, vmax=None, width=2.8e6, height=1.7e6, contourf=None, contourfNlevels=13, contour=None, contourLevels=None, contourColours=None, figsize=(5,4), title='', fontsize=14, mesh=True, cmap='jet', xlabel='', ylabel='', save=False, outpath='', outname='quiver1by1Basemap.png', show=True, dpi=200, text_data=None, parallels=None, meridians=None, isf=None, outline=None, extend='neither', maskColour='.6'):
+def quiver1by1Basemap(u, v, X, Y, d, lat_0, lon_0, qx=0.3, qy=0.03, qs=0.05, qunits='m/s', scale=1, vmin=None, vmax=None, width=2.8e6, height=1.7e6, contourf=None, contourfNlevels=13, contour=None, contourLevels=None, contourColours=None, figsize=(5,4), title='', fontsize=14, mesh=True, cmap='jet', xlabel='', ylabel='', save=False, outpath='', outname='quiver1by1Basemap.png', show=True, dpi=200, text_data=None, parallels=None, meridians=None, isf=None, land=None, outline=None, cbarTicks=None, extend='neither', AntarcticInsetData=None, maskColour='.6'):
 
 
 
@@ -4442,7 +4748,7 @@ def quiver1by1Basemap(u, v, X, Y, d, lat_0, lon_0, qx=0.3, qy=0.03, qs=0.05, qun
 
 			m.pcolormesh(X, Y, contourf, cmap=cmap, vmin=vmin, vmax=vmax)
 
-			m.colorbar(extend=extend)
+			m.colorbar(extend=extend, ticks=cbarTicks)
 
 		else:
 
@@ -4450,7 +4756,7 @@ def quiver1by1Basemap(u, v, X, Y, d, lat_0, lon_0, qx=0.3, qy=0.03, qs=0.05, qun
 
 			m.contourf(X, Y, contourf, levels=levels, cmap=cmap)
 
-			m.colorbar(extend=extend)
+			m.colorbar(extend=extend, ticks=cbarTicks)
 
 	
 
@@ -4478,7 +4784,7 @@ def quiver1by1Basemap(u, v, X, Y, d, lat_0, lon_0, qx=0.3, qy=0.03, qs=0.05, qun
 
 		u = u[::d, ::d]; v = v[::d, ::d]
 
-		q = m.quiver(Xd, Yd, u, v, scale=scale, width=0.002, headwidth=5., headlength=5., headaxislength=3)
+		q = m.quiver(Xd, Yd, u, v, scale=scale, width=0.002, headwidth=5., headlength=5., headaxislength=3, zorder=14)
 
 		plt.quiverkey(q, qx, qy, qs, str(qs) + ' ' + qunits ,labelpos='W', fontproperties={'size':11})
 
@@ -4508,7 +4814,7 @@ def quiver1by1Basemap(u, v, X, Y, d, lat_0, lon_0, qx=0.3, qy=0.03, qs=0.05, qun
 
 	if title is not None:
 
-		plt.title(title) 
+		plt.title(title, fontsize=fontsize) 
 
 
 
@@ -4524,15 +4830,13 @@ def quiver1by1Basemap(u, v, X, Y, d, lat_0, lon_0, qx=0.3, qy=0.03, qs=0.05, qun
 
 		# Latitudes
 
-		m.drawparallels(parallels,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[4,4])
+		m.drawparallels(parallels,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[4,4], zorder=4)
 
 	if meridians is not None:
 
 		# Longitudes
 
-		m.drawmeridians(meridians,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[4,4])
-
-
+		m.drawmeridians(meridians,labels=[True,False,False,True], color='k', linewidth=0.5,dashes=[4,4], zorder=4)
 
 
 
@@ -4542,7 +4846,17 @@ def quiver1by1Basemap(u, v, X, Y, d, lat_0, lon_0, qx=0.3, qy=0.03, qs=0.05, qun
 
 		m.imshow(1-isf, cmap=plt.cm.gray, interpolation='nearest', extent=extent, zorder=3);
 
+		#m.contourf(X, Y, 1-isf, cmap=plt.cm.gray, extent=extent, zorder=3, vmin=0, vmax=1);
 
+		
+
+	if land is not None:
+
+		extent = [X[0,0], X[0,-1], -Y[0,0], -Y[-1,0]]
+
+		m.imshow(1-land, cmap='gray', interpolation='nearest', extent=extent, zorder=2);
+
+		
 
 	if outline is not None:
 
@@ -4563,6 +4877,12 @@ def quiver1by1Basemap(u, v, X, Y, d, lat_0, lon_0, qx=0.3, qy=0.03, qs=0.05, qun
 		m.plot([lons[0], lons[1]], [lats[1], lats[1]], color='k', linestyle='--')
 
 
+
+	if AntarcticInsetData is not None:
+
+		doAntarcticInset(fig, AntarcticInsetData)
+
+		
 
 	plt.tight_layout()
 
@@ -4590,7 +4910,7 @@ def quiver1by1Basemap(u, v, X, Y, d, lat_0, lon_0, qx=0.3, qy=0.03, qs=0.05, qun
 
 
 
-def quiverPlotSubr1by2Basemap(u, v, X, Y, d, lat_0, lon_0, Xsubr, Ysubr, bathySubr, latSubr_0, lonSubr_0, vmin=None, vmax=None, width=2.8e6, height=1.7e6, contourf=None, figsize=(9,4), title='', fontsize=14, mesh=True, cmap='jet', xlabel='', ylabel='', save=False, outpath='', outname='quiver1by1Basemap.png', show=True, dpi=200, text_data=None, parallels=None, meridians=None, isf=[None,None], outline=None, extend='neither', labelData=[None,None], fs=14, width_ratios=[1.6,1.]):
+def quiverPlotSubr1by2Basemap(u, v, X, Y, d, lat_0, lon_0, Xsubr, Ysubr, bathySubr, latSubr_0, lonSubr_0, vmin=None, vmax=None, width=2.8e6, height=1.7e6, contourf=None, figsize=(9,4), title='', fontsize=14, mesh=True, cmap='jet', xlabel='', ylabel='', save=False, outpath='', outname='quiver1by1Basemap.png', show=True, dpi=200, text_data=None, parallels=None, meridians=None, isf=[None,None], outline=None, extend='neither', labelData=[None,None], fs=14, width_ratios=[1.6,1.], cbarTicks=None):
 
 
 
@@ -4626,13 +4946,13 @@ def quiverPlotSubr1by2Basemap(u, v, X, Y, d, lat_0, lon_0, Xsubr, Ysubr, bathySu
 
 			m.pcolormesh(X1, Y1, contourf, cmap=cmap, vmin=vmin[0], vmax=vmax[0])
 
-			m.colorbar(extend=extend[0])
+			m.colorbar(extend=extend[0], ticks=cbarTicks)
 
 		else:
 
 			m.contour(X1, Y1, contourf, levels=[-3000, -2000, -1000])
 
-			m.colorbar(extend=extend[0])
+			m.colorbar(extend=extend[0], ticks=cbarTicks)
 
 
 
