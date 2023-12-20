@@ -466,6 +466,156 @@ def corr(u, v, axis=0):
 
 
 
+def corress(v1, v2, binwidth, nin):
+
+	'''Adapted to Python from Paul Holland's Matlab code.
+
+	Calculate the correlation coefficient (r) and give the significance value 
+
+	(p) for two vectors, v1,v2, accounting for the effective sample size (n)
+
+	due to autocorrelations r1,r2, following Bretherton et al. J. Climate 1999.
+
+	
+
+	function [r,p,n,r1,r2]=corress(v1,v2,binwidth,nin) 
+
+
+
+	The input 'binwidth' allows for binning of input timeseries before the
+
+	calculations. binwidth=1 gives no binning. Binning is one way to proceed for 
+
+	timeseries that are highly autocorrelated, and hence oversampled, since the 
+
+	Bretherton formula breaks down in that case. This is questionable, but in 
+
+	practice the r,p,n are independent of bin width as long as n is not small.
+
+	
+
+	The input 'nin' allows the opportunity to specify the effective sample size, 
+
+	thus over-riding the calculation. set nin=0 to calculate the sample size.'''
+
+	
+
+	from scipy.stats import t as tstudent
+
+	
+
+	# Check vectors have the same length.
+
+	n1 = len(v1)
+
+	n2 = len(v2)
+
+	if n1 != n2:
+
+		print('Error: PAS_tools.coress. Input vectors have different lengths.')
+
+		quit()
+
+
+
+	# Bin the timeseries to reduce oversampling
+
+	nbins = int(np.ceil(n1/binwidth))
+
+	v1bin = np.zeros(nbins)
+
+	v2bin = np.zeros(nbins)
+
+	binlo = 0
+
+	binhi = binwidth
+
+	for b in range(nbins):
+
+		v1bin[b] = np.ma.mean(v1[binlo:binhi])
+
+		v2bin[b] = np.ma.mean(v2[binlo:binhi])
+
+		binlo = binlo + binwidth
+
+		if binhi is not None:
+
+			binhi = binhi+binwidth
+
+			if binhi > n1:
+
+				binhi = None
+
+
+
+	# Calculate the lag-1 autocorrelation for both variables 
+
+	r1 = corr(v1bin[:-1],v1bin[1:])
+
+	r2 = corr(v2bin[:-1],v2bin[1:])
+
+
+
+	# warning if negative autocorrelation detected
+
+	if (r1<0) or (r2<0):
+
+	  print('Warning: negative autocorrelation detected')
+
+
+
+	# warn user that if autocorrelation is large in either vector, the effective sample size formula below is invalid
+
+	#if (max(r1,r2)>0.5)
+
+	#  warning('large autocorrelation detected; formula invalid')
+
+	#end
+
+
+
+	if nin == 0:
+
+	  # Use the autocorrelation to calculate the effective sample size 
+
+	  n = nbins * (1-abs(r1*r2)) / (1+abs(r1*r2))
+
+	else:
+
+	  # Use specified effective sample size
+
+	  n = nin
+
+
+
+	# calculate the correlation between the two variables 
+
+	r = corr(v1bin, v2bin)
+
+
+
+	# Determine the value of the t-statistic 
+
+	t = r * np.sqrt(n-2) / np.sqrt(1-r**2)
+
+
+
+	# Calculate the p-value using Student's-t cumulative distribution function
+
+	sided = 2
+
+	p = sided * tstudent.cdf(abs(t), n-2)
+
+	
+
+	return r, 2-p, n, r1, r2
+
+
+
+#==
+
+
+
 def pearson(u, v):
 
 	'''Use scipy.pearson to compute the correlation.'''
@@ -596,7 +746,9 @@ def movingAv(a, n=3):
 
 def windowAv(a, n, nBuffer=None, av=True):
 
-		
+	'''Returns running mean with window length of n of data array a.'''
+
+	
 
 	b = np.zeros(np.array(a).shape)
 
@@ -633,6 +785,54 @@ def windowAv(a, n, nBuffer=None, av=True):
 	else:
 
 		return a[(nBuffer-1)//2:-(nBuffer-1)//2+1]
+
+		
+
+#==
+
+
+
+def windowAvMonthly(f, nyears):
+
+	'''Running-mean average over nyears, but averaging over each month individually.
+
+	Parameter nyears should be odd.'''
+
+	
+
+	nT = f.shape[0]
+
+	if nT % 12 != 0:
+
+		print('Error PAS_tools.windowAvMonthly: input data f must represent integer number of years.')
+
+		quit()
+
+	
+
+	nyearsTot = int(nT/12)
+
+	
+
+	f_out = f.copy()
+
+	
+
+	ny2 = int((nyears-1)/2)
+
+	for year in range(ny2, nyearsTot-ny2):
+
+		for mi in range(12):
+
+			f_tmp = f[mi:][::12][year-ny2:year+ny2+1]
+
+			f_out[12*year+mi] = np.mean(f_tmp, axis=0)
+
+
+
+	nmonths = nyears * 12	
+
+	return f_out[(nmonths-1)//2:-(nmonths-1)//2-1]
 
 		
 
@@ -1166,7 +1366,7 @@ def seasonalDataIPO(data, year, IPO, thresholdScale=1.):
 
 
 
-def monthlyDataIPO(data, year, IPO, DEMEAN=True, thresholdScale=1.):
+def monthlyDataComp(data, year, IPO, DEMEAN=True, thresholdScale=1.):
 
 	'''Return dictionary of timeseries data averaged over each month.
 
@@ -1562,6 +1762,10 @@ def surfaceRadiation(qa, Ua, Ta, LW, SW, SSS, hi, hs, bathy, draft, nTiS=1000, T
 
 
 
+#==
+
+
+
 def Fmi(SST, SSS):
 
 	'''Compute flux from ocean mixed layer into base of sea ice.'''
@@ -1594,7 +1798,7 @@ def Fmi(SST, SSS):
 
 	Tmix = SST + celsius2K
 
-		
+
 
 	dzSurf = 10.
 
@@ -1628,7 +1832,7 @@ def Fmi(SST, SSS):
 
      
 
-	return f_mi
+	return f_mi, rhow * cw * ch * umix * Tmix, -rhow * cw * ch * umix * Tf
 
 	
 
@@ -1750,6 +1954,68 @@ def surfaceRadiation_testCode():
 
 
 
+def monthlyData(data, year):
+
+	'''Return mean of data for each month.'''
+
+	
+
+	nM = 12
+
+	
+
+	jani = np.argmin(year[:12]-np.floor(year[:12]))
+
+	if len(year) % 12 != 0:
+
+		print('PAS_tools.monthlyData. Adjust end so that data spans integer number of years.')
+
+		quit()
+
+		
+
+	nyears = int(len(year)/nM)
+
+	months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'July', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+	months = months[-int(jani):] + months[:-int(jani)]
+
+	
+
+	if len(data.shape) == 1:
+
+		nT = data.shape[0]
+
+		dataMonthly = np.zeros((nM))
+
+	elif len(data.shape) == 3:
+
+		nT, nY, nX = data.shape
+
+		dataMonthly = np.zeros((nM, nY, nX))
+
+	
+
+	if nT % 12 != 0:
+
+		print('Warning: PAS_tools.monthlyData. Length of first dim of data should be multiple of 12.')
+
+
+
+	for mi in range(nM):
+
+		dataMonthly[mi] = np.mean(data[mi:None:12], axis=0)
+
+	
+
+	return dataMonthly, months
+
+
+
+#==
+
+
+
 def deseason(uin):
 
 	'''Deseasons monthly data. Checks if data has 12*n data points.'''
@@ -1861,6 +2127,52 @@ def detrendXY(uin, tin, interceptFlag=1):
 			
 
 	return uout
+
+	
+
+#==
+
+
+
+def normaliseSTD(data, printVarName=None, outputStats=False):
+
+	'''Get time-mean and standard deviation of timeseries data.
+
+	Return data normalised by mean and std.'''
+
+	
+
+	if len(data.shape) > 1:
+
+		print('Error: PAS_tools.normaliseSTD. Input data must be 1D array.')
+
+		
+
+	dataAv = np.mean(data)
+
+	dataSTD = np.mean((data-dataAv)**2)**0.5
+
+	dataNorm = (data - dataAv) / dataSTD
+
+	
+
+	if printVarName is not None:
+
+		print(printVarName)
+
+	print('Mean: %.3f' % dataAv)
+
+	print('STD: %.3f' % dataSTD)
+
+	
+
+	if outputStats:
+
+		return dataNorm, dataAv, dataSTD
+
+	else:
+
+		return dataNorm
 
 	
 
@@ -2018,7 +2330,7 @@ def maskSouthNorthSlope(data, grid, lonsN=[225, 260], lonsS=[225,260], Nrange=58
 
 					maskS[j-2,i] = True
 
-					maskS[j-3,i] = True
+					#maskS[j-3,i] = True
 
 					j -= X.shape[0]
 
@@ -2074,7 +2386,7 @@ def avSlopeSections(data, axis=1, sections=['westGetz', 'westPITW', 'westPITE'])
 
 
 
-def getSurfCurrent(path='/home/michael/Documents/data/slopeCurrent/0_779_y1/', fname='surf_uv_av.npy', t_start=T_START, t_end=T_END, sections=['westGetz', 'westPITW', 'westPITE'], DETREND=True, AV=True, nn=60):
+def getSurfCurrent(path='/home/michael/Documents/data/slopeCurrent/0_779_y1/', fname='surf_uv_av.npy', t_start=T_START, t_end=T_END, sections=['westGetz', 'westPITW', 'westPITE'], DETREND=True, AV=True, nn=60, interceptFlag=1):
 
 	'''Load surface current computed by PAS.py.'''
 
@@ -2092,7 +2404,7 @@ def getSurfCurrent(path='/home/michael/Documents/data/slopeCurrent/0_779_y1/', f
 
 	if DETREND:
 
-		u = detrend(u, None)
+		u = detrend(u, None, interceptFlag=interceptFlag)
 
 	
 
@@ -2110,7 +2422,7 @@ def getSurfCurrent(path='/home/michael/Documents/data/slopeCurrent/0_779_y1/', f
 
 
 
-def getUndercurrent(path='/home/michael/Documents/data/slopeCurrent/0_779_y1/', fname='slope_uv_max.npy', t_start=T_START, t_end=T_END, sections=['westGetz', 'westPITW', 'westPITE'], DETREND=True, AV=True, nn=60):
+def getUndercurrent(path='/home/michael/Documents/data/slopeCurrent/0_779_y1/', fname='slope_uv_max.npy', t_start=T_START, t_end=T_END, sections=['westGetz', 'westPITW', 'westPITE'], DETREND=True, AV=True, nn=60, interceptFlag=1):
 
 	'''Load undercurrent computed by PAS.py.'''
 
@@ -2128,7 +2440,7 @@ def getUndercurrent(path='/home/michael/Documents/data/slopeCurrent/0_779_y1/', 
 
 	if DETREND:
 
-		u = detrend(u, None)
+		u = detrend(u, None, interceptFlag=interceptFlag)
 
 	
 
@@ -2146,7 +2458,7 @@ def getUndercurrent(path='/home/michael/Documents/data/slopeCurrent/0_779_y1/', 
 
 
 
-def getBarocl(path='/home/michael/Documents/data/slopeCurrent/0_779_y1/', fname=['slope_uv_max.npy','surf_uv_av.npy'], t_start=T_START, t_end=T_END, sections=['westGetz', 'westPITW', 'westPITE'], DETREND=True, AV=True, nn=60):
+def getBarocl(path='/home/michael/Documents/data/slopeCurrent/0_779_y1/', fname=['slope_uv_max.npy','surf_uv_av.npy'], t_start=T_START, t_end=T_END, sections=['westGetz', 'westPITW', 'westPITE'], DETREND=True, AV=True, nn=60, interceptFlag=1):
 
 	'''Return difference between undercurrent and surface current computed by PAS.py.'''
 
@@ -2164,7 +2476,7 @@ def getBarocl(path='/home/michael/Documents/data/slopeCurrent/0_779_y1/', fname=
 
 	if DETREND:
 
-		u = detrend(u, None)
+		u = detrend(u, None, interceptFlag=interceptFlag)
 
 	
 
