@@ -5338,7 +5338,7 @@ def quiver1by1Basemap(u, v, X, Y, d, lat_0, lon_0, qx=0.3, qy=0.03, qs=0.05, qun
 
 
 
-def quiver1by1Basemap_timeseries(u, v, X, Y, d, lat_0, lon_0, qx=0.3, qy=0.03, qs=0.05, qunits='m/s', scale=1, vmin=None, vmax=None, width=2.8e6, height=1.7e6, plotvlines=[], contourf=None, contourfNlevels=13, contour=None, lw=1.2, contourLevels=None, contourColours=None, figsize=(5,4), title='', fstitle=14, fontsize=14, mesh=True, cmap='jet', xlabel='', ylabel='', save=False, outpath='', outname='quiver1by1Basemap.png', show=True, dpi=200, text_data=None, parallels=None, meridians=None, isf=None, land=None, outline=None, cbarTicks=None, extend='neither', AntarcticInsetData=None, maskColour='.6', height_ratios=None, ts_time=None, ts_data=None, ts_labels=None, ts_lines=None, ts_title=None, ts_xlabel=None, ts_ylabel=None, ts_xlim=None, ts_ylim=None):
+def quiver1by1Basemap_timeseries(u, v, X, Y, d, lat_0, lon_0, qx=0.3, qy=0.03, qs=0.05, qunits='m/s', scale=1, vmin=None, vmax=None, width=2.8e6, height=1.7e6, plotvlines=[], contourf=None, contourfNlevels=13, contour=None, lw=1.2, contourLevels=None, contourColours=None, figsize=(5,4), title='', fstitle=14, fontsize=14, mesh=True, cmap='jet', xlabel='', ylabel='', save=False, outpath='', outname='quiver1by1Basemap.png', show=True, dpi=200, text_data=None, parallels=None, meridians=None, isf=None, land=None, outline=None, cbarTicks=None, extend='neither', AntarcticInsetData=None, arrows=[], maskColour='.6', height_ratios=None, ts_time=None, ts_data=None, ts_labels=None, ts_lines=None, ts_title=None, ts_xlabel=None, ts_ylabel=None, ts_xlim=None, ts_ylim=None, ts_xticks=None, ts_yticks=None, ts_legendLoc=None, ts_legendFontsize=8, ts_legendNcol=3):
 
 
 
@@ -5500,9 +5500,15 @@ def quiver1by1Basemap_timeseries(u, v, X, Y, d, lat_0, lon_0, qx=0.3, qy=0.03, q
 
 		nvline = 40
 
-		m.plot(vline[0]*np.ones(nvline), np.linspace(vline[1], vline[2], nvline), color='blue', linestyle='dashed', latlon=True, lw=lw)
+		m.plot(vline[0]*np.ones(nvline), np.linspace(vline[1], vline[2], nvline), color=vline[3], linestyle='dashed', latlon=True, lw=vline[4])
 
 
+
+	for arrow in arrows:
+
+		plt.arrow(arrow[0], arrow[1], arrow[2], arrow[3], color=arrow[4], zorder=15, linewidth=3, head_width=1.5e4, head_length=1.5e4)	
+
+			
 
 	if AntarcticInsetData is not None:
 
@@ -5510,7 +5516,7 @@ def quiver1by1Basemap_timeseries(u, v, X, Y, d, lat_0, lon_0, qx=0.3, qy=0.03, q
 
 		#doAntarcticInset(ax, AntarcticInsetData)
 
-		
+
 
 	#==
 
@@ -5532,6 +5538,10 @@ def quiver1by1Basemap_timeseries(u, v, X, Y, d, lat_0, lon_0, qx=0.3, qy=0.03, q
 
 	plt.ylim(ts_ylim)
 
+	plt.xticks(ts_xticks)
+
+	plt.yticks(ts_yticks)
+
 	plt.title(ts_title, fontsize=fstitle)
 
 	#ax.tick_params(axis='both', which='minor', labelsize=fontsize)
@@ -5546,7 +5556,7 @@ def quiver1by1Basemap_timeseries(u, v, X, Y, d, lat_0, lon_0, qx=0.3, qy=0.03, q
 
 	plt.grid(color='k', linestyle='dashed', linewidth=0.5)
 
-	plt.legend(prop={'size': 8}, ncol=3)
+	plt.legend(prop={'size': ts_legendFontsize}, ncol=ts_legendNcol, loc=ts_legendLoc)
 
 	
 
@@ -5714,7 +5724,7 @@ def plot1by1Basemap_timeseries(data, X, Y, lat_0, lon_0, qx=0.3, qy=0.03, qs=0.0
 
 		nvline = 40
 
-		m.plot(vline[0]*np.ones(nvline), np.linspace(vline[1], vline[2], nvline), color='blue', linestyle='dashed', latlon=True, lw=lw)
+		m.plot(vline[0]*np.ones(nvline), np.linspace(vline[1], vline[2], nvline), color=vline[3], linestyle='dashed', latlon=True, lw=vline[4])
 
 
 
