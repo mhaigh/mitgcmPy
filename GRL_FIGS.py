@@ -418,11 +418,13 @@ if FIGURE1:
 
 	
 
+	lw = 2.5
+
 	xw = -125; ysw = -72.85; ynw = -71.85
 
 	xe = -108; yse = -71.6; yne = -70.6
 
-	plotvlines = [(xw, ysw, ynw), (xe, yse, yne)]
+	plotvlines = [(xw, ysw, ynw, 'blue', lw), (xe, yse, yne, 'blue', lw)]
 
 
 
@@ -433,6 +435,8 @@ if FIGURE1:
 	# Now do computations for timeseries
 
 
+
+	interceptFlag = 0 # Set this to zero to not remove time-mean when detrending.
 
 	plotSections = ['westGetz', 'westPITW', 'westPITE']
 
@@ -454,6 +458,8 @@ if FIGURE1:
 
 	IStot = np.zeros(len(year))
 
+	#IStot_ = np.zeros(len(year))
+
 	for shelf in shelves:
 
 		melt_ = grid.getIceShelf(SHIfw.copy()*areaIS, shelf)
@@ -466,15 +472,31 @@ if FIGURE1:
 
 		melt_ = secs_per_year*np.ma.sum(melt_, axis=(1,2)) / gt
 
-		melts[shelf] = ptools.windowAv(ptools.detrend(melt_, None), n=nn, nBuffer=nn)
+		#melts[shelf] = ptools.windowAv(melt_, n=nn, nBuffer=nn)
+
+		melts[shelf] = ptools.windowAv(ptools.detrend(melt_, None, interceptFlag=interceptFlag), n=nn, nBuffer=nn)
 
 		IStot += melts[shelf]
 
+		#melts[shelf] = ptools.windowAv(ptools.detrend(melt_, None), n=nn, nBuffer=nn)
+
+		#IStot_ += melts[shelf]	
+
 		
 
-	uv_mean = ptools.getUndercurrent(t_start=t_start, t_end=t_end, sections=plotSections)
+	#IStotAv = np.mean(IStot)
 
-	surf_uv_mean = ptools.getSurfCurrent(t_start=t_start, t_end=t_end, sections=plotSections)
+	#std = np.mean((IStot - IStotAv)**2)**0.5
+
+	#print(IStotAv, std)
+
+	
+
+	uv = ptools.getUndercurrent(t_start=t_start, t_end=t_end, sections=plotSections, interceptFlag=interceptFlag, fname='slope_uv_av.npy')
+
+	#uv = ptools.getUndercurrent(t_start=t_start, t_end=t_end, sections=plotSections, interceptFlag=interceptFlag)
+
+	surf_uv = ptools.getSurfCurrent(t_start=t_start, t_end=t_end, sections=plotSections, interceptFlag=interceptFlag)
 
 	
 
@@ -482,7 +504,7 @@ if FIGURE1:
 
 	wind = ptools.avSlopeSections(wind, sections=plotSections)
 
-	wind = ptools.detrend(wind, None)
+	wind = ptools.detrend(wind, None, interceptFlag=interceptFlag)
 
 	wind = ptools.windowAv(wind, n=nn)
 
@@ -508,65 +530,69 @@ if FIGURE1:
 
 	#===
 
-
+	binwidth = 40
 
 	print('IPO')
 
-	print('Surf current: ' + str(pearsonr(IPO, surf_uv_mean)))
+	print('Surf current: ' + str(pearsonr(IPO, surf_uv)))
 
-	print('Undercurrent: ' + str(pearsonr(IPO, uv_mean)))
+	#print(ptools.corress(IPO, surf_uv, binwidth, 0))
 
-	print('Baroclinicity: ' + str(pearsonr(IPO, uv_mean-surf_uv_mean)))
+	print('Undercurrent: ' + str(pearsonr(IPO, uv)))
+
+	print('Baroclinicity: ' + str(pearsonr(IPO, uv-surf_uv)))
 
 	print('SAM')
 
-	print('Surf current: ' + str(pearsonr(SAM, surf_uv_mean)))
+	print('Surf current: ' + str(pearsonr(SAM, surf_uv)))
 
-	print('Undercurrent: ' + str(pearsonr(SAM, uv_mean)))
+	print('Undercurrent: ' + str(pearsonr(SAM, uv)))
 
-	print('Baroclinicity: ' + str(pearsonr(SAM, uv_mean-surf_uv_mean)))
+	print('Baroclinicity: ' + str(pearsonr(SAM, uv-surf_uv)))
 
 	print('ASLlon')
 
-	print('Surf current: ' + str(pearsonr(ASLlon, surf_uv_mean)))
+	print('Surf current: ' + str(pearsonr(ASLlon, surf_uv)))
 
-	print('Undercurrent: ' + str(pearsonr(ASLlon, uv_mean)))
+	print('Undercurrent: ' + str(pearsonr(ASLlon, uv)))
 
-	print('Baroclinicity: ' + str(pearsonr(ASLlon, uv_mean-surf_uv_mean)))
+	print('Baroclinicity: ' + str(pearsonr(ASLlon, uv-surf_uv)))
 
 	print('ASLlat')
 
-	print('Surf current: ' + str(pearsonr(ASLlat, surf_uv_mean)))	
+	print('Surf current: ' + str(pearsonr(ASLlat, surf_uv)))	
 
-	print('Undercurrent: ' + str(pearsonr(ASLlat, uv_mean)))
+	print('Undercurrent: ' + str(pearsonr(ASLlat, uv)))
 
-	print('Baroclinicity: ' + str(pearsonr(ASLlat, uv_mean-surf_uv_mean)))
+	print('Baroclinicity: ' + str(pearsonr(ASLlat, uv-surf_uv)))
 
 	print('ASLactP')
 
-	print('Surf current: ' + str(pearsonr(ASLactP, surf_uv_mean)))	
+	print('Surf current: ' + str(pearsonr(ASLactP, surf_uv)))	
 
-	print('Undercurrent: ' + str(pearsonr(ASLactP, uv_mean)))
+	print('Undercurrent: ' + str(pearsonr(ASLactP, uv)))
 
-	print('Baroclinicity: ' + str(pearsonr(ASLactP, uv_mean-surf_uv_mean)))
+	print('Baroclinicity: ' + str(pearsonr(ASLactP, uv-surf_uv)))
 
 	print('ASLP')
 
-	print('Surf current: ' + str(pearsonr(ASLP, surf_uv_mean)))
+	print('Surf current: ' + str(pearsonr(ASLP, surf_uv)))
 
-	print('Undercurrent: ' + str(pearsonr(ASLP, uv_mean)))
+	print('Undercurrent: ' + str(pearsonr(ASLP, uv)))
 
-	print('Baroclinicity: ' + str(pearsonr(ASLP, uv_mean-surf_uv_mean)))
+	print('Baroclinicity: ' + str(pearsonr(ASLP, uv-surf_uv)))
 
 	print('ASLrelP')
 
-	print('Surf current: ' + str(pearsonr(ASLrelP, surf_uv_mean)))
+	print('Surf current: ' + str(pearsonr(ASLrelP, surf_uv)))
 
-	print('Undercurrent: ' + str(pearsonr(ASLrelP, uv_mean)))
+	print('Undercurrent: ' + str(pearsonr(ASLrelP, uv)))
 
-	print('Baroclinicity: ' + str(pearsonr(ASLrelP, uv_mean-surf_uv_mean)))
+	print('Baroclinicity: ' + str(pearsonr(ASLrelP, uv-surf_uv)))
 
 	
+
+	IPO = getIPO(IPO_t_start=IPO_t_start, IPO_t_end=IPO_t_end, interceptFlag=interceptFlag)
 
 	IPO /= np.max(np.abs(IPO))
 
@@ -578,27 +604,109 @@ if FIGURE1:
 
 	
 
-	ts_data = [1.e2*uv_mean, 1.e2*surf_uv_mean, IStot/50, wind, IPO]
+	#==
+
+	
+
+	# This option for non-normalised data.
+
+	#ts_data = [1.e2*uv, 1.e2*surf_uv, IStot/50, wind, IPO]
+
+	#ts_ylim = (-1.35, 1.35)
+
+	#ts_labels = [r'Undercurrent ($10^{-2}$ m s$^{-1}$)', r'Surface current ($10^{-2}$ m s$^{-1}$)', 'Ice-shelf basal melt (50 Gt yr$^{-1}$)', 'Along-slope wind (m s$^{-1}$)', 'IPO']
+
+	#ts_legendLoc = 'lower right'
+
+	#ts_legendFontsize = 8. 
+
+	#ts_legendNcol = 3
+
+	
+
+	#==
+
+	
+
+	# This option for normalised data.
+
+	# Standardise, print standard deviations and means.
+
+	uv, AV, STD = ptools.normaliseSTD(1.e2*uv, printVarName='Undercurrent', outputStats=True)
+
+	uvt = r'Undercurrent, mean=%.2f cm s$^{-1}$, std. dev.=%.2f cm s$^{-1}$' % (AV, STD)
+
+	uvt = r'Undercurrent, (mean,s.d.)=(%.2f,%.2f) cm s$^{-1}$' % (AV, STD)
+
+	
+
+	surf_uv, AV, STD = ptools.normaliseSTD(1.e2*surf_uv, printVarName='Surface current', outputStats=True)
+
+	surf_uvt = r'Surface current mean=%.2f cm s$^{-1}$, std. dev.=%.2f cm s$^{-1}$' % (AV, STD)
+
+	surf_uvt = r'Surf. current (mean,s.d.)=(%.2f,%.2f) cm s$^{-1}$' % (AV, STD)
+
+	
+
+	IStot, AV, STD = ptools.normaliseSTD(IStot, printVarName='Ice-shelf melt', outputStats=True)
+
+	IStott = r'Ice-shelf basal melt, mean=%.2f Gt yr$^{-1}$, std. dev.=%.2f Gt yr$^{-1}$' % (AV, STD)
+
+	IStott = r'Ice-shelf melt (mean,s.d.)=(%.2f,%.2f) Gt yr$^{-1}$' % (AV, STD)
+
+	
+
+	wind, AV, STD = ptools.normaliseSTD(wind, printVarName='Winds', outputStats=True)
+
+	windt = r'Along-slope wind, mean=%.2f m s$^{-1}$, std. dev.=%.2f m s$^{-1}$' % (AV, STD)
+
+	windt = r'Wind (mean,s.d.)=(%.2f,%.2f) m s$^{-1}$' % (AV, STD)
+
+	
+
+	IPO, AV, STD = ptools.normaliseSTD(IPO, printVarName='IPO', outputStats=True)
+
+	IPOt = r'IPO, mean=%.2f$^{\circ}$C, std. dev.=%.2f$^{\circ}$C' % (AV, STD)
+
+	IPOt = r'IPO (mean,s.d.)=(%.2f,%.2f)$^{\circ}$C' % (AV, STD)
+
+	
+
+	ts_data = [IPO, wind, IStot, uv, surf_uv]
+
+	ts_labels = [IPOt, windt, IStott, uvt, surf_uvt]
+
+	ts_ylim = (-2.,3.)
+
+	ts_yticks = np.linspace(-2., 3., 11)
+
+	ts_legendLoc = 'upper right'
+
+	ts_legendFontsize = 7.4
+
+	ts_legendNcol = 2
+
+	
+
+	#==
+
+	
 
 	ts_time = [year]*len(ts_data)
-
-	ts_labels = [r'Undercurrent ($10^{-2}$ m s$^{-1}$)', r'Surface current ($10^{-2}$ m s$^{-1}$)', 'Ice-shelf basal melt (50 gt yr$^{-1}$)', 'Along-slope wind (m s$^{-1}$)', 'IPO']	
 
 	
 
 	solid = 'solid'; dashed = 'dashed'
 
-	ts_lines = [(red, solid), (blue, solid), (green, solid), (grey, solid), (black, dashed)]
+	ts_lines = [(black, solid), (grey, solid), (green, solid), (red, solid), (blue, solid)]
 
-	ts_title = '(b) Along-slope flow, wind and ice-shelf melt anomalies'
+	ts_title = '(b) Eastward along-slope flow, wind and ice-shelf melt anomalies (units std. dev.)'
 
 	ts_xlabel = 'Year'
 
 	ts_ylabel = 'Current/wind speed & basal melt'
 
 	ts_xlim = (min(year), max(year))
-
-	ts_ylim = (-1.35, 1.35)
 
 	
 
@@ -608,11 +716,27 @@ if FIGURE1:
 
 	# PLOT
 
+	
+
+	contourColours = ['silver', 'white']
+
+	contourColours = ['cyan', 'white']
+
+	
+
+	dxArrow = 0.8e5; dxArrowDiag = 5.67e4
+
+	GetzArrow = [.65e6, 1.50e6, dxArrowDiag, -dxArrowDiag, 'r']
+
+	arrows = [[1.58e6, 8.2e5, dxArrow, 0, 'r'], [.93e6, 1.28e6, -dxArrowDiag, dxArrowDiag, 'b'], [1.18e6, 1.55e6, dxArrow, 0, 'b']]
+
+	#arrows = [[-112., -74., 1, 0, 'r']
 
 
-	pt.quiver1by1Basemap_timeseries(u, v, X, Y, d, lat_0, lon_0, contourf=T, mesh=False, contourfNlevels=21, vmin=vmin, vmax=vmax, cmap=cmapMean, contour=[-bathyC,-bathy], lw=2.5, plotvlines=plotvlines, contourLevels=[[1000], [500]], contourColours=['silver','white'], parallels=paras, meridians=merids, isf=iceC, land=land, title=title, text_data=text_data, fontsize=12, fstitle=14, cbarTicks=[-2,-1,0,1,2], maskColour='.8', AntarcticInsetData=True, \
 
-	ts_time=ts_time, ts_data=ts_data, ts_labels=ts_labels, ts_lines=ts_lines, ts_title=ts_title, ts_xlabel=ts_xlabel, ts_ylabel=ts_ylabel, ts_xlim=ts_xlim, ts_ylim=ts_ylim, \
+	pt.quiver1by1Basemap_timeseries(u, v, X, Y, d, lat_0, lon_0, contourf=T, mesh=False, contourfNlevels=21, vmin=vmin, vmax=vmax, cmap=cmapMean, contour=[-bathyC,-bathy], lw=lw, plotvlines=plotvlines, contourLevels=[[1000], [500]], contourColours=contourColours, parallels=paras, meridians=merids, isf=iceC, land=land, title=title, text_data=text_data, fontsize=12, fstitle=14, cbarTicks=[-2,-1,0,1,2], maskColour='.8', AntarcticInsetData=True, arrows=arrows, \
+
+	ts_time=ts_time, ts_data=ts_data, ts_labels=ts_labels, ts_lines=ts_lines, ts_title=ts_title, ts_xlabel=ts_xlabel, ts_ylabel=ts_ylabel, ts_xlim=ts_xlim, ts_ylim=ts_ylim, ts_yticks=ts_yticks, ts_legendLoc=ts_legendLoc, ts_legendFontsize=ts_legendFontsize, ts_legendNcol=ts_legendNcol, \
 
 	show=False, save=True, outname='Figure_1.png', height_ratios=[1.8,1], figsize=(9,9.2))
 
@@ -633,8 +757,6 @@ if FIGURE2:
 
 
 	allSections = ['westGetz','Getz','westPITW','PITW','westPITE']
-
-	#allSections = slopeSections
 
 	allSection_indices = ptools.getSectionIndices(allSections)
 
@@ -800,7 +922,7 @@ if FIGURE2:
 
 	# Plotting details for sections
 
-	sec_titles = [r'(a) Time-mean density (kg m$^{-3}$)'+'\n'+'& along-slope vel.', r'(c) Density (kg m$^{-3}$) &'+'\n'+'along-slope vel. (+ comp)', r'(e) Density (kg m$^{-3}$) &'+'\n'+'along-slope vel. (- comp)']
+	sec_titles = [r'(a) Time-mean density (kg m$^{-3}$)'+'\n'+'& eastward along-slope vel.', r'(c) Density (kg m$^{-3}$) &'+'\n'+'eastward along-slope vel. (+ comp)', r'(e) Density (kg m$^{-3}$) &'+'\n'+'eastward along-slope vel. (- comp)']
 
 	
 
@@ -1022,7 +1144,7 @@ if FIGURE3:
 
 	pval = np.where(bathy>=0, 1, pval)
 
-	pval = np.where(draft<0, 1, pval)
+	#pval = np.where(draft<0, 1, pval)
 
 	
 
@@ -1086,17 +1208,35 @@ if FIGURE3:
 
 	bathyC = ptt.makeBathyContour(bathy, X, Y)
 
+	contourLW = [2.,2.8,2.8,2.8]
+
+	solid = 'solid'; dashed = 'dashed'
+
+
+
+	# For on-shelf area outline over ice-shelf draft outline
+
+	contour = [bathyC, draft, areaNplot, areaSplot]
+
+	contourLS = [solid, solid, dashed, dashed]
+
+	contourLevels = [[-1000], [-1], [0], [1]]
+
+	contourColours = ['k', 'k', 'w', 'w']
+
+	# For ice-shelf draft outline over on-shelf area outline.
+
 	contour = [bathyC, areaNplot, areaSplot, draft]
+
+	contourLS = [solid, dashed, dashed, solid]
 
 	contourLevels = [[-1000], [0], [1], [-1]]
 
 	contourColours = ['k', 'w', 'w', 'k']
 
-	contourLW = [2.,2.8,2.8,2.8]
+	
 
-	solid = 'solid'; dashed = 'dashed'
-
-	contourLS = [solid, dashed, dashed, solid]
+	vlines = [(-125., -74.7, -74.0, 'k', 2.)]
 
 	
 
@@ -1156,7 +1296,7 @@ if FIGURE3:
 
 	
 
-	pt.plot1by1Basemap_timeseries(corr, X, Y, lat_0, lon_0, contourfNlevels=21, stippling=pval, stipData=[0.01, 6, 6, 2.], cmap='coolwarm', vmin=-1., vmax=1., cbarTicks=cbarTicks, parallels=paras, meridians=merids, fontsize=12, fstitle=14, title=title, contour=contour, contourLevels=contourLevels, contourColours=contourColours, contourLW=contourLW, contourLS=contourLS, mesh=False, \
+	pt.plot1by1Basemap_timeseries(corr, X, Y, lat_0, lon_0, contourfNlevels=21, stippling=pval, stipData=[0.01, 6, 6, 2.], cmap='coolwarm', vmin=-1., vmax=1., cbarTicks=cbarTicks, parallels=paras, meridians=merids, fontsize=12, fstitle=14, title=title, contour=contour, contourLevels=contourLevels, contourColours=contourColours, contourLW=contourLW, contourLS=contourLS, mesh=False, plotvlines=vlines, \
 
 	ts_time=ts_time, ts_data=ts_data, ts_labels=ts_labels, ts_lines=ts_lines, ts_title=ts_title, ts_xlabel=ts_xlabel, ts_ylabel=ts_ylabel, ts_xlim=ts_xlim, ts_ylim=ts_ylim, ts_fslegend=ts_fslegend, \
 
